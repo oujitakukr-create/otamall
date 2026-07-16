@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오타몰 - B2B 도매 파트너</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- NAVIGATION BAR -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <a href="#" onclick="switchView('shop')" class="text-2xl font-bold text-indigo-600 tracking-tight">오타몰 <span class="text-xs text-gray-500 font-normal">B2B 도매</span></a>
+                <nav class="hidden md:flex space-x-4">
+                    <button onclick="switchView('shop')" class="nav-link text-gray-600 hover:text-indigo-600 font-medium px-3 py-2 rounded-md transition text-sm">도매 상품 목록</button>
+                    <button onclick="switchView('register')" class="nav-link text-gray-600 hover:text-indigo-600 font-medium px-3 py-2 rounded-md transition text-sm">사업자 회원 신청</button>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="switchView('cart')" class="relative text-gray-600 hover:text-indigo-600 p-2">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span id="cart-badge" class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-bold bg-indigo-600 text-white transform translate-x-1/2 -translate-y-1/2 hidden">0</span>
+                </button>
+                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="bg-gray-800 text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-gray-700 transition">
+                    관리자 모드 진입
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- 1. SHOP VIEW (도매 상품 목록) -->
+        <section id="view-shop" class="view-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">도매 판매 상품</h2>
+                <span class="text-xs text-gray-500">* 사업자 회원 승인 완료된 계정만 실구매가 가능합니다.</span>
+            </div>
+            <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Products dynamically rendered here -->
+            </div>
+        </section>
+
+        <!-- 2. REGISTER VIEW (사업자 회원 신청) -->
+        <section id="view-register" class="view-section hidden">
+            <div class="max-w-lg mx-auto bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">사업자 회원 신청</h2>
+                <p class="text-sm text-gray-500 mb-6 text-center">가입 승인 후 도매 단가 확인 및 주문이 가능합니다.</p>
+                <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">상호명 (법인명)</label>
+                        <input type="text" id="reg-biz-name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">이메일 주소</label>
+                        <input type="email" id="reg-email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">사업자 등록번호</label>
+                        <input type="text" id="reg-biz-num" placeholder="000-00-00000" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">사업자등록증 첨부 (Mock)</label>
+                        <input type="file" id="reg-file" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-md font-medium text-sm hover:bg-indigo-700 transition">회원 신청서 제출</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. CART VIEW (장바구니 및 계좌이체 결제) -->
+        <section id="view-cart" class="view-section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">도매 장바구니</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Cart Items -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div id="cart-items-container" class="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                        <!-- Rendered Cart Items -->
+                    </div>
+                </div>
+                <!-- Checkout Info -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6 h-fit space-y-6">
+                    <h3 class="text-lg font-bold text-gray-900 border-b pb-3">결제 및 발주 정보</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">선택 상품 수량</span>
+                            <span id="cart-total-qty" class="font-medium text-gray-900">0개</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold pt-2 border-t">
+                            <span class="text-gray-900">총 결제 금액</span>
+                            <span id="cart-total-price" class="text-indigo-600">0원</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="border-gray-100">
+
+                    <!-- Bank Transfer Notice -->
+                    <div class="bg-indigo-50 p-4 rounded-md text-xs text-indigo-900 space-y-1">
+                        <p class="font-bold">🏦 도매 전용 결제 계좌 안내</p>
+                        <p>기업은행 123-456789-01-012 (예금주: 오타몰)</p>
+                        <p class="text-gray-500 mt-1">* 반드시 신청하신 사업자명으로 입금해 주세요.</p>
+                    </div>
+
+                    <!-- B2B Spec -->
+                    <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">인증된 사업자명 입력</label>
+                            <input type="text" id="order-biz-name" placeholder="가입 승인된 상호명 입력" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="tax-invoice-req" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <label for="tax-invoice-req" class="ml-2 text-xs text-gray-700 font-semibold">세금계산서 발행 신청</label>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-md font-semibold text-sm hover:bg-indigo-700 transition">발주서 및 계좌이체 완료 신청</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ADMIN CONTROL PANEL (관리자 기능) -->
+        <section id="view-admin" class="view-section hidden space-y-10">
+            <div class="border-b border-gray-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">⚙️ 오타몰 총괄 관리자 콘솔</h2>
+                    <p class="text-xs text-gray-500 mt-1">이 페이지에서 변경된 상태는 브라우저 로컬 저장소에 실시간 적용됩니다.</p>
+                </div>
+                <!-- B2B Backup & Migration Panel -->
+                <div class="flex space-x-2">
+                    <button onclick="exportData()" class="bg-gray-100 text-gray-800 text-xs px-3 py-2 rounded font-semibold hover:bg-gray-200 transition">💾 DB 데이터 백업</button>
+                    <label class="bg-indigo-50 text-indigo-700 text-xs px-3 py-2 rounded font-semibold hover:bg-indigo-100 transition cursor-pointer">
+                        📥 DB 데이터 복원
+                        <input type="file" id="db-import-file" onchange="importData(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Admin: Register Products -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">🆕 도매 상품 추가</h3>
+                    <form onsubmit="handleCreateProduct(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">상품명</label>
+                            <input type="text" id="prod-name" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">도매가 (원)</label>
+                                <input type="number" id="prod-price" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">최소구매수량(MOQ)</label>
+                                <input type="number" id="prod-moq" value="10" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">설명</label>
+                            <textarea id="prod-desc" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">이미지 URL</label>
+                            <input type="text" id="prod-img" placeholder="https://picsum.photos/200" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md text-sm font-semibold hover:bg-indigo-700">상품 등록</button>
+                    </form>
+                </div>
+
+                <!-- Admin: Manage Users -->
+                <div class="lg:col-span-2 bg-white border border-gray-200 rounded-lg p-6 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-gray-900">👥 사업자 회원 가입 승인 대기 목록</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="py-3 px-4">상호명</th>
+                                    <th class="py-3 px-4">이메일</th>
+                                    <th class="py-3 px-4">사업자번호</th>
+                                    <th class="py-3 px-4">상태</th>
+                                    <th class="py-3 px-4 text-right">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-user-list">
+                                <!-- Users list -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin: Order Management (with CSV Export) -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <h3 class="text-lg font-bold text-gray-900">📦 도매 발주 주문 내역</h3>
+                    <button onclick="downloadOrdersCSV()" class="bg-green-600 text-white text-xs font-bold px-3 py-2 rounded hover:bg-green-700 transition flex items-center">
+                        📊 배포/출고용 CSV 다운로드
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 font-bold">
+                            <tr>
+                                <th class="py-3 px-4">주문ID</th>
+                                <th class="py-3 px-4">발주처(상호)</th>
+                                <th class="py-3 px-4">주문 내역 및 수량</th>
+                                <th class="py-3 px-4">총 결제액</th>
+                                <th class="py-3 px-4">계산서</th>
+                                <th class="py-3 px-4">상태</th>
+                                <th class="py-3 px-4 text-right">상태 관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-order-list">
+                            <!-- Orders list -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+            <p>&copy; 2026 오타몰 도매전용센터. All Rights Reserved.</p>
+            <p class="mt-2 md:mt-0">GitHub Pages Static Prototype System.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const defaultProducts = [
+            { id: 1, name: "오타몰 한정판 기계식 키보드", price: 45000, desc: "독창적인 키캡 컬러웨이, 저소음 갈축 탑재 도매 상품", img: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=400&q=80", moq: 10 },
+            { id: 2, name: "고성능 인체공학 무선 마우스", price: 18000, desc: "장시간 사무작업 및 게이밍에 최적화된 그립감의 인디 히트상품", img: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=400&q=80", moq: 20 }
+        ];
+
+        const defaultUsers = [
+            { id: 101, bizName: "테스트유통", email: "dist@test.com", bizNum: "120-12-34567", status: "approved" },
+            { id: 102, bizName: "인디컴퍼니", email: "indie@test.com", bizNum: "505-88-00991", status: "pending" }
+        ];
+
+        const defaultOrders = [
+            { id: 9001, bizName: "테스트유통", items: [{ name: "오타몰 한정판 기계식 키보드", qty: 15 }], totalPrice: 675000, taxReq: true, status: "입금대기", date: "2026-07-15" }
+        ];
+
+        // Init localStorage data
+        if(!localStorage.getItem('products')) localStorage.setItem('products', JSON.stringify(defaultProducts));
+        if(!localStorage.getItem('users')) localStorage.setItem('users', JSON.stringify(defaultUsers));
+        if(!localStorage.getItem('orders')) localStorage.setItem('orders', JSON.stringify(defaultOrders));
+        if(!localStorage.getItem('cart')) localStorage.setItem('cart', JSON.stringify([]));
+
+        let currentView = 'shop';
+        let isAdminMode = false;
+
+        function switchView(viewId) {
+            currentView = viewId;
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            if (viewId === 'shop') renderShop();
+            if (viewId === 'cart') renderCart();
+            if (viewId === 'admin') renderAdmin();
+        }
+
+        function toggleAdminMode() {
+            isAdminMode = !isAdminMode;
+            const btn = document.getElementById('admin-toggle-btn');
+            if (isAdminMode) {
+                btn.textContent = "일반 도매 고객 모드";
+                btn.className = "bg-red-600 text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-red-700 transition";
+                switchView('admin');
+            } else {
+                btn.textContent = "관리자 모드 진입";
+                btn.className = "bg-gray-800 text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-gray-700 transition";
+                switchView('shop');
+            }
+        }
+
+        // --- SHOP CONTROLLER ---
+        function renderShop() {
+            const products = JSON.parse(localStorage.getItem('products'));
+            const listEl = document.getElementById('product-list');
+            listEl.innerHTML = '';
+
+            products.forEach(p => {
+                listEl.innerHTML += `
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col justify-between">
+                        <img src="${p.img || 'https://picsum.photos/300'}" alt="${p.name}" class="h-48 w-full object-cover">
+                        <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">${p.name}</h3>
+                                <p class="text-xs text-gray-500 mt-1 line-clamp-2">${p.desc}</p>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-baseline">
+                                    <span class="text-xs text-red-500 font-semibold">MOQ: ${p.moq || 1}개 이상</span>
+                                    <span class="text-lg font-extrabold text-indigo-600">${p.price.toLocaleString()}원</span>
+                                </div>
+                                <div class="mt-4 flex space-x-2">
+                                    <input type="number" id="qty-${p.id}" value="${p.moq || 10}" min="${p.moq || 1}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                                    <button onclick="addToCart(${p.id})" class="flex-grow bg-indigo-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-indigo-700 transition">장바구니</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- CART CONTROLLER ---
+        function addToCart(productId) {
+            const products = JSON.parse(localStorage.getItem('products'));
+            const p = products.find(prod => prod.id === productId);
+            const qtyInput = document.getElementById(`qty-${productId}`);
+            const qty = parseInt(qtyInput.value);
+
+            if(qty < p.moq) {
+                alert(`이 상품은 도매 최소 발주 수량(${p.moq}개)을 채워야 장바구니에 담을 수 있습니다.`);
+                return;
+            }
+
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            const cartItemIndex = cart.findIndex(item => item.id === productId);
+
+            if(cartItemIndex > -1) {
+                cart[cartItemIndex].qty = qty;
+            } else {
+                cart.push({ id: p.id, name: p.name, price: p.price, qty: qty, maxMoq: p.moq });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartBadge();
+            alert("상품이 장바구니에 추가되었습니다.");
+        }
+
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('cart'));
+            const badge = document.getElementById('cart-badge');
+            if (cart.length > 0) {
+                badge.textContent = cart.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderCart() {
+            const cart = JSON.parse(localStorage.getItem('cart'));
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = '';
+
+            if(cart.length === 0) {
+                container.innerHTML = `<p class="text-center text-sm text-gray-500 py-8">장바구니가 비어 있습니다.</p>`;
+                updateCartTotals();
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center py-4 border-b border-gray-100 last:border-0">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-sm">${item.name}</h4>
+                            <p class="text-xs text-red-500">도매 최소 수량 (MOQ): ${item.maxMoq}개</p>
+                        </div>
+                        <div class="flex items-center space-x-6 mt-4 md:mt-0">
+                            <div class="flex items-center">
+                                <span class="text-xs text-gray-500 mr-2">수량:</span>
+                                <input type="number" onchange="updateCartQty(${index}, this.value)" value="${item.qty}" min="${item.maxMoq}" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center">
+                            </div>
+                            <span class="font-bold text-sm text-gray-900 w-24 text-right">${(item.price * item.qty).toLocaleString()}원</span>
+                            <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 text-xs font-semibold">삭제</button>
+                        </div>
+                    </div>
+                `;
+            });
+            updateCartTotals();
+        }
+
+        function updateCartQty(index, qty) {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            qty = parseInt(qty);
+            if(qty < cart[index].maxMoq) {
+                alert(`최소 수량(${cart[index].maxMoq}개) 미만으로 설정할 수 없습니다.`);
+                renderCart();
+                return;
+            }
+            cart[index].qty = qty;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartBadge();
+            renderCart();
+        }
+
+        function updateCartTotals() {
+            const cart = JSON.parse(localStorage.getItem('cart'));
+            let totalQty = 0;
+            let totalPrice = 0;
+            cart.forEach(item => {
+                totalQty += item.qty;
+                totalPrice += (item.price * item.qty);
+            });
+            document.getElementById('cart-total-qty').textContent = `${totalQty}개`;
+            document.getElementById('cart-total-price').textContent = `${totalPrice.toLocaleString()}원`;
+        }
+
+        // --- CHECKOUT SUBMISSION ---
+        function handleCheckout(event) {
+            event.preventDefault();
+            const cart = JSON.parse(localStorage.getItem('cart'));
+            if(cart.length === 0) {
+                alert("장바구니에 담긴 상품이 없습니다.");
+                return;
+            }
+
+            const bizNameInput = document.getElementById('order-biz-name').value.trim();
+            const taxInvoiceReq = document.getElementById('tax-invoice-req').checked;
+
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users.find(u => u.bizName === bizNameInput && u.status === 'approved');
+
+            if(!user) {
+                alert("❗ 회원 승인 완료된 상호명만 발주가 가능합니다.\n관리자 모드에서 가입 처리를 진행해 주세요.");
+                return;
+            }
+
+            let orders = JSON.parse(localStorage.getItem('orders'));
+            let totalPrice = 0;
+            cart.forEach(item => totalPrice += (item.price * item.qty));
+
+            const newOrder = {
+                id: Date.now(),
+                bizName: bizNameInput,
+                items: cart.map(item => ({ name: item.name, qty: item.qty })),
+                totalPrice: totalPrice,
+                taxReq: taxInvoiceReq,
+                status: '입금대기',
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            orders.push(newOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('cart', JSON.stringify([]));
+            
+            updateCartBadge();
+            alert(`발주 완료! 입금 금액: ${totalPrice.toLocaleString()}원`);
+            switchView('shop');
+        }
+
+        // --- REGISTER ---
+        function handleRegister(event) {
+            event.preventDefault();
+            const bizName = document.getElementById('reg-biz-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const bizNum = document.getElementById('reg-biz-num').value.trim();
+
+            let users = JSON.parse(localStorage.getItem('users'));
+            if(users.some(u => u.bizName === bizName)) {
+                alert("이미 등록된 상호명입니다.");
+                return;
+            }
+
+            users.push({ id: Date.now(), bizName, email, bizNum, status: 'pending' });
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            alert(`가입 신청서가 정상 접수되었습니다. 승인을 대기해 주세요.`);
+            document.getElementById('register-form').reset();
+            switchView('shop');
+        }
+
+        // --- ADMIN CONTROLLER ---
+        function renderAdmin() {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const userListEl = document.getElementById('admin-user-list');
+            userListEl.innerHTML = '';
+
+            users.forEach(u => {
+                const statusColor = u.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const statusText = u.status === 'approved' ? '승인완료' : '승인대기';
+                const actionBtn = u.status === 'pending' 
+                    ? `<button onclick="approveUser(${u.id})" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-indigo-700">승인하기</button>` 
+                    : `<button onclick="rejectUser(${u.id})" class="text-red-500 hover:text-red-700 text-xs font-semibold">가입취소</button>`;
+
+                userListEl.innerHTML += `
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 px-4 font-semibold text-gray-900 text-xs">${u.bizName}</td>
+                        <td class="py-4 px-4 text-xs">${u.email}</td>
+                        <td class="py-4 px-4 text-xs">${u.bizNum}</td>
+                        <td class="py-4 px-4">
+                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full ${statusColor}">${statusText}</span>
+                        </td>
+                        <td class="py-4 px-4 text-right">${actionBtn}</td>
+                    </tr>
+                `;
+            });
+
+            const orders = JSON.parse(localStorage.getItem('orders'));
+            const orderListEl = document.getElementById('admin-order-list');
+            orderListEl.innerHTML = '';
+
+            if (orders.length === 0) {
+                orderListEl.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-sm text-gray-400">발주 내역이 존재하지 않습니다.</td></tr>`;
+                return;
+            }
+
+            orders.forEach(o => {
+                const itemsStr = o.items.map(item => `${item.name}(${item.qty}개)`).join(', ');
+                const taxLabel = o.taxReq ? '<span class="text-blue-600 font-bold">신청</span>' : '<span class="text-gray-400">미신청</span>';
+                
+                let selectStatus = `
+                    <select onchange="updateOrderStatus(${o.id}, this.value)" class="text-xs border border-gray-300 rounded p-1">
+                        <option value="입금대기" ${o.status === '입금대기' ? 'selected' : ''}>입금대기</option>
+                        <option value="발송준비" ${o.status === '발송준비' ? 'selected' : ''}>발송준비</option>
+                        <option value="발송완료" ${o.status === '발송완료' ? 'selected' : ''}>발송완료</option>
+                        <option value="주문취소" ${o.status === '주문취소' ? 'selected' : ''}>주문취소</option>
+                    </select>
+                `;
+
+                orderListEl.innerHTML += `
+                    <tr class="border-b border-gray-100">
+                        <td class="py-4 px-4 text-xs text-gray-400 font-mono">#${o.id.toString().slice(-4)}</td>
+                        <td class="py-4 px-4 font-bold text-xs text-gray-900">${o.bizName}</td>
+                        <td class="py-4 px-4 text-xs">${itemsStr}</td>
+                        <td class="py-4 px-4 text-xs font-extrabold text-indigo-600">${o.totalPrice.toLocaleString()}원</td>
+                        <td class="py-4 px-4 text-xs">${taxLabel}</td>
+                        <td class="py-4 px-4">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${o.status === '발송완료' ? 'bg-green-100 text-green-800' : 'bg-indigo-100 text-indigo-800'}">${o.status}</span>
+                        </td>
+                        <td class="py-4 px-4 text-right">${selectStatus}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function approveUser(userId) {
+            let users = JSON.parse(localStorage.getItem('users'));
+            const index = users.findIndex(u => u.id === userId);
+            if(index > -1) {
+                users[index].status = 'approved';
+                localStorage.setItem('users', JSON.stringify(users));
+                renderAdmin();
+            }
+        }
+
+        function rejectUser(userId) {
+            let users = JSON.parse(localStorage.getItem('users'));
+            const index = users.findIndex(u => u.id === userId);
+            if(index > -1) {
+                users[index].status = 'pending';
+                localStorage.setItem('users', JSON.stringify(users));
+                renderAdmin();
+            }
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            let orders = JSON.parse(localStorage.getItem('orders'));
+            const index = orders.findIndex(o => o.id === orderId);
+            if(index > -1) {
+                orders[index].status = newStatus;
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderAdmin();
+            }
+        }
+
+        function handleCreateProduct(event) {
+            event.preventDefault();
+            const name = document.getElementById('prod-name').value.trim();
+            const price = parseInt(document.getElementById('prod-price').value);
+            const moq = parseInt(document.getElementById('prod-moq').value);
+            const desc = document.getElementById('prod-desc').value.trim();
+            const img = document.getElementById('prod-img').value.trim() || 'https://picsum.photos/300';
+
+            let products = JSON.parse(localStorage.getItem('products'));
+            products.push({ id: Date.now(), name, price, moq, desc, img });
+            localStorage.setItem('products', JSON.stringify(products));
+            alert("신규 상품이 등록되었습니다.");
+            event.target.reset();
+            renderAdmin();
+        }
+
+        // --- B2B BUSINESS OPTIMIZED PORTABLE DB TOOLS ---
+
+        // 1. Export Mock DB as JSON (데이터 전체 백업)
+        function exportData() {
+            const data = {
+                products: JSON.parse(localStorage.getItem('products')),
+                users: JSON.parse(localStorage.getItem('users')),
+                orders: JSON.parse(localStorage.getItem('orders'))
+            };
+            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", jsonString);
+            downloadAnchor.setAttribute("download", `otamall_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // 2. Import Mock DB (데이터 복원)
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (parsedData.products && parsedData.users && parsedData.orders) {
+                        localStorage.setItem('products', JSON.stringify(parsedData.products));
+                        localStorage.setItem('users', JSON.stringify(parsedData.users));
+                        localStorage.setItem('orders', JSON.stringify(parsedData.orders));
+                        alert("🎉 오타몰 Mock 데이터베이스가 완벽하게 동기화 복원되었습니다.");
+                        renderAdmin();
+                    } else {
+                        alert("올바른 오타몰 백업 규격 파일이 아닙니다.");
+                    }
+                } catch (err) {
+                    alert("파일을 읽는 도중 오류가 발생했습니다.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 3. Export Orders as CSV (발주서 한눈에 엑셀화 출력)
+        function downloadOrdersCSV() {
+            const orders = JSON.parse(localStorage.getItem('orders'));
+            if(orders.length === 0) {
+                alert("내보낼 주문 내역이 없습니다.");
+                return;
+            }
+
+            // BOM for Korean Excel compatibility
+            let csvContent = "\uFEFF주문ID,발주일자,발주처(상호),상태,총결제액,세금계산서,발주상세\n";
+            orders.forEach(o => {
+                const itemsStr = o.items.map(item => `${item.name}(${item.qty}개)`).join(' | ');
+                const taxStr = o.taxReq ? "신청" : "미신청";
+                csvContent += `"${o.id}","${o.date}","${o.bizName}","${o.status}","${o.totalPrice}","${taxStr}","${itemsStr}"\n`;
+            });
+
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `otamall_orders_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+
+        // Initialize First View
+        switchView('shop');
+        updateCartBadge();
+    </script>
+</body>
+</html>
