@@ -98,12 +98,16 @@
 
   <script>
     // ==========================================
-    // 1. Supabase 초기화 세팅
+    // 1. Supabase 초기화 세팅 (수정 완료)
     // ==========================================
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
-    // ⚠️ 아래에 Supabase에서 복사한 Publishable Key (sb_publishable_...)를 넣으세요!
-    const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
     
+    // 🚨 [필수] 아래 큰따옴표 안에 본인의 Publishable Key (sb_publishable_...)를 꼭 넣으세요!
+    const SUPABASE_ANON_KEY = "YOUR_PUBLISHABLE_KEY_HERE"; 
+    
+    // 변수명 충돌 방지 처리
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
