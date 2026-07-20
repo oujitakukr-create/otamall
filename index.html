@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오타몰 B2B - 공식 도매몰</title>
+  <!-- Supabase JS SDK (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; line-height: 1.6; color: #333; }
+    .hidden { display: none !important; }
+    .card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .badge { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; margin-right: 5px; }
+    .price-masked { color: #e03131; font-weight: bold; }
+    .expired-notice { color: #d9534f; font-weight: bold; }
+    nav { margin-bottom: 20px; padding: 12px 20px; background: #1e293b; color: white; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; background: #2563eb; color: white; font-weight: bold; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #cbd5e1; cursor: not-allowed; }
+    input[type="text"], input[type="password"], input[type="number"], input[type="date"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .admin-panel { background: #fefce8; border-color: #fef08a; }
+  </style>
+</head>
+<body>
+
+  <h1>🏬 오타몰 (Otamall) B2B 도매몰</h1>
+
+  <!-- 상단 네비게이션 -->
+  <nav>
+    <span id="user-status">🔄 DB 상태 확인 중...</span>
+    <div>
+      <button id="btn-login-modal" onclick="showModal('login-modal')">로그인</button>
+      <button id="btn-signup-modal" onclick="showModal('signup-modal')">사업자 회원가입</button>
+      <button id="btn-logout" class="hidden" onclick="handleLogout()">로그아웃</button>
+    </div>
+  </nav>
+
+  <!-- 1. 로그인 모달 -->
+  <div id="login-modal" class="card hidden">
+    <h3>🔐 도매 회원 로그인</h3>
+    <input type="text" id="login-email" placeholder="이메일 주소 (아이디)"><br><br>
+    <input type="password" id="login-pw" placeholder="비밀번호"><br><br>
+    <button onclick="handleLogin()">로그인</button>
+    <button onclick="hideModal('login-modal')" style="background:#64748b;">취소</button>
+  </div>
+
+  <!-- 2. 회원가입 및 계약서 동의 모달 -->
+  <div id="signup-modal" class="card hidden">
+    <h3>📝 사업자 회원가입</h3>
+    <input type="text" id="signup-email" placeholder="이메일 주소"><br><br>
+    <input type="password" id="signup-pw" placeholder="비밀번호 (6자리 이상)"><br><br>
+    <input type="text" id="signup-bizname" placeholder="사업자 상호명"><br><br>
+    
+    <h4>[필수] 오타몰 도매 거래 이용 계약서</h4>
+    <div style="width: 100%; height: 100px; overflow-y: scroll; border: 1px solid #ccc; font-size: 0.85em; padding: 10px; background: #f8fafc;">
+      제1조 (목적) 본 계약은 오타몰과 도매회원 간의 물품 공급 및 거래 조건을 규정함을 목적으로 합니다.<br>
+      제2조 (비밀유지) 회원은 오타몰의 도매가격 및 상품 정보를 제3자에게 유출해서는 안 됩니다.<br>
+      제3조 (주문 및 결제) 주문은 정해진 차시 마감일 전까지 완료되어야 하며, 무통장입금을 원칙으로 합니다.
+    </div>
+    <br>
+    <label>
+      <input type="checkbox" id="contract-agree"> (필수) 위 도매 거래 계약서 내용에 동의합니다.
+    </label><br><br>
+    <button onclick="handleSignup()">가입 신청하기</button>
+    <button onclick="hideModal('signup-modal')" style="background:#64748b;">취소</button>
+  </div>
+
+  <!-- 3. 관리자 전용: 카테고리 관리 -->
+  <div id="admin-category-panel" class="card admin-panel hidden">
+    🛠️ <strong>[관리자 전용] 카테고리 관리</strong>
+    <div id="category-tree" style="margin: 10px 0;"></div>
+    <input type="text" id="new-main-cat" placeholder="신규 대분류명">
+    <button onclick="addMainCategory()">대분류 추가</button>
+  </div>
+
+  <!-- 4. 관리자 전용: 주문 마감일 설정 -->
+  <div id="admin-deadline-panel" class="card admin-panel hidden">
+    📅 <strong>[관리자 전용] 차시 주문 마감일 설정</strong>
+    <input type="date" id="input-deadline">
+    <button onclick="saveDeadline()">마감일 DB 저장</button>
+  </div>
+
+  <hr>
+
+  <!-- 메인 쇼핑몰 영역 -->
+  <h2>📦 도매 상품 목록</h2>
+  
+  <div id="user-category-display"></div><br>
+
+  <!-- 주문 마감일 안내 바 -->
+  <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
+    ⏱️ 이번 차시 주문 마감일: <strong id="display-deadline">불러오는 중...</strong>
+    <span id="deadline-status-badge"></span>
+  </div>
+
+  <!-- 상품 리스트 출력 영역 -->
+  <div id="product-list"></div>
+
+  <script>
+    // ==========================================
+    // 1. Supabase 초기화 세팅
+    // ==========================================
+    const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
+    // ⚠️ 아래에 Supabase에서 복사한 Publishable Key (sb_publishable_...)를 넣으세요!
+    const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
+    
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let userProfile = null;
+    let orderDeadline = "2026-12-31";
+
+    // ==========================================
+    // 2. 초기 로딩 및 앱 시작
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      await checkUserSession();
+      await fetchSettings();
+      await fetchCategories();
+      await fetchProducts();
+    });
+
+    async function checkUserSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        // DB에서 유저 프로필 및 권한 가져오기
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        userProfile = profile;
+      } else {
+        currentUser = null;
+        userProfile = null;
+      }
+      updateUI();
+    }
+
+    // ==========================================
+    // 3. 회원가입 및 로그인 / 로그아웃 로직
+    // ==========================================
+    async function handleSignup() {
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-pw').value;
+      const bizName = document.getElementById('signup-bizname').value;
+      const isAgreed = document.getElementById('contract-agree').checked;
+
+      if (!isAgreed) {
+        alert("계약서 동의에 체크해야만 회원가입이 가능합니다.");
+        return;
+      }
+
+      if (!email || !password) {
+        alert("이메일과 비밀번호를 입력해주세요.");
+        return;
+      }
+
+      // Supabase Auth 회원가입
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        alert("가입 실패: " + error.message);
+        return;
+      }
+
+      // Profiles 테이블에 추가 정보(계약동의, 상호명) 저장
+      if (data.user) {
+        await supabase.from('profiles').insert([{
+          id: data.user.id,
+          email: email,
+          business_name: bizName,
+          role: email === 'playjanus@otamall.com' ? 'admin' : 'buyer', // 특정 관리자 이메일 분기
+          contract_agreed: true
+        }]);
+      }
+
+      alert("회원가입이 완료되었습니다! 로그인해 주세요.");
+      hideModal('signup-modal');
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-pw').value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert("로그인 실패: " + error.message);
+        return;
+      }
+
+      alert("로그인되었습니다.");
+      hideModal('login-modal');
+      await checkUserSession();
+      await fetchProducts(); // 로그인 후 도매가 해제된 상품 재로드
+    }
+
+    async function handleLogout() {
+      await supabase.auth.signOut();
+      alert("로그아웃 되었습니다.");
+      await checkUserSession();
+      await fetchProducts(); // 비회원용 마스킹 상품 재로드
+    }
+
+    // ==========================================
+    // 4. DB 데이터 조회 및 동적 UI 렌더링
+    // ==========================================
+    async function fetchSettings() {
+      const { data } = await supabase.from('settings').select('*').eq('key', 'order_deadline').single();
+      if (data) {
+        orderDeadline = data.value;
+        document.getElementById('display-deadline').innerText = orderDeadline;
+        document.getElementById('input-deadline').value = orderDeadline;
+      }
+      checkDeadlineStatus();
+    }
+
+    async function fetchCategories() {
+      const { data: categories } = await supabase.from('categories').select('*');
+      if (!categories) return;
+
+      const mainCats = categories.filter(c => c.parent_id === null);
+      const display = document.getElementById('user-category-display');
+      const tree = document.getElementById('category-tree');
+      
+      display.innerHTML = "<strong>카테고리: </strong>";
+      tree.innerHTML = "";
+
+      mainCats.forEach(main => {
+        const subs = categories.filter(c => c.parent_id === main.id);
+        const subNames = subs.map(s => s.name).join(', ');
+        display.innerHTML += `<span class="badge">${main.name} (${subNames || '전체'})</span>`;
+
+        tree.innerHTML += `<div><strong>${main.name}</strong> <button onclick="deleteCategory(${main.id})">삭제</button></div>`;
+      });
+    }
+
+    async function fetchProducts() {
+      const { data: products } = await supabase.from('products').select('*');
+      const container = document.getElementById('product-list');
+      container.innerHTML = "";
+
+      if (!products || products.length === 0) {
+        container.innerHTML = "<p>등록된 도매 상품이 없습니다.</p>";
+        return;
+      }
+
+      products.forEach(p => {
+        const isLogged = currentUser !== null;
+        const priceText = isLogged ? `${p.wholesale_price.toLocaleString()}원` : `<span class="price-masked">🔒 로그인 후 확인 가능</span>`;
+        const moqText = isLogged ? `${p.moq}개` : `<span class="price-masked">🔒 로그인 후 확인 가능</span>`;
+
+        container.innerHTML += `
+          <div class="card">
+            <h3>${p.name}</h3>
+            <p>개당 도매가: ${priceText} | 최소주문수량(MOQ): ${moqText}</p>
+            
+            ${isLogged ? `
+              <div style="background:#f8fafc; padding:15px; border-radius:6px; margin-top:10px;">
+                <label>주문 수량: <input type="number" id="qty-${p.id}" value="${p.moq}" min="${p.moq}" onchange="calcTotal(${p.id}, ${p.wholesale_price})"></label><br><br>
+                <label><input type="checkbox" id="tax-${p.id}" onchange="calcTotal(${p.id}, ${p.wholesale_price})"> 세금계산서 발행 신청 (+부가세 10%)</label>
+                <div style="margin-top:10px; font-weight:bold;">
+                  최종 예상 결제액: <span id="total-${p.id}">${(p.wholesale_price * p.moq).toLocaleString()}</span>원
+                </div><br>
+                <button class="btn-order" onclick="submitOrder('${p.name}', ${p.id})">발주서 제출 (무통장입금)</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+
+      checkDeadlineStatus();
+    }
+
+    // ==========================================
+    // 5. 계산 및 주문 기능
+    // ==========================================
+    function calcTotal(productId, price) {
+      const qty = parseInt(document.getElementById(`qty-${productId}`).value) || 0;
+      const isTax = document.getElementById(`tax-${productId}`).checked;
+      
+      let subtotal = price * qty;
+      if (isTax) subtotal = Math.round(subtotal * 1.1); // 부가세 10% 포함
+
+      document.getElementById(`total-${productId}`).innerText = subtotal.toLocaleString();
+    }
+
+    async function submitOrder(productName, productId) {
+      if (!currentUser) return;
+
+      const qty = parseInt(document.getElementById(`qty-${productId}`).value);
+      const isTax = document.getElementById(`tax-${productId}`).checked;
+      const totalStr = document.getElementById(`total-${productId}`).innerText.replace(/,/g, '');
+
+      const { error } = await supabase.from('orders').insert([{
+        user_id: currentUser.id,
+        product_name: productName,
+        qty: qty,
+        is_tax_invoice: isTax,
+        total_price: parseInt(totalStr),
+        status: 'pending'
+      }]);
+
+      if (error) {
+        alert("주문 실패: " + error.message);
+      } else {
+        alert("발주서가 성공적으로 DB에 접수되었습니다. 안내된 계좌로 입금해 주세요.");
+      }
+    }
+
+    // ==========================================
+    // 6. 관리자 기능 (마감일 수정, 카테고리 추가)
+    // ==========================================
+    async function saveDeadline() {
+      const newDate = document.getElementById('input-deadline').value;
+      await supabase.from('settings').upsert({ key: 'order_deadline', value: newDate });
+      alert("주문 마감일이 수정되었습니다.");
+      await fetchSettings();
+    }
+
+    async function addMainCategory() {
+      const name = document.getElementById('new-main-cat').value;
+      if (name) {
+        await supabase.from('categories').insert([{ name: name, parent_id: null }]);
+        document.getElementById('new-main-cat').value = "";
+        await fetchCategories();
+      }
+    }
+
+    async function deleteCategory(id) {
+      await supabase.from('categories').delete().eq('id', id);
+      await fetchCategories();
+    }
+
+    function checkDeadlineStatus() {
+      const today = new Date().toISOString().split('T')[0];
+      const isExpired = today > orderDeadline;
+
+      document.querySelectorAll('.btn-order').forEach(btn => {
+        btn.disabled = isExpired;
+        if (isExpired) btn.innerText = "이번 차시 주문 마감됨";
+      });
+
+      const badge = document.getElementById('deadline-status-badge');
+      if (badge) {
+        badge.innerHTML = isExpired ? `<span class="expired-notice"> [주문 마감]</span>` : `<span style="color:green; font-weight:bold;"> [주문 가능]</span>`;
+      }
+    }
+
+    // UI 상태 갱신
+    function updateUI() {
+      const statusSpan = document.getElementById('user-status');
+      const btnLogin = document.getElementById('btn-login-modal');
+      const btnSignup = document.getElementById('btn-signup-modal');
+      const btnLogout = document.getElementById('btn-logout');
+      const adminCat = document.getElementById('admin-category-panel');
+      const adminDead = document.getElementById('admin-deadline-panel');
+
+      if (currentUser) {
+        const isAdmin = userProfile && userProfile.role === 'admin';
+        statusSpan.innerText = `${isAdmin ? '🔥 관리자' : '🛒 구매회원'}: ${currentUser.email}`;
+        
+        btnLogin.classList.add('hidden');
+        btnSignup.classList.add('hidden');
+        btnLogout.classList.remove('hidden');
+
+        if (isAdmin) {
+          adminCat.classList.remove('hidden');
+          adminDead.classList.remove('hidden');
+        } else {
+          adminCat.classList.add('hidden');
+          adminDead.classList.add('hidden');
+        }
+      } else {
+        statusSpan.innerText = "현재 상태: 비회원 (도매가 열람 제한)";
+        btnLogin.classList.remove('hidden');
+        btnSignup.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+        adminCat.classList.add('hidden');
+        adminDead.classList.add('hidden');
+      }
+    }
+
+    function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+  </script>
+</body>
+</html>
