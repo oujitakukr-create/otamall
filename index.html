@@ -98,14 +98,12 @@
 
   <script>
     // ==========================================
-    // 1. Supabase 초기화 세팅 (수정 완료)
+    // 1. Supabase 초기화 세팅
     // ==========================================
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
-    
-    // 🚨 [필수] 아래 큰따옴표 안에 본인의 Publishable Key (sb_publishable_...)를 꼭 넣으세요!
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
     
-    // 변수명 충돌 방지 처리
+    // 정상적인 초기화 처리 (중복 제거 완료)
     const { createClient } = window.supabase;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -127,7 +125,6 @@
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         currentUser = session.user;
-        // DB에서 유저 프로필 및 권한 가져오기
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -160,7 +157,6 @@
         return;
       }
 
-      // Supabase Auth 회원가입
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
@@ -168,13 +164,12 @@
         return;
       }
 
-      // Profiles 테이블에 추가 정보(계약동의, 상호명) 저장
       if (data.user) {
         await supabase.from('profiles').insert([{
           id: data.user.id,
           email: email,
           business_name: bizName,
-          role: email === 'playjanus@otamall.com' ? 'admin' : 'buyer', // 특정 관리자 이메일 분기
+          role: email === 'playjanus@otamall.com' ? 'admin' : 'buyer',
           contract_agreed: true
         }]);
       }
@@ -197,14 +192,14 @@
       alert("로그인되었습니다.");
       hideModal('login-modal');
       await checkUserSession();
-      await fetchProducts(); // 로그인 후 도매가 해제된 상품 재로드
+      await fetchProducts();
     }
 
     async function handleLogout() {
       await supabase.auth.signOut();
       alert("로그아웃 되었습니다.");
       await checkUserSession();
-      await fetchProducts(); // 비회원용 마스킹 상품 재로드
+      await fetchProducts();
     }
 
     // ==========================================
@@ -285,7 +280,7 @@
       const isTax = document.getElementById(`tax-${productId}`).checked;
       
       let subtotal = price * qty;
-      if (isTax) subtotal = Math.round(subtotal * 1.1); // 부가세 10% 포함
+      if (isTax) subtotal = Math.round(subtotal * 1.1);
 
       document.getElementById(`total-${productId}`).innerText = subtotal.toLocaleString();
     }
