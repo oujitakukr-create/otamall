@@ -161,13 +161,13 @@
 
   <script>
     // ==========================================
-    // 1. Supabase 연동 설정 (단일 선언으로 에러 방지)
+    // 1. Supabase 연동 설정 (전역 변수명 충돌 방지: supabaseClient 사용)
     // ==========================================
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
 
-    // 단일 supabase 클라이언트 객체 생성
-    const _supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    // window.supabase CDN과 명칭이 겹치지 않도록 supabaseClient로 할당
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     let currentUser = null;
     let userProfile = null;
@@ -177,7 +177,7 @@
     // 2. 실행 초기화
     // ==========================================
     window.addEventListener('DOMContentLoaded', async () => {
-      if (!_supabase) {
+      if (!supabaseClient) {
         document.getElementById('user-status').innerText = "❌ Supabase 라이브러리 로드 실패";
         return;
       }
@@ -199,12 +199,12 @@
     });
 
     async function checkUserSession() {
-      const { data: { session }, error } = await _supabase.auth.getSession();
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
       if (error) throw error;
 
       if (session) {
         currentUser = session.user;
-        const { data: profile } = await _supabase
+        const { data: profile } = await supabaseClient
           .from('profiles')
           .select('*')
           .eq('id', currentUser.id)
@@ -236,7 +236,7 @@
         return;
       }
 
-      const { data, error } = await _supabase.auth.signUp({ email, password });
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
       if (error) {
         alert("가입 실패: " + error.message);
@@ -244,7 +244,7 @@
       }
 
       if (data.user) {
-        await _supabase.from('profiles').insert([{
+        await supabaseClient.from('profiles').insert([{
           id: data.user.id,
           email: email,
           business_name: bizName,
@@ -261,7 +261,7 @@
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-pw').value;
 
-      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) {
         alert("로그인 실패: " + error.message);
@@ -275,7 +275,7 @@
     }
 
     async function handleLogout() {
-      await _supabase.auth.signOut();
+      await supabaseClient.auth.signOut();
       alert("로그아웃 되었습니다.");
       await checkUserSession();
       await fetchProducts();
@@ -285,7 +285,7 @@
     // 4. 데이터 조회 및 표시
     // ==========================================
     async function fetchSettings() {
-      const { data } = await _supabase.from('settings').select('*').eq('key', 'order_deadline').maybeSingle();
+      const { data } = await supabaseClient.from('settings').select('*').eq('key', 'order_deadline').maybeSingle();
       if (data) {
         orderDeadline = data.value;
         document.getElementById('display-deadline').innerText = orderDeadline;
@@ -295,7 +295,7 @@
     }
 
     async function fetchCategories() {
-      const { data: categories } = await _supabase.from('categories').select('*');
+      const { data: categories } = await supabaseClient.from('categories').select('*');
       if (!categories) return;
 
       const mainCats = categories.filter(c => c.parent_id === null);
@@ -314,7 +314,7 @@
     }
 
     async function fetchProducts() {
-      const { data: products } = await _supabase.from('products').select('*');
+      const { data: products } = await supabaseClient.from('products').select('*');
       const container = document.getElementById('product-list');
       container.innerHTML = "";
 
@@ -367,7 +367,7 @@
       const isTax = document.getElementById(`tax-${productId}`).checked;
       const totalStr = document.getElementById(`total-${productId}`).innerText.replace(/,/g, '');
 
-      const { error } = await _supabase.from('orders').insert([{
+      const { error } = await supabaseClient.from('orders').insert([{
         user_id: currentUser.id,
         product_name: productName,
         qty: qty,
@@ -385,7 +385,7 @@
 
     async function saveDeadline() {
       const newDate = document.getElementById('input-deadline').value;
-      await _supabase.from('settings').upsert({ key: 'order_deadline', value: newDate });
+      await supabaseClient.from('settings').upsert({ key: 'order_deadline', value: newDate });
       alert("주문 마감일이 수정되었습니다.");
       await fetchSettings();
     }
@@ -393,14 +393,14 @@
     async function addMainCategory() {
       const name = document.getElementById('new-main-cat').value;
       if (name) {
-        await _supabase.from('categories').insert([{ name: name, parent_id: null }]);
+        await supabaseClient.from('categories').insert([{ name: name, parent_id: null }]);
         document.getElementById('new-main-cat').value = "";
         await fetchCategories();
       }
     }
 
     async function deleteCategory(id) {
-      await _supabase.from('categories').delete().eq('id', id);
+      await supabaseClient.from('categories').delete().eq('id', id);
       await fetchCategories();
     }
 
