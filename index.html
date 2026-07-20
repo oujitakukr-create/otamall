@@ -46,6 +46,14 @@
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
     input, select { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: 0.9rem; }
 
+    /* 붙여넣기 드롭존 & 썸네일 미리보기 영역 */
+    .paste-dropzone { border: 2px dashed #cbd5e1; background: #ffffff; padding: 16px; border-radius: 8px; text-align: center; margin-top: 6px; cursor: pointer; transition: background 0.2s; }
+    .paste-dropzone:hover { background: #f1f5f9; }
+    .preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .preview-item { position: relative; width: 70px; height: 70px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-remove-btn { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
     /* 관리자 테이블 */
     .admin-order-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; background: #fff; border-radius: 6px; overflow: hidden; }
     .admin-order-table th, .admin-order-table td { padding: 10px; border: 1px solid var(--border-color); text-align: left; }
@@ -93,7 +101,7 @@
     .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
     .price-total { font-size: 1rem; font-weight: 800; color: var(--primary); border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 6px; }
 
-    /* 장바구니 테이블 및 아이템 */
+    /* 장바구니 테이블 */
     .cart-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85rem; }
     .cart-table th, .cart-table td { padding: 8px; border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
     .cart-table th { background: #f8fafc; color: var(--text-muted); }
@@ -117,7 +125,7 @@
 
   <div class="container">
 
-    <!-- [관리자 전용 1] 카테고리 관리 (삭제 기능 연동) -->
+    <!-- [관리자 전용 1] 카테고리 관리 -->
     <div id="admin-category-panel" class="admin-card hidden">
       <div class="admin-title">🛠️ [관리자] 카테고리 생성 및 삭제 관리</div>
       <div id="category-tree" style="margin-bottom: 12px;"></div>
@@ -132,7 +140,7 @@
       </div>
     </div>
 
-    <!-- [관리자 전용 2] 상품 등록 -->
+    <!-- [관리자 전용 2] 상품 등록 (파일 업로드 + 스크린샷 붙여넣기 지원) -->
     <div id="admin-product-panel" class="admin-card hidden">
       <div class="admin-title">🛍️ [관리자] 신규 상품 등록</div>
       <div class="form-grid">
@@ -142,9 +150,18 @@
         <input type="number" id="p-price" placeholder="개당 도매가(원)">
         <input type="number" id="p-moq" value="5" placeholder="최소주문수량(MOQ)">
         <input type="text" id="p-delivery" placeholder="예상 배송 시기 (예: 2026년 4분기)">
+        
+        <!-- 파일 선택 및 Ctrl+V 붙여넣기 통합 구역 -->
         <div style="grid-column: 1 / -1;">
-          <label style="font-size:0.8rem; font-weight:700;">📸 상품 이미지 (복수 선택 가능)</label>
-          <input type="file" id="p-images" multiple accept="image/*">
+          <label style="font-size:0.8rem; font-weight:700;">📸 상품 이미지 (파일 선택 또는 화면 캡처 후 Ctrl+V 붙여넣기 가능)</label>
+          <div class="paste-dropzone" onclick="document.getElementById('p-images').click();">
+            <p style="font-size:0.85rem; color:var(--text-muted); pointer-events:none;">
+              📁 클릭하여 파일 선택 | 📋 스크린샷 캡처 후 이 창에 <strong>Ctrl + V</strong> 누르기
+            </p>
+            <input type="file" id="p-images" multiple accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+          </div>
+          <!-- 선택/붙여넣은 이미지 미리보기 및 삭제 목록 -->
+          <div id="image-preview-container" class="preview-container"></div>
         </div>
       </div>
       <button id="btn-add-prod" class="btn btn-primary" style="width:100%;" onclick="addProduct()">상품 등록하기</button>
@@ -158,9 +175,7 @@
 
     <!-- 2단계 계층형 카테고리 필터 섹션 -->
     <div class="category-section">
-      <!-- 상단 열: 대분류 목록 -->
       <div id="main-category-bar" class="category-row"></div>
-      <!-- 하단 열: 소분류 목록 (대분류 선택 시에만 출력) -->
       <div id="sub-category-bar" class="category-row sub-cat-row hidden"></div>
     </div>
 
@@ -244,15 +259,16 @@
     let rawProductsData = [];
     let filteredProductsData = [];
     
-    // 카테고리 계층적 선택 상태
     let selectedMainCatId = null;
     let selectedSubCatId = null;
 
     let currentPage = 1;
     const itemsPerPage = 25;
 
-    // 장바구니 데이터 (localStorage 저장 연동)
     let cartItems = JSON.parse(localStorage.getItem('otamall_cart') || '[]');
+
+    // 업로드 대상 파일들을 저장하는 통합 관리 배열 (파일선택 + Ctrl+V 붙여넣기 공용)
+    let uploadFilesList = [];
 
     window.addEventListener('DOMContentLoaded', async () => {
       if (!supabaseClient) return;
@@ -260,7 +276,66 @@
       await checkUserSession();
       await fetchCategories();
       await fetchProducts();
+
+      // 글로벌 Paste(붙여넣기) 이벤트 리스너 등록
+      document.addEventListener('paste', handlePasteEvent);
     });
+
+    // --- 📸 파일 선택 및 스크린샷 붙여넣기(Paste) 처리 ---
+    function handleFileSelect(event) {
+      const files = Array.from(event.target.files);
+      files.forEach(f => uploadFilesList.push(f));
+      renderImagePreviews();
+      event.target.value = ''; // 동일 파일 재선택 가능하도록 초기화
+    }
+
+    function handlePasteEvent(e) {
+      const adminPanel = document.getElementById('admin-product-panel');
+      // 관리자 패널이 닫혀있는 경우에는 붙여넣기 작동 방지
+      if (!adminPanel || adminPanel.classList.contains('hidden')) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      let added = false;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            // 복사된 Blob 객체를 File 객체로 변환
+            const fileName = `screenshot_${Date.now()}_${i}.png`;
+            const file = new File([blob], fileName, { type: blob.type });
+            uploadFilesList.push(file);
+            added = true;
+          }
+        }
+      }
+
+      if (added) {
+        e.preventDefault();
+        renderImagePreviews();
+      }
+    }
+
+    function renderImagePreviews() {
+      const container = document.getElementById('image-preview-container');
+      container.innerHTML = '';
+
+      uploadFilesList.forEach((file, index) => {
+        const objectUrl = URL.createObjectURL(file);
+        container.innerHTML += `
+          <div class="preview-item">
+            <img src="${objectUrl}" alt="미리보기">
+            <button class="preview-remove-btn" onclick="removeImageFromUploadList(${index})" title="삭제">✕</button>
+          </div>
+        `;
+      });
+    }
+
+    function removeImageFromUploadList(index) {
+      uploadFilesList.splice(index, 1);
+      renderImagePreviews();
+    }
 
     async function checkUserSession() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -294,7 +369,7 @@
       const address = document.getElementById('signup-address').value.trim();
 
       if (!email || !password || !bizName || !depositorName || !phone || !address) {
-        return alert("모든 항목(이메일, 비밀번호, 상호명, 예금주명, 전화번호, 주소)을 필수 입력해 주세요.");
+        return alert("모든 항목을 필수 입력해 주세요.");
       }
 
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
@@ -326,7 +401,7 @@
       await fetchProducts();
     }
 
-    // --- 2단계 계층형 카테고리 UI & 관리자 삭제 처리 ---
+    // --- 카테고리 관리 ---
     async function fetchCategories() {
       const { data } = await supabaseClient.from('categories').select('*');
       categoriesData = data || [];
@@ -339,13 +414,11 @@
       const productCatSelect = document.getElementById('p-category');
       const editCatSelect = document.getElementById('edit-p-category');
 
-      // 1) 상단 열 (대분류) 출력 - 항상 상위에 보임
       mainBar.innerHTML = `<button class="cat-btn ${selectedMainCatId === null ? 'active' : ''}" onclick="selectMainCategory(null)">전체보기</button>`;
       mainCats.forEach(main => {
         mainBar.innerHTML += `<button class="cat-btn ${selectedMainCatId === main.id ? 'active' : ''}" onclick="selectMainCategory(${main.id})">${main.name}</button>`;
       });
 
-      // 2) 하단 열 (소분류) 출력 - 선택된 대분류가 있을 때만 노출
       if (selectedMainCatId !== null) {
         const subCats = categoriesData.filter(c => c.parent_id === selectedMainCatId);
         subBar.classList.remove('hidden');
@@ -357,7 +430,6 @@
         subBar.classList.add('hidden');
       }
 
-      // 3) 관리자용 Select 셀렉트 박스 갱신
       parentSelect.innerHTML = "<option value=''>-- 대분류 선택 --</option>";
       productCatSelect.innerHTML = "<option value=''>-- 소분류 선택 --</option>";
       editCatSelect.innerHTML = "<option value=''>-- 소분류 선택 --</option>";
@@ -371,7 +443,6 @@
         });
       });
 
-      // 4) 관리자용 카테고리 트리 UI 및 삭제 버튼 생성
       if (userProfile && userProfile.role === 'admin') {
         const tree = document.getElementById('category-tree');
         tree.innerHTML = "";
@@ -390,7 +461,7 @@
 
     function selectMainCategory(mainId) {
       selectedMainCatId = mainId;
-      selectedSubCatId = null; // 대분류 전환 시 소분류 선택 초기화
+      selectedSubCatId = null;
       currentPage = 1;
       fetchCategories();
       applyFilterAndRender();
@@ -404,13 +475,13 @@
     }
 
     async function deleteCategory(id) {
-      if (!confirm("해당 카테고리를 삭제하시겠습니까? 관련 상품의 카테고리 지정이 해제될 수 있습니다.")) return;
+      if (!confirm("해당 카테고리를 삭제하시겠습니까?")) return;
       await supabaseClient.from('categories').delete().eq('id', id);
       await fetchCategories();
       await fetchProducts();
     }
 
-    // --- 상품 데이터 조회 및 최신순 필터링 ---
+    // --- 상품 데이터 조회 및 렌더링 ---
     async function fetchProducts() {
       const { data } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
       rawProductsData = data || [];
@@ -499,7 +570,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- 🛒 장바구니 핵심 로직 ---
+    // --- 장바구니 로직 ---
     function updateCartBadge() {
       const totalQty = cartItems.reduce((sum, item) => sum + item.qty, 0);
       document.getElementById('cart-count').innerText = totalQty;
@@ -622,10 +693,7 @@
       if (cartItems.length === 0) return;
 
       const isTax = document.getElementById('cart-tax-check').checked;
-      const subtotal = cartItems.reduce((sum, item) => sum + (item.wholesale_price * item.qty), 0);
-      const shipping = subtotal >= 200000 ? 0 : 4000;
 
-      // 각 상품별 개별 발주 데이터 작성
       const orderPayloads = cartItems.map(item => {
         const itemSum = item.wholesale_price * item.qty;
         const itemVat = isTax ? Math.round(itemSum * 0.1) : 0;
@@ -779,7 +847,7 @@
       }
     }
 
-    // --- 관리자 전용 편집 / 삭제 / 발주 조회 ---
+    // --- 관리자 전용 편집 / 삭제 / 발주 및 상품 등록 ---
     function openEditModal(productId) {
       const p = rawProductsData.find(item => item.id === productId);
       if (!p) return;
@@ -877,6 +945,7 @@
       container.innerHTML = html;
     }
 
+    // 파일 업로드 (uploadFilesList 배열 일원화 등록)
     async function addProduct() {
       const name = document.getElementById('p-name').value;
       const categoryId = document.getElementById('p-category').value;
@@ -884,7 +953,6 @@
       const price = parseInt(document.getElementById('p-price').value);
       const moq = parseInt(document.getElementById('p-moq').value) || 1;
       const delivery = document.getElementById('p-delivery').value;
-      const imageFiles = document.getElementById('p-images').files;
 
       if (!name || !deadline || isNaN(price)) return alert("상품명, 마감일, 도매가는 필수입니다.");
 
@@ -893,10 +961,10 @@
       btn.innerText = "⏳ 등록 진행 중...";
 
       let imageUrls = [];
-      if (imageFiles && imageFiles.length > 0) {
-        for (let i = 0; i < imageFiles.length; i++) {
-          const file = imageFiles[i];
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${file.name.split('.').pop()}`;
+      if (uploadFilesList.length > 0) {
+        for (let i = 0; i < uploadFilesList.length; i++) {
+          const file = uploadFilesList[i];
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${file.name.split('.').pop() || 'png'}`;
           const filePath = `products/${fileName}`;
           const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(filePath, file);
           if (!uploadError) {
@@ -919,6 +987,8 @@
         alert("상품 등록 완료!");
         document.getElementById('p-name').value = "";
         document.getElementById('p-price').value = "";
+        uploadFilesList = [];
+        renderImagePreviews();
         await fetchProducts();
       }
     }
