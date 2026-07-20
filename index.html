@@ -5,112 +5,173 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오타몰 B2B - 공식 도매몰</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; line-height: 1.6; color: #333; background: #f8fafc; }
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --admin-bg: #fefce8;
+      --admin-border: #fef08a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.5; padding-bottom: 60px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+    /* 헤더 & 네비게이션 */
+    header { background: #1e293b; color: white; padding: 16px 0; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .nav-wrapper { display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.4rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .user-badge { font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; }
+    
+    /* 버튼 스타일 */
+    .btn { cursor: pointer; padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #64748b; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+
+    /* 관리자 패널 */
+    .admin-card { background: var(--admin-bg); border: 1px solid var(--admin-border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+    .admin-title { font-weight: 700; color: #854d0e; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    input, select { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: 0.9rem; }
+
+    /* 카테고리 필터 바 */
+    .category-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); }
+    .cat-btn { padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .cat-btn.active, .cat-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* 상품 카드 그리드 (Thumbnail 중심) */
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .product-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    
+    .thumb-wrapper { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #f1f5f9; overflow: hidden; }
+    .thumb-img { width: 100%; height: 100%; object-fit: cover; }
+    .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.85rem; }
+    
+    .deadline-badge { position: absolute; top: 10px; left: 10px; background: rgba(15, 23, 42, 0.85); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; backdrop-filter: blur(4px); }
+    .deadline-badge.expired { background: rgba(220, 38, 38, 0.9); }
+
+    .card-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+    .prod-title { font-size: 0.95rem; font-weight: 700; line-height: 1.3; margin-bottom: 8px; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .prod-price { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
+    .price-masked { color: #ef4444; font-size: 0.85rem; font-weight: 700; }
+
+    /* 페이지네이션 UI */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 36px; }
+    .page-btn { padding: 6px 12px; border: 1px solid var(--border-color); background: #fff; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* 모달 팝업 (로그인 / 회원가입 / 상품 상세 발주) */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    
     .hidden { display: none !important; }
-    .card { border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .badge { background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; margin-right: 5px; }
-    .badge-sub { background: #dbeafe; color: #1e40af; }
-    .price-masked { color: #e03131; font-weight: bold; }
-    .expired-notice { color: #d9534f; font-weight: bold; }
-    nav { margin-bottom: 20px; padding: 12px 20px; background: #1e293b; color: white; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; background: #2563eb; color: white; font-weight: bold; }
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #cbd5e1; cursor: not-allowed; }
-    input[type="text"], input[type="password"], input[type="number"], input[type="date"], select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
-    .admin-panel { background: #fefce8; border: 1px solid #fef08a; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px; }
-    .price-breakdown { background: #f1f5f9; padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 0.9em; }
+    .price-breakdown { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin: 12px 0; font-size: 0.85rem; }
     .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-    .price-total { font-size: 1.1em; font-weight: bold; color: #2563eb; border-top: 1px solid #cbd5e1; pt: 6px; margin-top: 6px; }
+    .price-total { font-size: 1rem; font-weight: 800; color: var(--primary); border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 6px; }
   </style>
 </head>
 <body>
 
-  <h1>🏬 오타몰 (Otamall) B2B 도매몰</h1>
-
-  <nav>
-    <span id="user-status">🔄 DB 연결 상태 확인 중...</span>
-    <div>
-      <button id="btn-login-modal" onclick="showModal('login-modal')">로그인</button>
-      <button id="btn-signup-modal" onclick="showModal('signup-modal')">사업자 회원가입</button>
-      <button id="btn-logout" class="hidden" onclick="handleLogout()">로그아웃</button>
-    </div>
-  </nav>
-
-  <!-- 로그인 모달 -->
-  <div id="login-modal" class="card hidden">
-    <h3>🔐 도매 회원 로그인</h3>
-    <input type="text" id="login-email" placeholder="이메일 주소"><br><br>
-    <input type="password" id="login-pw" placeholder="비밀번호"><br><br>
-    <button onclick="handleLogin()">로그인</button>
-    <button onclick="hideModal('login-modal')" style="background:#64748b;">취소</button>
-  </div>
-
-  <!-- 회원가입 모달 -->
-  <div id="signup-modal" class="card hidden">
-    <h3>📝 사업자 회원가입</h3>
-    <input type="text" id="signup-email" placeholder="이메일 주소"><br><br>
-    <input type="password" id="signup-pw" placeholder="비밀번호 (6자리 이상)"><br><br>
-    <input type="text" id="signup-bizname" placeholder="사업자 상호명"><br><br>
-    <button onclick="handleSignup()">가입 신청하기</button>
-    <button onclick="hideModal('signup-modal')" style="background:#64748b;">취소</button>
-  </div>
-
-  <!-- [관리자 전용] 1. 대분류 / 소분류 카테고리 관리 -->
-  <div id="admin-category-panel" class="card admin-panel hidden">
-    🛠️ <strong>[관리자 전용] 대분류 & 소분류 카테고리 관리</strong>
-    <div id="category-tree" style="margin: 15px 0;"></div>
-    
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
-      <input type="text" id="new-main-cat" placeholder="신규 대분류명">
-      <button onclick="addMainCategory()">대분류 추가</button>
-    </div>
-    
-    <div style="display:flex; gap:10px;">
-      <select id="select-parent-cat"></select>
-      <input type="text" id="new-sub-cat" placeholder="신규 소분류명">
-      <button onclick="addSubCategory()" style="background:#059669;">소분류 추가</button>
-    </div>
-  </div>
-
-  <!-- [관리자 전용] 2. 개별 상품 등록 (마감일 달력 UI 지원) -->
-  <div id="admin-product-panel" class="card admin-panel hidden">
-    🛍️ <strong>[관리자 전용] 개별 도매 상품 등록</strong>
-    <div class="form-grid" style="margin-top: 10px;">
-      <div>
-        <label>상품명:</label><br>
-        <input type="text" id="p-name" placeholder="예: [예약] 귀멸의 칼날 무이치로" style="width:100%;">
-      </div>
-      <div>
-        <label>카테고리(소분류):</label><br>
-        <select id="p-category" style="width:100%;"></select>
-      </div>
-      <div>
-        <label>주문 마감일 (달력):</label><br>
-        <input type="date" id="p-deadline" style="width:100%;">
-      </div>
-      <div>
-        <label>개당 도매가 (원):</label><br>
-        <input type="number" id="p-price" placeholder="25000" style="width:100%;">
-      </div>
-      <div>
-        <label>최소 주문 수량 (MOQ):</label><br>
-        <input type="number" id="p-moq" value="5" style="width:100%;">
-      </div>
-      <div>
-        <label>예상 배송 시기:</label><br>
-        <input type="text" id="p-delivery" placeholder="예: 2026년 4분기 예정" style="width:100%;">
+  <!-- 헤더 -->
+  <header>
+    <div class="container nav-wrapper">
+      <div class="logo">🏬 오타몰 B2B</div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span id="user-status" class="user-badge">확인 중...</span>
+        <button id="btn-login-modal" class="btn btn-primary btn-sm" onclick="showModal('login-modal')">로그인</button>
+        <button id="btn-signup-modal" class="btn btn-secondary btn-sm" onclick="showModal('signup-modal')">회원가입</button>
+        <button id="btn-logout" class="btn btn-danger btn-sm hidden" onclick="handleLogout()">로그아웃</button>
       </div>
     </div>
-    <button onclick="addProduct()" style="background:#16a34a; width:100%; padding:10px; margin-top:5px;">상품 등록하기</button>
+  </header>
+
+  <div class="container">
+
+    <!-- [관리자 전용] 카테고리 관리 -->
+    <div id="admin-category-panel" class="admin-card hidden">
+      <div class="admin-title">🛠️ [관리자] 카테고리 관리</div>
+      <div id="category-tree" style="margin-bottom: 12px;"></div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="text" id="new-main-cat" placeholder="신규 대분류명">
+        <button class="btn btn-primary btn-sm" onclick="addMainCategory()">대분류 추가</button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <select id="select-parent-cat"></select>
+        <input type="text" id="new-sub-cat" placeholder="신규 소분류명">
+        <button class="btn btn-primary btn-sm" style="background:#059669;" onclick="addSubCategory()">소분류 추가</button>
+      </div>
+    </div>
+
+    <!-- [관리자 전용] 개별 상품 등록 -->
+    <div id="admin-product-panel" class="admin-card hidden">
+      <div class="admin-title">🛍️ [관리자] 신규 상품 등록</div>
+      <div class="form-grid">
+        <input type="text" id="p-name" placeholder="상품명">
+        <select id="p-category"></select>
+        <input type="date" id="p-deadline">
+        <input type="number" id="p-price" placeholder="개당 도매가(원)">
+        <input type="number" id="p-moq" value="5" placeholder="최소주문수량(MOQ)">
+        <input type="text" id="p-delivery" placeholder="예상 배송 시기 (예: 2026년 4분기)">
+        <div style="grid-column: 1 / -1;">
+          <label style="font-size:0.8rem; font-weight:700;">📸 상품 이미지 (복수 선택 가능)</label>
+          <input type="file" id="p-images" multiple accept="image/*">
+        </div>
+      </div>
+      <button id="btn-add-prod" class="btn btn-primary" style="width:100%;" onclick="addProduct()">상품 등록하기</button>
+    </div>
+
+    <!-- 카테고리 필터 바 -->
+    <div id="category-bar" class="category-bar">
+      <button class="cat-btn active" onclick="selectCategory(null)">전체보기</button>
+    </div>
+
+    <!-- 상품 카드 리스트 그리드 -->
+    <div id="product-list" class="product-grid"></div>
+
+    <!-- 페이지네이션 UI -->
+    <div id="pagination" class="pagination"></div>
+
   </div>
 
-  <hr>
+  <!-- 모달 1: 로그인 -->
+  <div id="login-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header"><h3>🔐 도매 회원 로그인</h3><button onclick="hideModal('login-modal')">✕</button></div>
+      <input type="text" id="login-email" placeholder="이메일 주소" style="margin-bottom:10px;">
+      <input type="password" id="login-pw" placeholder="비밀번호" style="margin-bottom:16px;">
+      <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">로그인</button>
+    </div>
+  </div>
 
-  <h2>📦 도매 상품 목록</h2>
-  <div id="user-category-display"></div><br>
-  <div id="product-list"></div>
+  <!-- 모달 2: 회원가입 -->
+  <div id="signup-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header"><h3>📝 사업자 회원가입</h3><button onclick="hideModal('signup-modal')">✕</button></div>
+      <input type="text" id="signup-email" placeholder="이메일 주소" style="margin-bottom:10px;">
+      <input type="password" id="signup-pw" placeholder="비밀번호 (6자리 이상)" style="margin-bottom:10px;">
+      <input type="text" id="signup-bizname" placeholder="사업자 상호명" style="margin-bottom:16px;">
+      <button class="btn btn-primary" style="width:100%;" onclick="handleSignup()">가입 신청</button>
+    </div>
+  </div>
+
+  <!-- 모달 3: 상품 상세 & 발주 작성 -->
+  <div id="detail-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header"><h3 id="modal-prod-title">상품 상세 정보</h3><button onclick="hideModal('detail-modal')">✕</button></div>
+      <div id="modal-prod-body"></div>
+    </div>
+  </div>
 
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
@@ -120,6 +181,13 @@
     let currentUser = null;
     let userProfile = null;
     let categoriesData = [];
+    let rawProductsData = [];
+    let filteredProductsData = [];
+    
+    // 페이지네이션 및 필터 상태 관리
+    let selectedCategoryId = null;
+    let currentPage = 1;
+    const itemsPerPage = 25;
 
     window.addEventListener('DOMContentLoaded', async () => {
       if (!supabaseClient) return;
@@ -132,11 +200,7 @@
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         currentUser = session.user;
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .maybeSingle();
+        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         userProfile = profile;
       } else {
         currentUser = null;
@@ -161,208 +225,212 @@
       await fetchProducts();
     }
 
-    // --- 카테고리 로직 (대분류/소분류) ---
+    // --- 카테고리 로직 ---
     async function fetchCategories() {
       const { data } = await supabaseClient.from('categories').select('*');
       categoriesData = data || [];
 
       const mainCats = categoriesData.filter(c => c.parent_id === null);
-      
-      const display = document.getElementById('user-category-display');
-      const tree = document.getElementById('category-tree');
+      const catBar = document.getElementById('category-bar');
       const parentSelect = document.getElementById('select-parent-cat');
       const productCatSelect = document.getElementById('p-category');
 
-      display.innerHTML = "<strong>카테고리: </strong>";
-      tree.innerHTML = "";
+      catBar.innerHTML = `<button class="cat-btn ${selectedCategoryId === null ? 'active' : ''}" onclick="selectCategory(null)">전체보기</button>`;
       parentSelect.innerHTML = "<option value=''>-- 대분류 선택 --</option>";
       productCatSelect.innerHTML = "<option value=''>-- 소분류 선택 --</option>";
 
       mainCats.forEach(main => {
         const subs = categoriesData.filter(c => c.parent_id === main.id);
         
-        // 메인 UI 표시
-        display.innerHTML += `<span class="badge"><strong>${main.name}</strong></span>`;
-        subs.forEach(s => {
-          display.innerHTML += `<span class="badge badge-sub">${s.name}</span>`;
-        });
-
-        // 관리자 트리
-        let subHtml = subs.map(s => ` ${s.name} <button onclick="deleteCategory(${s.id})" style="padding:2px 6px; font-size:0.75em; background:#dc2626;">x</button>`).join(' | ');
-        tree.innerHTML += `
-          <div style="margin-bottom:8px; padding:8px; background:#fff; border-radius:4px;">
-            <strong>📂 ${main.name}</strong> 
-            <button onclick="deleteCategory(${main.id})" style="padding:2px 6px; font-size:0.75em; background:#dc2626;">대분류 삭제</button>
-            <div style="margin-left: 15px; font-size:0.9em; color:#475569; margin-top:4px;">└ 소분류: ${subHtml || '없음'}</div>
-          </div>`;
-
-        // 셀렉트 박스 동기화
-        parentSelect.innerHTML += `<option value="${main.id}">${main.name}</option>`;
+        // 카테고리 바 대분류 버튼
+        catBar.innerHTML += `<button class="cat-btn ${selectedCategoryId === main.id ? 'active' : ''}" onclick="selectCategory(${main.id})">${main.name}</button>`;
         
+        // 소분류 버튼
         subs.forEach(s => {
+          catBar.innerHTML += `<button class="cat-btn ${selectedCategoryId === s.id ? 'active' : ''}" onclick="selectCategory(${s.id})" style="font-size:0.8rem; padding:6px 12px;">└ ${s.name}</button>`;
           productCatSelect.innerHTML += `<option value="${s.id}">${main.name} > ${s.name}</option>`;
         });
+
+        parentSelect.innerHTML += `<option value="${main.id}">${main.name}</option>`;
       });
     }
 
-    async function addMainCategory() {
-      const name = document.getElementById('new-main-cat').value;
-      if (!name) return alert("대분류명을 입력하세요.");
-      await supabaseClient.from('categories').insert([{ name: name, parent_id: null }]);
-      document.getElementById('new-main-cat').value = "";
-      await fetchCategories();
+    function selectCategory(catId) {
+      selectedCategoryId = catId;
+      currentPage = 1;
+      fetchCategories();
+      applyFilterAndRender();
     }
 
-    async function addSubCategory() {
-      const parentId = document.getElementById('select-parent-cat').value;
-      const name = document.getElementById('new-sub-cat').value;
-      if (!parentId || !name) return alert("대분류 선택 및 소분류명을 입력하세요.");
-      await supabaseClient.from('categories').insert([{ name: name, parent_id: parseInt(parentId) }]);
-      document.getElementById('new-sub-cat').value = "";
-      await fetchCategories();
-    }
-
-    async function deleteCategory(id) {
-      if (!confirm("해당 카테고리를 삭제하시겠습니까?")) return;
-      await supabaseClient.from('categories').delete().eq('id', id);
-      await fetchCategories();
-    }
-
-    // --- 상품 등록/조회 로직 ---
-    async function addProduct() {
-      const name = document.getElementById('p-name').value;
-      const categoryId = document.getElementById('p-category').value;
-      const deadline = document.getElementById('p-deadline').value;
-      const price = parseInt(document.getElementById('p-price').value);
-      const moq = parseInt(document.getElementById('p-moq').value) || 1;
-      const delivery = document.getElementById('p-delivery').value;
-
-      if (!name || !deadline || isNaN(price)) {
-        return alert("상품명, 마감일, 도매가는 필수 입력값입니다.");
-      }
-
-      const { error } = await supabaseClient.from('products').insert([{
-        name: name,
-        category_id: categoryId ? parseInt(categoryId) : null,
-        deadline: deadline,
-        wholesale_price: price,
-        moq: moq,
-        delivery_date: delivery
-      }]);
-
-      if (error) alert("등록 실패: " + error.message);
-      else {
-        alert("상품이 성공적으로 등록되었습니다!");
-        document.getElementById('p-name').value = "";
-        document.getElementById('p-price').value = "";
-        await fetchProducts();
-      }
-    }
-
-    async function deleteProduct(id) {
-      if (!confirm("상품을 삭제하시겠습니까?")) return;
-      await supabaseClient.from('products').delete().eq('id', id);
-      await fetchProducts();
-    }
-
+    // --- 상품 데이터 조회 & 최신순 정렬 ---
     async function fetchProducts() {
-      const { data: products } = await supabaseClient.from('products').select('*');
+      // created_at 내림차순 (최신 업로드순) 조회
+      const { data } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
+      rawProductsData = data || [];
+      applyFilterAndRender();
+    }
+
+    // --- 필터링 및 페이지네이션 연산 ---
+    function applyFilterAndRender() {
+      if (selectedCategoryId === null) {
+        filteredProductsData = [...rawProductsData];
+      } else {
+        // 선택된 카테고리가 대분류인지 소분류인지 판별
+        const subCatIds = categoriesData.filter(c => c.parent_id === selectedCategoryId).map(c => c.id);
+        filteredProductsData = rawProductsData.filter(p => p.category_id === selectedCategoryId || subCatIds.includes(p.category_id));
+      }
+
+      renderProductGrid();
+      renderPagination();
+    }
+
+    // --- 썸네일 중심의 카드 그리드 출력 ---
+    function renderProductGrid() {
       const container = document.getElementById('product-list');
       container.innerHTML = "";
 
-      if (!products || products.length === 0) {
-        container.innerHTML = "<p>등록된 도매 상품이 없습니다.</p>";
+      if (filteredProductsData.length === 0) {
+        container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; padding:40px; color:#64748b;'>해당 조건의 상품이 없습니다.</p>";
         return;
       }
+
+      // 25개 단위 슬라이싱
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const paginatedItems = filteredProductsData.slice(startIndex, startIndex + itemsPerPage);
+
+      const isLogged = currentUser !== null;
+      const today = new Date().toISOString().split('T')[0];
+
+      paginatedItems.forEach(p => {
+        const isExpired = p.deadline && today > p.deadline;
+        const mainImg = (Array.isArray(p.images) && p.images.length > 0) ? p.images[0] : null;
+        
+        const priceDisplay = isLogged 
+          ? `${p.wholesale_price.toLocaleString()}원` 
+          : `<span class="price-masked">🔒 로그인 후 확인</span>`;
+
+        container.innerHTML += `
+          <div class="product-card" onclick="openDetailModal(${p.id})">
+            <div class="thumb-wrapper">
+              ${mainImg ? `<img src="${mainImg}" class="thumb-img" alt="${p.name}">` : `<div class="no-img">이미지 없음</div>`}
+              <span class="deadline-badge ${isExpired ? 'expired' : ''}">
+                ⏱️ ${p.deadline ? p.deadline + ' 마감' : '상시접수'}
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="prod-title">${p.name}</div>
+              <div class="prod-price">${priceDisplay}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // --- 페이지네이션 UI 렌더링 ---
+    function renderPagination() {
+      const container = document.getElementById('pagination');
+      container.innerHTML = "";
+
+      const totalPages = Math.ceil(filteredProductsData.length / itemsPerPage);
+      if (totalPages <= 1) return;
+
+      for (let i = 1; i <= totalPages; i++) {
+        container.innerHTML += `
+          <button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>
+        `;
+      }
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderProductGrid();
+      renderPagination();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- 상세 모달 팝업 (갤러리 + 3단계 정산) ---
+    function openDetailModal(productId) {
+      const p = rawProductsData.find(item => item.id === productId);
+      if (!p) return;
 
       const isLogged = currentUser !== null;
       const isAdmin = userProfile && userProfile.role === 'admin';
       const today = new Date().toISOString().split('T')[0];
+      const isExpired = p.deadline && today > p.deadline;
+      const imgList = Array.isArray(p.images) ? p.images : [];
 
-      products.forEach(p => {
-        const isExpired = p.deadline && today > p.deadline;
-        const priceText = isLogged ? `${p.wholesale_price.toLocaleString()}원` : `<span class="price-masked">🔒 로그인 후 확인 가능</span>`;
-        const moqText = isLogged ? `${p.moq}개` : `<span class="price-masked">🔒 로그인 후 확인 가능</span>`;
+      document.getElementById('modal-prod-title').innerText = p.name;
+      
+      let bodyHtml = `
+        <div style="margin-bottom:16px;">
+          ${imgList.length > 0 ? `<img id="modal-main-img" src="${imgList[0]}" style="width:100%; max-height:300px; object-fit:contain; background:#f1f5f9; border-radius:8px; margin-bottom:8px;">` : ''}
+          <div style="display:flex; gap:6px; overflow-x:auto;">
+            ${imgList.map(url => `<img src="${url}" style="width:50px; height:50px; object-fit:cover; border-radius:4px; cursor:pointer;" onclick="document.getElementById('modal-main-img').src='${url}'">`).join('')}
+          </div>
+        </div>
 
-        container.innerHTML += `
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:start;">
-              <div>
-                <h3 style="margin:0 0 8px 0;">${p.name}</h3>
-                <span style="font-size:0.85em; color:#64748b;">
-                  ⏱️ 마감일: <strong>${p.deadline || '상시'}</strong> 
-                  ${isExpired ? '<span class="expired-notice">[주문 마감]</span>' : '<span style="color:green; font-weight:bold;">[주문 가능]</span>'} | 
-                  🚚 예상 배송: ${p.delivery_date || '미정'}
-                </span>
-              </div>
-              ${isAdmin ? `<button onclick="deleteProduct(${p.id})" style="background:#dc2626;">삭제</button>` : ''}
+        <p style="font-size:0.9rem; color:#64748b; margin-bottom:8px;">
+          ⏱️ 마감일: <strong>${p.deadline || '상시'}</strong> | 🚚 예상 배송: ${p.delivery_date || '미정'}
+        </p>
+      `;
+
+      if (isLogged) {
+        bodyHtml += `
+          <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
+            <p style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:12px;">
+              개당 도매가: ${p.wholesale_price.toLocaleString()}원 (MOQ: ${p.moq}개)
+            </p>
+            
+            <label style="font-weight:700; font-size:0.85rem;">주문 수량: 
+              <input type="number" id="modal-qty" value="${p.moq}" min="${p.moq}" onchange="calcTotalModal(${p.wholesale_price})" style="width:90px; margin-left:8px;">
+            </label><br><br>
+
+            <label style="font-size:0.85rem;">
+              <input type="checkbox" id="modal-tax" onchange="calcTotalModal(${p.wholesale_price})"> 세금계산서 발행 신청 (+VAT 10%)
+            </label>
+
+            <div class="price-breakdown">
+              <div class="price-row"><span>상품 금액합계:</span><span id="m-subtotal">0 원</span></div>
+              <div class="price-row"><span>부가세 (VAT 10%):</span><span id="m-vat">0 원</span></div>
+              <div class="price-row"><span>배송비 (20만원 이상 무료):</span><span id="m-shipping">0 원</span></div>
+              <div class="price-row price-total"><span>최종 결제 금액:</span><span id="m-total">0 원</span></div>
             </div>
 
-            <p style="margin-top:12px;">개당 도매가: ${priceText} | 최소주문수량(MOQ): ${moqText}</p>
-
-            ${isLogged ? `
-              <div style="background:#f8fafc; padding:15px; border-radius:6px; border:1px solid #e2e8f0;">
-                <label>주문 수량: 
-                  <input type="number" id="qty-${p.id}" value="${p.moq}" min="${p.moq}" onchange="calcTotal(${p.id}, ${p.wholesale_price})" style="width:80px;">
-                </label><br><br>
-                <label>
-                  <input type="checkbox" id="tax-${p.id}" onchange="calcTotal(${p.id}, ${p.wholesale_price})"> 세금계산서 발행 신청 (+부가세 10%)
-                </label>
-
-                <!-- 정산 내역 3단계 상세 구조 -->
-                <div class="price-breakdown">
-                  <div class="price-row">
-                    <span>상품 금액합계:</span>
-                    <span id="subtotal-${p.id}">${(p.wholesale_price * p.moq).toLocaleString()} 원</span>
-                  </div>
-                  <div class="price-row">
-                    <span>부가세 (VAT 10%):</span>
-                    <span id="vat-${p.id}">0 원</span>
-                  </div>
-                  <div class="price-row">
-                    <span>배송비 (20만원 이상 무료):</span>
-                    <span id="shipping-${p.id}">${(p.wholesale_price * p.moq >= 200000) ? '0원 (무료배송)' : '4,000원'}</span>
-                  </div>
-                  <div class="price-row price-total">
-                    <span>최종 결제 금액:</span>
-                    <span id="total-${p.id}">계산 중...</span>
-                  </div>
-                </div><br>
-
-                <button class="btn-order" onclick="submitOrder('${p.name}', ${p.id})" ${isExpired ? 'disabled' : ''}>
-                  ${isExpired ? '주문 마감됨' : '발주서 제출 (무통장입금)'}
-                </button>
-              </div>
-            ` : ''}
+            <button class="btn btn-primary" style="width:100%; padding:12px;" onclick="submitOrder('${p.name}', ${p.id})" ${isExpired ? 'disabled' : ''}>
+              ${isExpired ? '주문이 마감되었습니다' : '발주서 제출하기 (무통장입금)'}
+            </button>
+            ${isAdmin ? `<button class="btn btn-danger" style="width:100%; margin-top:8px;" onclick="deleteProduct(${p.id})">삭제하기</button>` : ''}
           </div>
         `;
+      } else {
+        bodyHtml += `<p class="price-masked" style="margin-top:12px;">🔒 도매 가격 정보 및 발주는 사업자 로그인 후 가능합니다.</p>`;
+      }
 
-        // 초기 가격 계산 트리거
-        if (isLogged) calcTotal(p.id, p.wholesale_price);
-      });
+      document.getElementById('modal-prod-body').innerHTML = bodyHtml;
+      showModal('detail-modal');
+      if (isLogged) calcTotalModal(p.wholesale_price);
     }
 
-    // --- 정산 계산식 (상품가 / 부가세 / 배송비) ---
-    function calcTotal(productId, unitPrice) {
-      const qty = parseInt(document.getElementById(`qty-${productId}`).value) || 0;
-      const isTax = document.getElementById(`tax-${productId}`).checked;
+    function calcTotalModal(unitPrice) {
+      const qty = parseInt(document.getElementById('modal-qty').value) || 0;
+      const isTax = document.getElementById('modal-tax').checked;
 
-      const productTotal = unitPrice * qty; // pure product price
+      const productTotal = unitPrice * qty;
       const vat = isTax ? Math.round(productTotal * 0.1) : 0;
       const shipping = (productTotal >= 200000) ? 0 : 4000;
       const finalTotal = productTotal + vat + shipping;
 
-      document.getElementById(`subtotal-${productId}`).innerText = `${productTotal.toLocaleString()} 원`;
-      document.getElementById(`vat-${productId}`).innerText = `${vat.toLocaleString()} 원`;
-      document.getElementById(`shipping-${productId}`).innerText = shipping === 0 ? "0원 (무료배송)" : "4,000원";
-      document.getElementById(`total-${productId}`).innerText = `${finalTotal.toLocaleString()} 원`;
+      document.getElementById('m-subtotal').innerText = `${productTotal.toLocaleString()} 원`;
+      document.getElementById('m-vat').innerText = `${vat.toLocaleString()} 원`;
+      document.getElementById('m-shipping').innerText = shipping === 0 ? "0원 (무료배송)" : "4,000원";
+      document.getElementById('m-total').innerText = `${finalTotal.toLocaleString()} 원`;
     }
 
     async function submitOrder(productName, productId) {
       if (!currentUser) return;
-      const qty = parseInt(document.getElementById(`qty-${productId}`).value);
-      const isTax = document.getElementById(`tax-${productId}`).checked;
-      const totalStr = document.getElementById(`total-${productId}`).innerText.replace(/[^0-9]/g, '');
+      const qty = parseInt(document.getElementById('modal-qty').value);
+      const isTax = document.getElementById('modal-tax').checked;
+      const totalStr = document.getElementById('m-total').innerText.replace(/[^0-9]/g, '');
 
       const { error } = await supabaseClient.from('orders').insert([{
         user_id: currentUser.id,
@@ -374,7 +442,83 @@
       }]);
 
       if (error) alert("주문 실패: " + error.message);
-      else alert("발주서가 성공적으로 접수되었습니다.");
+      else {
+        alert("발주서가 성공적으로 접수되었습니다.");
+        hideModal('detail-modal');
+      }
+    }
+
+    // --- 상품 및 카테고리 관리자 CRUD ---
+    async function addProduct() {
+      const name = document.getElementById('p-name').value;
+      const categoryId = document.getElementById('p-category').value;
+      const deadline = document.getElementById('p-deadline').value;
+      const price = parseInt(document.getElementById('p-price').value);
+      const moq = parseInt(document.getElementById('p-moq').value) || 1;
+      const delivery = document.getElementById('p-delivery').value;
+      const imageFiles = document.getElementById('p-images').files;
+
+      if (!name || !deadline || isNaN(price)) return alert("상품명, 마감일, 도매가는 필수입니다.");
+
+      const btn = document.getElementById('btn-add-prod');
+      btn.disabled = true;
+      btn.innerText = "⏳ 등록 진행 중...";
+
+      let imageUrls = [];
+      if (imageFiles && imageFiles.length > 0) {
+        for (let i = 0; i < imageFiles.length; i++) {
+          const file = imageFiles[i];
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${file.name.split('.').pop()}`;
+          const filePath = `products/${fileName}`;
+          const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(filePath, file);
+          if (!uploadError) {
+            const { data: publicData } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
+            if (publicData?.publicUrl) imageUrls.push(publicData.publicUrl);
+          }
+        }
+      }
+
+      const { error } = await supabaseClient.from('products').insert([{
+        name, category_id: categoryId ? parseInt(categoryId) : null,
+        deadline, wholesale_price: price, moq, delivery_date: delivery, images: imageUrls
+      }]);
+
+      btn.disabled = false;
+      btn.innerText = "상품 등록하기";
+
+      if (error) alert("등록 실패: " + error.message);
+      else {
+        alert("상품 등록 완료!");
+        document.getElementById('p-name').value = "";
+        document.getElementById('p-price').value = "";
+        await fetchProducts();
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("정말 이 상품을 삭제하시겠습니까?")) return;
+      await supabaseClient.from('products').delete().eq('id', id);
+      hideModal('detail-modal');
+      await fetchProducts();
+    }
+
+    async function addMainCategory() {
+      const name = document.getElementById('new-main-cat').value;
+      if (name) {
+        await supabaseClient.from('categories').insert([{ name, parent_id: null }]);
+        document.getElementById('new-main-cat').value = "";
+        await fetchCategories();
+      }
+    }
+
+    async function addSubCategory() {
+      const parentId = document.getElementById('select-parent-cat').value;
+      const name = document.getElementById('new-sub-cat').value;
+      if (parentId && name) {
+        await supabaseClient.from('categories').insert([{ name, parent_id: parseInt(parentId) }]);
+        document.getElementById('new-sub-cat').value = "";
+        await fetchCategories();
+      }
     }
 
     function updateUI() {
@@ -382,14 +526,12 @@
       const btnLogin = document.getElementById('btn-login-modal');
       const btnSignup = document.getElementById('btn-signup-modal');
       const btnLogout = document.getElementById('btn-logout');
-      
       const adminCat = document.getElementById('admin-category-panel');
       const adminProd = document.getElementById('admin-product-panel');
 
       if (currentUser) {
         const isAdmin = userProfile && userProfile.role === 'admin';
         statusSpan.innerText = `${isAdmin ? '🔥 관리자' : '🛒 구매회원'}: ${currentUser.email}`;
-        
         btnLogin.classList.add('hidden');
         btnSignup.classList.add('hidden');
         btnLogout.classList.remove('hidden');
@@ -402,7 +544,7 @@
           adminProd.classList.add('hidden');
         }
       } else {
-        statusSpan.innerText = "현재 상태: 비회원 (도매가 열람 제한)";
+        statusSpan.innerText = "비회원 (가격 열람 제한)";
         btnLogin.classList.remove('hidden');
         btnSignup.classList.remove('hidden');
         btnLogout.classList.add('hidden');
