@@ -30,12 +30,14 @@
     .user-badge { font-size: 0.85rem; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; }
     
     /* 버튼 스타일 */
-    .btn { cursor: pointer; padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .btn { cursor: pointer; padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
     .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-secondary { background: #64748b; color: white; }
     .btn-danger { background: #ef4444; color: white; }
     .btn-warning { background: #d97706; color: white; }
+    .btn-cart { background: #059669; color: white; }
+    .btn-cart:hover { background: #047857; }
     .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
 
     /* 관리자 패널 */
@@ -44,15 +46,19 @@
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
     input, select { width: 100%; padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: 0.9rem; }
 
-    /* 관리자 발주 관리 테이블 */
+    /* 관리자 테이블 */
     .admin-order-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; background: #fff; border-radius: 6px; overflow: hidden; }
     .admin-order-table th, .admin-order-table td { padding: 10px; border: 1px solid var(--border-color); text-align: left; }
     .admin-order-table th { background: #f1f5f9; font-weight: 700; }
 
-    /* 카테고리 필터 바 */
-    .category-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); }
+    /* 2단계 계층형 카테고리 바 */
+    .category-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+    .category-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
     .cat-btn { padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
     .cat-btn.active, .cat-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .sub-cat-row { background: #f1f5f9; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border-color); }
+    .sub-cat-btn { padding: 6px 14px; border-radius: 16px; background: #fff; border: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+    .sub-cat-btn.active, .sub-cat-btn:hover { background: #059669; color: white; border-color: #059669; }
 
     /* 상품 카드 그리드 */
     .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
@@ -66,8 +72,8 @@
     .deadline-badge { position: absolute; top: 10px; left: 10px; background: rgba(15, 23, 42, 0.85); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; backdrop-filter: blur(4px); }
     .deadline-badge.expired { background: rgba(220, 38, 38, 0.9); }
 
-    .card-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-    .prod-title { font-size: 0.95rem; font-weight: 700; line-height: 1.3; margin-bottom: 8px; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; gap: 8px; }
+    .prod-title { font-size: 0.95rem; font-weight: 700; line-height: 1.3; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .prod-price { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
     .price-masked { color: #ef4444; font-size: 0.85rem; font-weight: 700; }
 
@@ -78,7 +84,7 @@
 
     /* 모달 팝업 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-    .modal-content { background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .modal-content { background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     
     .hidden { display: none !important; }
@@ -86,6 +92,11 @@
     .price-breakdown { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin: 12px 0; font-size: 0.85rem; }
     .price-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
     .price-total { font-size: 1rem; font-weight: 800; color: var(--primary); border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 6px; }
+
+    /* 장바구니 테이블 및 아이템 */
+    .cart-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85rem; }
+    .cart-table th, .cart-table td { padding: 8px; border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
+    .cart-table th { background: #f8fafc; color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -96,6 +107,7 @@
       <div class="logo">🏬 오타몰 B2B</div>
       <div style="display: flex; gap: 10px; align-items: center;">
         <span id="user-status" class="user-badge">확인 중...</span>
+        <button id="btn-cart-toggle" class="btn btn-cart btn-sm" onclick="openCartModal()">🛒 장바구니 (<span id="cart-count">0</span>)</button>
         <button id="btn-login-modal" class="btn btn-primary btn-sm" onclick="showModal('login-modal')">로그인</button>
         <button id="btn-signup-modal" class="btn btn-secondary btn-sm" onclick="showModal('signup-modal')">사업자 회원가입</button>
         <button id="btn-logout" class="btn btn-danger btn-sm hidden" onclick="handleLogout()">로그아웃</button>
@@ -105,9 +117,9 @@
 
   <div class="container">
 
-    <!-- [관리자 전용 1] 카테고리 관리 -->
+    <!-- [관리자 전용 1] 카테고리 관리 (삭제 기능 연동) -->
     <div id="admin-category-panel" class="admin-card hidden">
-      <div class="admin-title">🛠️ [관리자] 카테고리 관리</div>
+      <div class="admin-title">🛠️ [관리자] 카테고리 생성 및 삭제 관리</div>
       <div id="category-tree" style="margin-bottom: 12px;"></div>
       <div style="display:flex; gap:8px; margin-bottom:8px;">
         <input type="text" id="new-main-cat" placeholder="신규 대분류명">
@@ -144,9 +156,12 @@
       <div id="admin-orders-list">주문 데이터를 불러오는 중...</div>
     </div>
 
-    <!-- 카테고리 필터 바 -->
-    <div id="category-bar" class="category-bar">
-      <button class="cat-btn active" onclick="selectCategory(null)">전체보기</button>
+    <!-- 2단계 계층형 카테고리 필터 섹션 -->
+    <div class="category-section">
+      <!-- 상단 열: 대분류 목록 -->
+      <div id="main-category-bar" class="category-row"></div>
+      <!-- 하단 열: 소분류 목록 (대분류 선택 시에만 출력) -->
+      <div id="sub-category-bar" class="category-row sub-cat-row hidden"></div>
     </div>
 
     <!-- 상품 카드 리스트 그리드 -->
@@ -159,7 +174,7 @@
 
   <!-- 모달 1: 로그인 -->
   <div id="login-modal" class="modal-overlay hidden">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:400px;">
       <div class="modal-header"><h3>🔐 도매 회원 로그인</h3><button onclick="hideModal('login-modal')">✕</button></div>
       <input type="text" id="login-email" placeholder="이메일 주소" style="margin-bottom:10px;">
       <input type="password" id="login-pw" placeholder="비밀번호" style="margin-bottom:16px;">
@@ -167,9 +182,9 @@
     </div>
   </div>
 
-  <!-- 모달 2: 필수 가입정보 반영 회원가입 -->
+  <!-- 모달 2: 회원가입 -->
   <div id="signup-modal" class="modal-overlay hidden">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:450px;">
       <div class="modal-header"><h3>📝 사업자 회원가입 (필수)</h3><button onclick="hideModal('signup-modal')">✕</button></div>
       <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
         <div><label style="font-size:0.8rem; font-weight:700;">이메일 주소 *</label><input type="text" id="signup-email" placeholder="email@example.com"></div>
@@ -183,15 +198,15 @@
     </div>
   </div>
 
-  <!-- 모달 3: 상품 상세 (구매자: 주문창 / 관리자: 상품 수정 기능 제공) -->
+  <!-- 모달 3: 상품 상세 모달 -->
   <div id="detail-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-content">
       <div class="modal-header"><h3 id="modal-prod-title">상품 상세 정보</h3><button onclick="hideModal('detail-modal')">✕</button></div>
       <div id="modal-prod-body"></div>
     </div>
   </div>
 
-  <!-- 모달 4: [관리자 전용] 상품 정보 수정 모달 -->
+  <!-- 모달 4: 관리자 상품 정보 수정 모달 -->
   <div id="edit-prod-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <div class="modal-header"><h3>✏️ 상품 정보 수정</h3><button onclick="hideModal('edit-prod-modal')">✕</button></div>
@@ -208,6 +223,14 @@
     </div>
   </div>
 
+  <!-- 모달 5: 🛒 장바구니 일괄 발주 모달 -->
+  <div id="cart-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width:700px;">
+      <div class="modal-header"><h3>🛒 장바구니 일괄 발주</h3><button onclick="hideModal('cart-modal')">✕</button></div>
+      <div id="cart-modal-body"></div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
@@ -221,12 +244,19 @@
     let rawProductsData = [];
     let filteredProductsData = [];
     
-    let selectedCategoryId = null;
+    // 카테고리 계층적 선택 상태
+    let selectedMainCatId = null;
+    let selectedSubCatId = null;
+
     let currentPage = 1;
     const itemsPerPage = 25;
 
+    // 장바구니 데이터 (localStorage 저장 연동)
+    let cartItems = JSON.parse(localStorage.getItem('otamall_cart') || '[]');
+
     window.addEventListener('DOMContentLoaded', async () => {
       if (!supabaseClient) return;
+      updateCartBadge();
       await checkUserSession();
       await fetchCategories();
       await fetchProducts();
@@ -271,7 +301,6 @@
       if (error) return alert("가입 에러: " + error.message);
 
       if (data?.user) {
-        // 프로필 정보 DB 저장
         const { error: profileErr } = await supabaseClient.from('profiles').upsert([{
           id: data.user.id,
           email: email,
@@ -282,9 +311,8 @@
           role: 'user'
         }]);
 
-        if (profileErr) {
-          alert("프로필 저장 중 오류가 발생했습니다: " + profileErr.message);
-        } else {
+        if (profileErr) alert("프로필 저장 에러: " + profileErr.message);
+        else {
           alert("회원가입 신청이 성공적으로 완료되었습니다.");
           hideModal('signup-modal');
           await checkUserSession();
@@ -298,43 +326,91 @@
       await fetchProducts();
     }
 
-    // --- 카테고리 로직 ---
+    // --- 2단계 계층형 카테고리 UI & 관리자 삭제 처리 ---
     async function fetchCategories() {
       const { data } = await supabaseClient.from('categories').select('*');
       categoriesData = data || [];
 
       const mainCats = categoriesData.filter(c => c.parent_id === null);
-      const catBar = document.getElementById('category-bar');
+      
+      const mainBar = document.getElementById('main-category-bar');
+      const subBar = document.getElementById('sub-category-bar');
       const parentSelect = document.getElementById('select-parent-cat');
       const productCatSelect = document.getElementById('p-category');
       const editCatSelect = document.getElementById('edit-p-category');
 
-      catBar.innerHTML = `<button class="cat-btn ${selectedCategoryId === null ? 'active' : ''}" onclick="selectCategory(null)">전체보기</button>`;
+      // 1) 상단 열 (대분류) 출력 - 항상 상위에 보임
+      mainBar.innerHTML = `<button class="cat-btn ${selectedMainCatId === null ? 'active' : ''}" onclick="selectMainCategory(null)">전체보기</button>`;
+      mainCats.forEach(main => {
+        mainBar.innerHTML += `<button class="cat-btn ${selectedMainCatId === main.id ? 'active' : ''}" onclick="selectMainCategory(${main.id})">${main.name}</button>`;
+      });
+
+      // 2) 하단 열 (소분류) 출력 - 선택된 대분류가 있을 때만 노출
+      if (selectedMainCatId !== null) {
+        const subCats = categoriesData.filter(c => c.parent_id === selectedMainCatId);
+        subBar.classList.remove('hidden');
+        subBar.innerHTML = `<button class="sub-cat-btn ${selectedSubCatId === null ? 'active' : ''}" onclick="selectSubCategory(null)">└ 전체</button>`;
+        subCats.forEach(sub => {
+          subBar.innerHTML += `<button class="sub-cat-btn ${selectedSubCatId === sub.id ? 'active' : ''}" onclick="selectSubCategory(${sub.id})">${sub.name}</button>`;
+        });
+      } else {
+        subBar.classList.add('hidden');
+      }
+
+      // 3) 관리자용 Select 셀렉트 박스 갱신
       parentSelect.innerHTML = "<option value=''>-- 대분류 선택 --</option>";
       productCatSelect.innerHTML = "<option value=''>-- 소분류 선택 --</option>";
       editCatSelect.innerHTML = "<option value=''>-- 소분류 선택 --</option>";
 
       mainCats.forEach(main => {
+        parentSelect.innerHTML += `<option value="${main.id}">${main.name}</option>`;
         const subs = categoriesData.filter(c => c.parent_id === main.id);
-        catBar.innerHTML += `<button class="cat-btn ${selectedCategoryId === main.id ? 'active' : ''}" onclick="selectCategory(${main.id})">${main.name}</button>`;
-        
         subs.forEach(s => {
-          catBar.innerHTML += `<button class="cat-btn ${selectedCategoryId === s.id ? 'active' : ''}" onclick="selectCategory(${s.id})" style="font-size:0.8rem; padding:6px 12px;">└ ${s.name}</button>`;
           productCatSelect.innerHTML += `<option value="${s.id}">${main.name} > ${s.name}</option>`;
           editCatSelect.innerHTML += `<option value="${s.id}">${main.name} > ${s.name}</option>`;
         });
-
-        parentSelect.innerHTML += `<option value="${main.id}">${main.name}</option>`;
       });
+
+      // 4) 관리자용 카테고리 트리 UI 및 삭제 버튼 생성
+      if (userProfile && userProfile.role === 'admin') {
+        const tree = document.getElementById('category-tree');
+        tree.innerHTML = "";
+        mainCats.forEach(m => {
+          const subs = categoriesData.filter(c => c.parent_id === m.id);
+          let subHtml = subs.map(s => `${s.name} <button class="btn btn-danger btn-sm" style="padding:1px 5px; font-size:0.7rem;" onclick="deleteCategory(${s.id})">삭제</button>`).join(' | ');
+          tree.innerHTML += `
+            <div style="margin-bottom:8px; padding:8px; background:#fff; border-radius:6px; border:1px solid #fef08a;">
+              <strong>📂 ${m.name}</strong> 
+              <button class="btn btn-danger btn-sm" style="padding:2px 6px; font-size:0.75rem;" onclick="deleteCategory(${m.id})">대분류 삭제</button>
+              <div style="margin-left: 15px; font-size:0.85rem; color:#475569; margin-top:4px;">└ 소분류: ${subHtml || '없음'}</div>
+            </div>`;
+        });
+      }
     }
 
-    function selectCategory(catId) {
-      selectedCategoryId = catId;
+    function selectMainCategory(mainId) {
+      selectedMainCatId = mainId;
+      selectedSubCatId = null; // 대분류 전환 시 소분류 선택 초기화
       currentPage = 1;
       fetchCategories();
       applyFilterAndRender();
     }
 
+    function selectSubCategory(subId) {
+      selectedSubCatId = subId;
+      currentPage = 1;
+      fetchCategories();
+      applyFilterAndRender();
+    }
+
+    async function deleteCategory(id) {
+      if (!confirm("해당 카테고리를 삭제하시겠습니까? 관련 상품의 카테고리 지정이 해제될 수 있습니다.")) return;
+      await supabaseClient.from('categories').delete().eq('id', id);
+      await fetchCategories();
+      await fetchProducts();
+    }
+
+    // --- 상품 데이터 조회 및 최신순 필터링 ---
     async function fetchProducts() {
       const { data } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
       rawProductsData = data || [];
@@ -345,11 +421,13 @@
     }
 
     function applyFilterAndRender() {
-      if (selectedCategoryId === null) {
+      if (selectedMainCatId === null) {
         filteredProductsData = [...rawProductsData];
+      } else if (selectedSubCatId !== null) {
+        filteredProductsData = rawProductsData.filter(p => p.category_id === selectedSubCatId);
       } else {
-        const subCatIds = categoriesData.filter(c => c.parent_id === selectedCategoryId).map(c => c.id);
-        filteredProductsData = rawProductsData.filter(p => p.category_id === selectedCategoryId || subCatIds.includes(p.category_id));
+        const subCatIds = categoriesData.filter(c => c.parent_id === selectedMainCatId).map(c => c.id);
+        filteredProductsData = rawProductsData.filter(p => p.category_id === selectedMainCatId || subCatIds.includes(p.category_id));
       }
 
       renderProductGrid();
@@ -369,6 +447,7 @@
       const paginatedItems = filteredProductsData.slice(startIndex, startIndex + itemsPerPage);
 
       const isLogged = currentUser !== null;
+      const isAdmin = userProfile && userProfile.role === 'admin';
       const today = new Date().toISOString().split('T')[0];
 
       paginatedItems.forEach(p => {
@@ -390,6 +469,12 @@
             <div class="card-body">
               <div class="prod-title">${p.name}</div>
               <div class="prod-price">${priceDisplay}</div>
+              ${isLogged && !isAdmin ? `
+                <button class="btn btn-cart btn-sm" style="width:100%; margin-top:4px;" 
+                        onclick="event.stopPropagation(); addToCart(${p.id})">
+                  🛒 장바구니 담기
+                </button>
+              ` : ''}
             </div>
           </div>
         `;
@@ -399,14 +484,11 @@
     function renderPagination() {
       const container = document.getElementById('pagination');
       container.innerHTML = "";
-
       const totalPages = Math.ceil(filteredProductsData.length / itemsPerPage);
       if (totalPages <= 1) return;
 
       for (let i = 1; i <= totalPages; i++) {
-        container.innerHTML += `
-          <button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>
-        `;
+        container.innerHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
       }
     }
 
@@ -417,7 +499,161 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- 상품 상세 모달 (관리자 vs 구매회원 구별 처리) ---
+    // --- 🛒 장바구니 핵심 로직 ---
+    function updateCartBadge() {
+      const totalQty = cartItems.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('cart-count').innerText = totalQty;
+      localStorage.setItem('otamall_cart', JSON.stringify(cartItems));
+    }
+
+    function addToCart(productId, customQty = null) {
+      if (!currentUser) return alert("장바구니 기능은 로그인 후 이용 가능합니다.");
+      const p = rawProductsData.find(item => item.id === productId);
+      if (!p) return;
+
+      const qtyToAdd = customQty !== null ? customQty : p.moq;
+      const existing = cartItems.find(item => item.product_id === productId);
+
+      if (existing) {
+        existing.qty += qtyToAdd;
+      } else {
+        cartItems.push({
+          product_id: p.id,
+          name: p.name,
+          wholesale_price: p.wholesale_price,
+          moq: p.moq,
+          qty: qtyToAdd,
+          image: (Array.isArray(p.images) && p.images.length > 0) ? p.images[0] : null
+        });
+      }
+
+      updateCartBadge();
+      alert(`[${p.name}] 상품이 장바구니에 담겼습니다.`);
+    }
+
+    function removeFromCart(productId) {
+      cartItems = cartItems.filter(item => item.product_id !== productId);
+      updateCartBadge();
+      renderCartModal();
+    }
+
+    function updateCartQty(productId, newQty) {
+      const item = cartItems.find(i => i.product_id === productId);
+      if (item) {
+        item.qty = Math.max(item.moq, parseInt(newQty) || item.moq);
+        updateCartBadge();
+        renderCartModal();
+      }
+    }
+
+    function openCartModal() {
+      if (!currentUser) return alert("로그인 후 장바구니를 확인하실 수 있습니다.");
+      renderCartModal();
+      showModal('cart-modal');
+    }
+
+    function renderCartModal() {
+      const container = document.getElementById('cart-modal-body');
+      if (cartItems.length === 0) {
+        container.innerHTML = "<p style='text-align:center; padding:40px; color:#64748b;'>장바구니가 비어 있습니다.</p>";
+        return;
+      }
+
+      let subtotal = 0;
+      let tableRows = cartItems.map(item => {
+        const itemSum = item.wholesale_price * item.qty;
+        subtotal += itemSum;
+        return `
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${item.image ? `<img src="${item.image}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">` : ''}
+                <span style="font-weight:700;">${item.name}</span>
+              </div>
+            </td>
+            <td>${item.wholesale_price.toLocaleString()}원</td>
+            <td>
+              <input type="number" value="${item.qty}" min="${item.moq}" 
+                     style="width:70px; padding:4px;" 
+                     onchange="updateCartQty(${item.product_id}, this.value)">
+            </td>
+            <td style="font-weight:700;">${itemSum.toLocaleString()}원</td>
+            <td><button class="btn btn-danger btn-sm" onclick="removeFromCart(${item.product_id})">삭제</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      const isTax = document.getElementById('cart-tax-check')?.checked || false;
+      const vat = isTax ? Math.round(subtotal * 0.1) : 0;
+      const shipping = subtotal >= 200000 ? 0 : 4000;
+      const grandTotal = subtotal + vat + shipping;
+
+      container.innerHTML = `
+        <table class="cart-table">
+          <thead>
+            <tr><th>상품명</th><th>단가</th><th>수량</th><th>합계</th><th>관리</th></tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+
+        <label style="font-size:0.85rem; font-weight:700;">
+          <input type="checkbox" id="cart-tax-check" ${isTax ? 'checked' : ''} onchange="renderCartModal()"> 
+          세금계산서 발행 신청 (+VAT 10%)
+        </label>
+
+        <div class="price-breakdown">
+          <div class="price-row"><span>총 상품금액:</span><span>${subtotal.toLocaleString()} 원</span></div>
+          <div class="price-row"><span>부가세 (VAT 10%):</span><span>${vat.toLocaleString()} 원</span></div>
+          <div class="price-row">
+            <span>배송비 (20만원 이상 구매 시 무료):</span>
+            <span>${shipping === 0 ? "0원 (무료배송)" : "4,000원"}</span>
+          </div>
+          <div class="price-row price-total"><span>최종 결제 금액:</span><span>${grandTotal.toLocaleString()} 원</span></div>
+          <div class="bank-notice">🏦 입금 계좌 안내: ${BANK_ACCOUNT_INFO}</div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; padding:12px;" onclick="submitCartCheckout()">
+          🛒 장바구니 상품 한 번에 발주서 제출하기 (무통장입금)
+        </button>
+      `;
+    }
+
+    async function submitCartCheckout() {
+      if (cartItems.length === 0) return;
+
+      const isTax = document.getElementById('cart-tax-check').checked;
+      const subtotal = cartItems.reduce((sum, item) => sum + (item.wholesale_price * item.qty), 0);
+      const shipping = subtotal >= 200000 ? 0 : 4000;
+
+      // 각 상품별 개별 발주 데이터 작성
+      const orderPayloads = cartItems.map(item => {
+        const itemSum = item.wholesale_price * item.qty;
+        const itemVat = isTax ? Math.round(itemSum * 0.1) : 0;
+        return {
+          user_id: currentUser.id,
+          product_id: item.product_id,
+          product_name: item.name,
+          qty: item.qty,
+          is_tax_invoice: isTax,
+          total_price: itemSum + itemVat,
+          status: 'pending'
+        };
+      });
+
+      const { error } = await supabaseClient.from('orders').insert(orderPayloads);
+
+      if (error) {
+        alert("일괄 발주 제출 실패: " + error.message);
+      } else {
+        alert(`장바구니 주문이 완료되었습니다. ${BANK_ACCOUNT_INFO}로 입금 부탁드립니다.`);
+        cartItems = [];
+        updateCartBadge();
+        hideModal('cart-modal');
+        if (userProfile && userProfile.role === 'admin') fetchAdminOrders();
+      }
+    }
+
+    // --- 상품 상세 모달 ---
     function openDetailModal(productId) {
       const p = rawProductsData.find(item => item.id === productId);
       if (!p) return;
@@ -444,7 +680,6 @@
       `;
 
       if (isAdmin) {
-        // [관리자] 주문 창은 뜨지 않고 상품 편집 및 삭제 버튼 제공
         bodyHtml += `
           <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
             <p style="font-size:1rem; font-weight:800; color:var(--primary); margin-bottom:12px;">
@@ -457,7 +692,6 @@
           </div>
         `;
       } else if (isLogged) {
-        // [일반 구매회원] 주문 양식 및 무통장 입금 계좌 고지
         bodyHtml += `
           <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
             <p style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:12px;">
@@ -475,16 +709,19 @@
             <div class="price-breakdown">
               <div class="price-row"><span>상품 금액합계:</span><span id="m-subtotal">0 원</span></div>
               <div class="price-row"><span>부가세 (VAT 10%):</span><span id="m-vat">0 원</span></div>
-              <div class="price-row"><span>배송비 (20만원 이상 무료):</span><span id="m-shipping">0 원</span></div>
+              <div class="price-row"><span>배송비 (20만원 이상 구매 시 무료):</span><span id="m-shipping">0 원</span></div>
               <div class="price-row price-total"><span>최종 결제 금액:</span><span id="m-total">0 원</span></div>
-              <div class="bank-notice">
-                🏦 입금 계좌 안내: ${BANK_ACCOUNT_INFO}
-              </div>
+              <div class="bank-notice">🏦 입금 계좌 안내: ${BANK_ACCOUNT_INFO}</div>
             </div>
 
-            <button class="btn btn-primary" style="width:100%; padding:12px;" onclick="submitOrder('${p.name}', ${p.id})" ${isExpired ? 'disabled' : ''}>
-              ${isExpired ? '주문이 마감되었습니다' : '발주서 제출하기 (무통장입금)'}
-            </button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-cart" style="flex:1; padding:12px;" onclick="addSingleToCartFromModal(${p.id})">
+                🛒 장바구니 담기
+              </button>
+              <button class="btn btn-primary" style="flex:1; padding:12px;" onclick="submitOrder('${p.name}', ${p.id})" ${isExpired ? 'disabled' : ''}>
+                ${isExpired ? '주문 마감됨' : '바로 발주하기'}
+              </button>
+            </div>
           </div>
         `;
       } else {
@@ -494,6 +731,12 @@
       document.getElementById('modal-prod-body').innerHTML = bodyHtml;
       showModal('detail-modal');
       if (isLogged && !isAdmin) calcTotalModal(p.wholesale_price);
+    }
+
+    function addSingleToCartFromModal(productId) {
+      const qty = parseInt(document.getElementById('modal-qty').value);
+      addToCart(productId, qty);
+      hideModal('detail-modal');
     }
 
     function calcTotalModal(unitPrice) {
@@ -536,7 +779,7 @@
       }
     }
 
-    // --- [관리자] 상품 정보 수정 기능 ---
+    // --- 관리자 전용 편집 / 삭제 / 발주 조회 ---
     function openEditModal(productId) {
       const p = rawProductsData.find(item => item.id === productId);
       if (!p) return;
@@ -563,23 +806,18 @@
       const delivery = document.getElementById('edit-p-delivery').value;
 
       const { error } = await supabaseClient.from('products').update({
-        name,
-        category_id: categoryId ? parseInt(categoryId) : null,
-        deadline,
-        wholesale_price: price,
-        moq,
-        delivery_date: delivery
+        name, category_id: categoryId ? parseInt(categoryId) : null,
+        deadline, wholesale_price: price, moq, delivery_date: delivery
       }).eq('id', id);
 
       if (error) alert("수정 실패: " + error.message);
       else {
-        alert("상품 정보가 성공적으로 수정되었습니다.");
+        alert("수정 완료되었습니다.");
         hideModal('edit-prod-modal');
         await fetchProducts();
       }
     }
 
-    // --- [관리자] 상품별 최근 발주 현황 조회 ---
     async function fetchAdminOrders() {
       const { data: orders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
@@ -590,11 +828,9 @@
         return;
       }
 
-      // 프로필 데이터 맵핑
       const profileMap = {};
       (profiles || []).forEach(pf => { profileMap[pf.id] = pf; });
 
-      // 상품별 주문 그룹화
       const grouped = {};
       orders.forEach(ord => {
         const pName = ord.product_name || `상품 ID: ${ord.product_id}`;
@@ -613,13 +849,7 @@
             <table class="admin-order-table">
               <thead>
                 <tr>
-                  <th>상호명</th>
-                  <th>예금주명</th>
-                  <th>전화번호</th>
-                  <th>주소</th>
-                  <th>수량</th>
-                  <th>총결제금액</th>
-                  <th>발주일시</th>
+                  <th>상호명</th><th>예금주명</th><th>전화번호</th><th>주소</th><th>수량</th><th>총결제금액</th><th>발주일시</th>
                 </tr>
               </thead>
               <tbody>
@@ -647,7 +877,6 @@
       container.innerHTML = html;
     }
 
-    // --- 상품 등록/삭제 ---
     async function addProduct() {
       const name = document.getElementById('p-name').value;
       const categoryId = document.getElementById('p-category').value;
