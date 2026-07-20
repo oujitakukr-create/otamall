@@ -161,12 +161,11 @@
 
   <script>
     // ==========================================
-    // 1. Supabase 연동 설정 (전역 변수명 충돌 방지: supabaseClient 사용)
+    // 1. Supabase 연동 설정
     // ==========================================
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF"; 
 
-    // window.supabase CDN과 명칭이 겹치지 않도록 supabaseClient로 할당
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     let currentUser = null;
@@ -244,16 +243,17 @@
       }
 
       if (data.user) {
+        // bjbision@gmail.com 계정에 한해 admin 권한 부여
         await supabaseClient.from('profiles').insert([{
           id: data.user.id,
           email: email,
           business_name: bizName,
-          role: email === 'playjanus@otamall.com' ? 'admin' : 'buyer',
+          role: email === 'bjbision@gmail.com' ? 'admin' : 'buyer',
           contract_agreed: true
         }]);
       }
 
-      alert("회원가입 신청이 완료되었습니다! 로그인해 주세요.");
+      alert("회원가입 신청이 완료되었습니다! 이메일 인증을 확인하시거나 로그인해 주세요.");
       hideModal('signup-modal');
     }
 
