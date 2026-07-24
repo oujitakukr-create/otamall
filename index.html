@@ -127,10 +127,39 @@
             <label class="block font-semibold mb-1">출고 예정일</label>
             <input type="text" id="prod-delivery" placeholder="예: 2026-08-15 순차 출고" class="w-full border rounded px-3 py-1.5">
           </div>
-          <div class="md:col-span-2">
-            <label class="block font-semibold mb-1">상품 이미지 업로드</label>
-            <input type="file" id="prod-file" accept="image/*" class="w-full border rounded px-2 py-1 bg-white">
+          
+          <!-- 이미지 입력 영역 (URL 입력 OR 스크린샷 붙여넣기/파일 선택) -->
+          <div class="md:col-span-2 space-y-2 bg-slate-50 p-3 rounded border border-slate-200">
+            <label class="block font-semibold text-slate-700">🖼️ 상품 이미지 등록 (3가지 방식 지원)</label>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <span class="text-xs text-slate-500 block mb-1">방법 A: 외부 이미지 URL 직접 입력</span>
+                <input type="url" id="prod-image-url" placeholder="https://example.com/image.jpg" class="w-full border rounded px-2 py-1 text-xs bg-white">
+              </div>
+              <div>
+                <span class="text-xs text-slate-500 block mb-1">방법 B: 파일 선택</span>
+                <input type="file" id="prod-file" accept="image/*" class="w-full border rounded px-2 py-0.5 text-xs bg-white">
+              </div>
+            </div>
+
+            <!-- 스크린샷(Ctrl+V) 캡처 존 -->
+            <div id="paste-zone" class="border-2 border-dashed border-amber-300 bg-amber-50/50 rounded-lg p-3 text-center cursor-pointer hover:bg-amber-100/50 transition">
+              <p class="text-xs font-bold text-amber-900">📋 방법 C: 스크린샷 캡처 후 이 창을 클릭하고 Ctrl + V 로 붙여넣기</p>
+              <p class="text-[10px] text-amber-700 mt-0.5">클립보드에 복사된 이미지가 자동으로 감지되어 업로드됩니다.</p>
+            </div>
+
+            <!-- 스크린샷 미리보기 -->
+            <div id="paste-preview-container" class="hidden flex items-center space-x-3 bg-white p-2 rounded border">
+              <img id="paste-preview-img" class="h-12 w-12 object-cover rounded border">
+              <div class="text-xs flex-1">
+                <span class="font-bold text-emerald-600 block">✓ 스크린샷 인식 완료</span>
+                <span class="text-slate-400 text-[10px]" id="paste-file-info"></span>
+              </div>
+              <button type="button" onclick="clearPastedImage()" class="text-xs text-red-500 font-bold px-2 py-1">취소</button>
+            </div>
           </div>
+
           <div class="md:col-span-3">
             <label class="block font-semibold mb-1">상품 상세 설명</label>
             <textarea id="prod-desc" rows="2" class="w-full border rounded px-3 py-1.5"></textarea>
@@ -266,7 +295,7 @@
     </div>
   </div>
 
-  <!-- 3. JavaScript 연동 통합 로직 -->
+  <!-- JavaScript 연동 통합 로직 -->
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
@@ -278,11 +307,11 @@
     let categoriesList = [];
     let productsList = []; 
     let currentSelectedProduct = null;
+    let pastedImageFile = null; // 스크린샷 저장용 변수
 
-    // 안전하게 URL 인코딩 처리된 SVG 대체 이미지
-    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='100%25' height='100%25' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='14'%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EB%A1%9C%EB%93%9C%20%EB%B6%88%EA%B0%80%3C/text%3E%3C/svg%3E";
+    // 디자인 보완된 B2B 플레이스홀더 SVG
+    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Cg transform='translate(150, 100)' fill='%23cbd5e1'%3E%3Cpath d='M20 0H80C91 0 100 9 100 20V80C100 91 91 100 80 100H20C9 100 0 91 0 80V20C0 9 9 0 20 0ZM50 30L20 70H80L50 30Z'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='13' font-family='sans-serif'%3E이미지 준비 중%3C/text%3E%3C/svg%3E";
 
-    // 1. 이미지 URL 유효성 검증 함수 (깨진 HTML 문자열 방어)
     function getSafeImageUrl(url) {
       if (!url || typeof url !== 'string') return FALLBACK_IMAGE;
       const trimmed = url.trim();
@@ -292,7 +321,6 @@
       return FALLBACK_IMAGE;
     }
 
-    // 2. HTML 이스케이프 방어 함수 (XSS 및 속성 파괴 방지)
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -303,7 +331,6 @@
         .replace(/'/g, '&#039;');
     }
 
-    // 이미지 로드 실패 시 예외 처리 함수 (무한 루프 방지)
     function handleImageError(img) {
       img.onerror = null;
       img.src = FALLBACK_IMAGE;
@@ -313,7 +340,38 @@
       await checkSession();
       await loadCategories();
       await loadProducts();
+      setupPasteEventListener();
     });
+
+    // 스크린샷 Ctrl+V 붙여넣기 이벤트 감지
+    function setupPasteEventListener() {
+      document.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+        if (!items) return;
+
+        for (let item of items) {
+          if (item.type.indexOf('image') === 0) {
+            const file = item.getAsFile();
+            pastedImageFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              document.getElementById('paste-preview-img').src = event.target.result;
+              document.getElementById('paste-file-info').textContent = `캡처 이미지 (${Math.round(file.size / 1024)} KB)`;
+              document.getElementById('paste-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      });
+    }
+
+    function clearPastedImage() {
+      pastedImageFile = null;
+      document.getElementById('paste-preview-container').classList.add('hidden');
+      document.getElementById('paste-preview-img').src = '';
+    }
 
     async function checkSession() {
       try {
@@ -549,7 +607,7 @@
           const safeImgSrc = getSafeImageUrl(p.image_url);
 
           return `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition">
               <div class="h-48 bg-slate-100 relative">
                 <img src="${safeImgSrc}" 
                      onerror="handleImageError(this)"
@@ -747,21 +805,29 @@
       const deadline = document.getElementById('prod-deadline').value;
       const delivery = document.getElementById('prod-delivery').value;
       const desc = document.getElementById('prod-desc').value;
-      const file = document.getElementById('prod-file').files[0];
+      
+      const imageUrlInput = document.getElementById('prod-image-url').value.trim();
+      const fileInput = document.getElementById('prod-file').files[0];
 
       let imageUrl = null;
 
-      if (file) {
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      // 이미지 결정 우선순위: 1. 스크린샷 캡처 파일 -> 2. 파일 선택 -> 3. URL 직접 입력
+      const targetFile = pastedImageFile || fileInput;
+
+      if (targetFile) {
+        const safeName = (targetFile.name || 'screenshot.png').replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `${Date.now()}_${safeName}`;
 
-        const { error: uploadError } = await sbClient.storage.from('product-images').upload(filePath, file);
+        const { error: uploadError } = await sbClient.storage.from('product-images').upload(filePath, targetFile);
         if (!uploadError) {
           const { data: pubUrl } = sbClient.storage.from('product-images').getPublicUrl(filePath);
           imageUrl = pubUrl.publicUrl;
         } else {
           console.error("이미지 업로드 오류:", uploadError);
+          return alert("이미지 업로드 실패: " + uploadError.message);
         }
+      } else if (imageUrlInput) {
+        imageUrl = imageUrlInput;
       }
 
       const { error } = await sbClient.from('products').insert([{
@@ -779,8 +845,9 @@
       if (error) {
         alert("상품 등록 실패: " + error.message);
       } else {
-        alert("신규 도매 상품이 등록되었습니다!");
+        alert("신규 도매 상품이 성공적으로 등록되었습니다!");
         document.getElementById('add-product-form').reset();
+        clearPastedImage();
         await loadProducts();
       }
     }
