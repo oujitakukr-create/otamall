@@ -4,14 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오타몰 B2B 도매 플랫폼</title>
-  <!-- 1. Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 2. Supabase JS Client v2 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
-  <!-- 상단 네비게이션 바 -->
   <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -33,27 +30,31 @@
     </div>
   </header>
 
-  <!-- 메인 컨테이너 -->
   <main class="max-w-7xl mx-auto px-4 py-6">
-
-    <!-- 승인 대기 알림 뱅크 -->
-    <div id="status-banner" class="hidden mb-6 p-4 rounded-lg bg-amber-100 border border-amber-300 text-amber-900 text-sm flex items-center justify-between">
-      <div>
-        <strong>📌 가입 승인 대기 중:</strong> 현재 사업자 승인 심사 중입니다. 정회원 승인 완료 후 도매 주문이 가능합니다.
-      </div>
-    </div>
 
     <!-- TAB 1: 상품 카탈로그 -->
     <section id="tab-catalog" class="space-y-6">
+      
+      <!-- 대분류 / 소분류 필터링 검색 바 -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-        <div class="flex items-center space-x-3 w-full md:w-auto">
-          <label class="text-sm font-bold text-slate-600">카테고리 Filter:</label>
-          <select id="category-filter" onchange="loadProducts()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none">
-            <option value="all">전체 상품 보기</option>
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <span class="text-sm font-bold text-slate-700">📂 카테고리 검색:</span>
+          
+          <!-- 1차 대분류 선택 -->
+          <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none">
+            <option value="all">대분류 (전체)</option>
           </select>
+
+          <!-- 2차 소분류 선택 -->
+          <select id="filter-sub-cat" onchange="loadProducts()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none disabled:bg-slate-200" disabled>
+            <option value="all">소분류 (전체)</option>
+          </select>
+
+          <button onclick="resetCategoryFilter()" class="text-xs text-slate-500 underline hover:text-slate-800">필터 초기화</button>
         </div>
+        
         <div class="text-xs text-slate-500">
-          ※ 모든 공급 단가는 부가세(VAT) 별도 및 MOQ(최소주문수량) 기준입니다.
+          ※ 대분류 선택 시 해당 카테고리의 모든 하위 상품이 자동 포함됩니다.
         </div>
       </div>
 
@@ -93,6 +94,24 @@
         <span class="text-xs bg-red-100 text-red-800 px-2.5 py-1 rounded border border-red-200">시스템 최고 관리자</span>
       </div>
 
+      <!-- 카테고리 자체 추가 폼 (대분류/소분류) -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
+        <h3 class="text-lg font-bold border-b pb-2 text-slate-700">🏷️ 카테고리 구조 관리 (신규 등록)</h3>
+        <form onsubmit="handleCreateCategory(event)" class="flex flex-wrap items-end gap-3 text-sm">
+          <div>
+            <label class="block font-semibold mb-1 text-xs">상위 대분류 선택</label>
+            <select id="admin-cat-parent" class="border rounded px-3 py-1.5 bg-slate-50 text-xs">
+              <option value="">(최상위 대분류로 등록)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-xs">카테고리명 *</label>
+            <input type="text" id="admin-cat-name" required placeholder="예: 의류 또는 상의" class="border rounded px-3 py-1.5 text-xs">
+          </div>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-1.5 rounded text-xs">카테고리 추가</button>
+        </form>
+      </div>
+
       <!-- 신규 상품 등록 서식 -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
         <h3 class="text-lg font-bold border-b pb-2 text-slate-700">📦 신규 도매 상품 등록</h3>
@@ -102,9 +121,15 @@
             <input type="text" id="prod-name" required class="w-full border rounded px-3 py-1.5">
           </div>
           <div>
-            <label class="block font-semibold mb-1">카테고리</label>
-            <select id="prod-category" class="w-full border rounded px-3 py-1.5 bg-white">
-              <option value="">(선택 안 함)</option>
+            <label class="block font-semibold mb-1">대분류 *</label>
+            <select id="prod-main-cat" onchange="onAdminMainCatChange()" required class="w-full border rounded px-3 py-1.5 bg-white">
+              <option value="">대분류 선택</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">소분류</label>
+            <select id="prod-sub-cat" class="w-full border rounded px-3 py-1.5 bg-white disabled:bg-slate-100" disabled>
+              <option value="">소분류 선택 (선택사항)</option>
             </select>
           </div>
           <div>
@@ -119,735 +144,208 @@
             <label class="block font-semibold mb-1">초기 재고 *</label>
             <input type="number" id="prod-stock" required min="0" value="100" class="w-full border rounded px-3 py-1.5">
           </div>
-          <div>
-            <label class="block font-semibold mb-1">주문 마감일 (Deadline)</label>
-            <input type="date" id="prod-deadline" class="w-full border rounded px-3 py-1.5">
-          </div>
-          <div>
-            <label class="block font-semibold mb-1">출고 예정일</label>
-            <input type="text" id="prod-delivery" placeholder="예: 2026-08-15 순차 출고" class="w-full border rounded px-3 py-1.5">
-          </div>
           
-          <!-- 이미지 입력 영역 (URL 입력 OR 스크린샷 붙여넣기/파일 선택) -->
-          <div class="md:col-span-2 space-y-2 bg-slate-50 p-3 rounded border border-slate-200">
-            <label class="block font-semibold text-slate-700">🖼️ 상품 이미지 등록 (3가지 방식 지원)</label>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <span class="text-xs text-slate-500 block mb-1">방법 A: 외부 이미지 URL 직접 입력</span>
-                <input type="url" id="prod-image-url" placeholder="https://example.com/image.jpg" class="w-full border rounded px-2 py-1 text-xs bg-white">
-              </div>
-              <div>
-                <span class="text-xs text-slate-500 block mb-1">방법 B: 파일 선택</span>
-                <input type="file" id="prod-file" accept="image/*" class="w-full border rounded px-2 py-0.5 text-xs bg-white">
-              </div>
-            </div>
-
-            <!-- 스크린샷(Ctrl+V) 캡처 존 -->
-            <div id="paste-zone" class="border-2 border-dashed border-amber-300 bg-amber-50/50 rounded-lg p-3 text-center cursor-pointer hover:bg-amber-100/50 transition">
-              <p class="text-xs font-bold text-amber-900">📋 방법 C: 스크린샷 캡처 후 이 창을 클릭하고 Ctrl + V 로 붙여넣기</p>
-              <p class="text-[10px] text-amber-700 mt-0.5">클립보드에 복사된 이미지가 자동으로 감지되어 업로드됩니다.</p>
-            </div>
-
-            <!-- 스크린샷 미리보기 -->
-            <div id="paste-preview-container" class="hidden flex items-center space-x-3 bg-white p-2 rounded border">
-              <img id="paste-preview-img" class="h-12 w-12 object-cover rounded border">
-              <div class="text-xs flex-1">
-                <span class="font-bold text-emerald-600 block">✓ 스크린샷 인식 완료</span>
-                <span class="text-slate-400 text-[10px]" id="paste-file-info"></span>
-              </div>
-              <button type="button" onclick="clearPastedImage()" class="text-xs text-red-500 font-bold px-2 py-1">취소</button>
-            </div>
-          </div>
-
-          <div class="md:col-span-3">
-            <label class="block font-semibold mb-1">상품 상세 설명</label>
-            <textarea id="prod-desc" rows="2" class="w-full border rounded px-3 py-1.5"></textarea>
-          </div>
-          <div class="md:col-span-3 text-right">
+          <div class="md:col-span-3 border-t pt-3 flex justify-end">
             <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-6 py-2 rounded">상품 등록 완료</button>
           </div>
         </form>
-      </div>
-
-      <!-- 회원 가입 승인 관리 -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
-        <h3 class="text-lg font-bold border-b pb-2 text-slate-700">👥 사업자 회원 승인 및 관리</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="bg-slate-100 border-b">
-              <tr>
-                <th class="p-2">이메일</th>
-                <th class="p-2">상호명</th>
-                <th class="p-2">입금자명</th>
-                <th class="p-2">연락처</th>
-                <th class="p-2">사업자등록증</th>
-                <th class="p-2">상태</th>
-                <th class="p-2">승인 처리</th>
-              </tr>
-            </thead>
-            <tbody id="admin-users-body">
-              <tr><td colspan="7" class="text-center py-4">회원 목록을 불러오는 중...</td></tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- MODAL 1: Auth (로그인 / 회원가입) -->
-  <div id="modal-auth" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
-      <button onclick="closeModal('modal-auth')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-      
-      <div class="flex border-b mb-4">
-        <button id="auth-tab-login" onclick="toggleAuthTab('login')" class="w-1/2 py-2 font-bold border-b-2 border-slate-800 text-slate-800">로그인</button>
-        <button id="auth-tab-signup" onclick="toggleAuthTab('signup')" class="w-1/2 py-2 font-bold border-b-2 border-transparent text-slate-400">사업자 회원가입</button>
-      </div>
-
-      <!-- 로그인 폼 -->
-      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold mb-1">이메일</label>
-          <input type="email" id="login-email" required class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1">비밀번호</label>
-          <input type="password" id="login-password" required class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded text-sm hover:bg-slate-900">로그인</button>
-      </form>
-
-      <!-- 사업자 회원가입 폼 -->
-      <form id="form-signup" onsubmit="handleSignup(event)" class="hidden space-y-3 text-sm">
-        <div>
-          <label class="block text-xs font-semibold mb-0.5">이메일 *</label>
-          <input type="email" id="signup-email" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-0.5">비밀번호 *</label>
-          <input type="password" id="signup-password" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-semibold mb-0.5">상호명 *</label>
-            <input type="text" id="signup-bizname" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold mb-0.5">입금자명 *</label>
-            <input type="text" id="signup-depositor" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-0.5">연락처 *</label>
-          <input type="text" id="signup-phone" placeholder="010-0000-0000" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-0.5">사업장 주소 *</label>
-          <input type="text" id="signup-address" required class="w-full border rounded px-2.5 py-1.5 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-0.5">사업자등록증 첨부</label>
-          <input type="file" id="signup-license-file" accept="image/*,.pdf" class="w-full border rounded px-2 py-1 text-xs bg-slate-50">
-        </div>
-        <button type="submit" class="w-full bg-amber-500 text-slate-900 font-bold py-2 rounded text-sm hover:bg-amber-600 mt-2">사업자 회원가입 신청</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL 2: 주문(발주) 모달 -->
-  <div id="modal-order" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative space-y-4">
-      <button onclick="closeModal('modal-order')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-      <h3 class="text-lg font-bold border-b pb-2 text-slate-800">🛍️ 도매 발주 신청</h3>
-      
-      <input type="hidden" id="order-prod-id">
-      <div class="space-y-2 text-sm">
-        <div><strong>상품명:</strong> <span id="order-prod-name" class="text-amber-600 font-semibold"></span></div>
-        <div><strong>도매 단가:</strong> <span id="order-prod-price"></span> 원 (VAT 별도)</div>
-        <div><strong>MOQ (최소수량):</strong> <span id="order-prod-moq"></span> 개</div>
-        <div><strong>현재 재고:</strong> <span id="order-prod-stock"></span> 개</div>
-      </div>
-
-      <div class="bg-slate-50 p-3 rounded border space-y-3">
-        <div>
-          <label class="block text-xs font-semibold mb-1">발주 수량 설정</label>
-          <input type="number" id="order-qty" oninput="calculateOrderTotal()" class="w-full border rounded px-3 py-1.5 font-bold text-slate-800">
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <input type="checkbox" id="order-tax" onchange="calculateOrderTotal()" class="w-4 h-4 text-amber-600 rounded">
-          <label for="order-tax" class="text-xs font-medium text-slate-700">세금계산서 발행 요청 (부가세 10% 추가)</label>
-        </div>
-      </div>
-
-      <!-- 금액 집계 -->
-      <div class="border-t pt-3 text-right space-y-1">
-        <div class="text-xs text-slate-500">공급가액: <span id="summary-supply">0</span> 원</div>
-        <div class="text-xs text-slate-500">부가세(VAT): <span id="summary-vat">0</span> 원</div>
-        <div class="text-base font-extrabold text-red-600">최종 결제 예정 금액: <span id="summary-total">0</span> 원</div>
-      </div>
-
-      <button onclick="submitOrderRPC()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow">
-        안전 발주 제출하기 (RPC 실행)
-      </button>
-    </div>
-  </div>
-
-  <!-- JavaScript 연동 통합 로직 -->
+  <!-- JS Logic -->
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
-
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentUser = null;
-    let currentProfile = null;
-    let categoriesList = [];
+    let categoriesList = []; // 전체 카테고리 데이터 (parent_id 포함)
     let productsList = []; 
-    let currentSelectedProduct = null;
-    let pastedImageFile = null; // 스크린샷 저장용 변수
 
-    // 디자인 보완된 B2B 플레이스홀더 SVG
-    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Cg transform='translate(150, 100)' fill='%23cbd5e1'%3E%3Cpath d='M20 0H80C91 0 100 9 100 20V80C100 91 91 100 80 100H20C9 100 0 91 0 80V20C0 9 9 0 20 0ZM50 30L20 70H80L50 30Z'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='13' font-family='sans-serif'%3E이미지 준비 중%3C/text%3E%3C/svg%3E";
-
-    function getSafeImageUrl(url) {
-      if (!url || typeof url !== 'string') return FALLBACK_IMAGE;
-      const trimmed = url.trim();
-      if (/^https?:\/\/[^\s"'<>]+$/i.test(trimmed)) {
-        return trimmed;
-      }
-      return FALLBACK_IMAGE;
-    }
+    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8'%3E이미지 없음%3C/text%3E%3C/svg%3E";
 
     function escapeHtml(str) {
       if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function handleImageError(img) {
-      img.onerror = null;
-      img.src = FALLBACK_IMAGE;
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await checkSession();
       await loadCategories();
       await loadProducts();
-      setupPasteEventListener();
     });
 
-    // 스크린샷 Ctrl+V 붙여넣기 이벤트 감지
-    function setupPasteEventListener() {
-      document.addEventListener('paste', (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
-        if (!items) return;
-
-        for (let item of items) {
-          if (item.type.indexOf('image') === 0) {
-            const file = item.getAsFile();
-            pastedImageFile = file;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              document.getElementById('paste-preview-img').src = event.target.result;
-              document.getElementById('paste-file-info').textContent = `캡처 이미지 (${Math.round(file.size / 1024)} KB)`;
-              document.getElementById('paste-preview-container').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-            break;
-          }
-        }
-      });
-    }
-
-    function clearPastedImage() {
-      pastedImageFile = null;
-      document.getElementById('paste-preview-container').classList.add('hidden');
-      document.getElementById('paste-preview-img').src = '';
-    }
-
-    async function checkSession() {
-      try {
-        const { data: { session } } = await sbClient.auth.getSession();
-        if (session) {
-          currentUser = session.user;
-          await fetchProfile();
-        } else {
-          currentUser = null;
-          currentProfile = null;
-          updateUIByAuth();
-        }
-
-        sbClient.auth.onAuthStateChange(async (event, session) => {
-          if (session) {
-            currentUser = session.user;
-            await fetchProfile();
-          } else {
-            currentUser = null;
-            currentProfile = null;
-            updateUIByAuth();
-          }
-        });
-      } catch (err) {
-        console.error("세션 확인 실패:", err);
-      }
-    }
-
-    async function fetchProfile() {
-      if (!currentUser) return;
-      try {
-        const { data, error } = await sbClient
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single();
-
-        if (!error && data) {
-          currentProfile = data;
-        }
-      } catch (err) {
-        console.error("프로필 로드 실패:", err);
-      }
-      updateUIByAuth();
-    }
-
-    function updateUIByAuth() {
-      const authButtons = document.getElementById('auth-buttons');
-      const userInfo = document.getElementById('user-info');
-      const userDisplay = document.getElementById('user-display');
-      const navOrders = document.getElementById('nav-orders');
-      const navAdmin = document.getElementById('nav-admin');
-      const statusBanner = document.getElementById('status-banner');
-
-      if (currentUser && currentProfile) {
-        authButtons.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        userDisplay.textContent = `${escapeHtml(currentProfile.biz_name || currentUser.email)} 님 (${currentProfile.status === 'approved' ? '정회원' : '승인대기'})`;
-
-        navOrders.classList.remove('hidden');
-
-        if (currentProfile.status === 'pending' && currentProfile.role !== 'admin') {
-          statusBanner.classList.remove('hidden');
-        } else {
-          statusBanner.classList.add('hidden');
-        }
-
-        if (currentProfile.role === 'admin') {
-          navAdmin.classList.remove('hidden');
-        } else {
-          navAdmin.classList.add('hidden');
-        }
-      } else {
-        authButtons.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-        navOrders.classList.add('hidden');
-        navAdmin.classList.add('hidden');
-        statusBanner.classList.add('hidden');
-      }
-    }
-
-    function switchTab(tabName) {
-      document.getElementById('tab-catalog').classList.add('hidden');
-      document.getElementById('tab-orders').classList.add('hidden');
-      document.getElementById('tab-admin').classList.add('hidden');
-
-      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-
-      if (tabName === 'orders') loadMyOrders();
-      if (tabName === 'admin') loadAdminDashboard();
-    }
-
-    function showAuthModal(type) {
-      toggleAuthTab(type);
-      document.getElementById('modal-auth').classList.remove('hidden');
-    }
-
-    function closeModal(modalId) {
-      document.getElementById(modalId).classList.add('hidden');
-    }
-
-    function toggleAuthTab(type) {
-      const formLogin = document.getElementById('form-login');
-      const formSignup = document.getElementById('form-signup');
-      const tabLogin = document.getElementById('auth-tab-login');
-      const tabSignup = document.getElementById('auth-tab-signup');
-
-      if (type === 'login') {
-        formLogin.classList.remove('hidden');
-        formSignup.classList.add('hidden');
-        tabLogin.className = "w-1/2 py-2 font-bold border-b-2 border-slate-800 text-slate-800";
-        tabSignup.className = "w-1/2 py-2 font-bold border-b-2 border-transparent text-slate-400";
-      } else {
-        formLogin.classList.add('hidden');
-        formSignup.classList.remove('hidden');
-        tabSignup.className = "w-1/2 py-2 font-bold border-b-2 border-slate-800 text-slate-800";
-        tabLogin.className = "w-1/2 py-2 font-bold border-b-2 border-transparent text-slate-400";
-      }
-    }
-
-    async function handleLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-
-      const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-      if (error) {
-        alert("로그인 실패: " + error.message);
-      } else {
-        closeModal('modal-auth');
-        await fetchProfile();
-      }
-    }
-
-    async function handleSignup(e) {
-      e.preventDefault();
-      const email = document.getElementById('signup-email').value;
-      const password = document.getElementById('signup-password').value;
-      const bizName = document.getElementById('signup-bizname').value;
-      const depositor = document.getElementById('signup-depositor').value;
-      const phone = document.getElementById('signup-phone').value;
-      const address = document.getElementById('signup-address').value;
-      const licenseFile = document.getElementById('signup-license-file').files[0];
-
-      let licenseUrl = null;
-
-      const { data: authData, error: authError } = await sbClient.auth.signUp({ email, password });
-      if (authError || !authData?.user) return alert("회원가입 오류: " + (authError ? authError.message : "사용자 생성 실패"));
-
-      const userId = authData.user.id;
-
-      if (licenseFile) {
-        const safeExt = licenseFile.name.split('.').pop();
-        const filePath = `${userId}_${Date.now()}.${safeExt}`;
-        const { error: uploadError } = await sbClient.storage.from('business-licenses').upload(filePath, licenseFile);
-        if (!uploadError) {
-          const { data: pubUrl } = sbClient.storage.from('business-licenses').getPublicUrl(filePath);
-          licenseUrl = pubUrl.publicUrl;
-        }
-      }
-
-      const { error: profileError } = await sbClient.from('profiles').insert([{
-        id: userId,
-        email: email,
-        biz_name: bizName,
-        depositor_name: depositor,
-        phone: phone,
-        address: address,
-        business_license_url: licenseUrl,
-        role: 'user',
-        status: 'pending'
-      }]);
-
-      if (profileError) {
-        alert("프로필 저장 실패: " + profileError.message);
-      } else {
-        alert("사업자 가입 신청이 완료되었습니다. 이메일 인증 링크 클릭 및 관리자 승인 후 도매 발주가 가능합니다.");
-        closeModal('modal-auth');
-      }
-    }
-
-    async function handleLogout() {
-      await sbClient.auth.signOut();
-      alert("로그아웃 되었습니다.");
-      switchTab('catalog');
-    }
-
+    // 1. 카테고리 데이터 로드 및 계층화 분리
     async function loadCategories() {
       try {
         const { data, error } = await sbClient.from('categories').select('*');
-        if (!error && data) {
-          categoriesList = data;
-          const filterSelect = document.getElementById('category-filter');
-          const prodSelect = document.getElementById('prod-category');
-
-          filterSelect.innerHTML = '<option value="all">전체 상품 보기</option>';
-          prodSelect.innerHTML = '<option value="">(선택 안 함)</option>';
-
-          data.forEach(cat => {
-            const catName = escapeHtml(cat.name);
-            filterSelect.innerHTML += `<option value="${cat.id}">${catName}</option>`;
-            prodSelect.innerHTML += `<option value="${cat.id}">${catName}</option>`;
-          });
-        }
+        if (error) throw error;
+        
+        categoriesList = data || [];
+        renderCategoryDropdowns();
       } catch (err) {
-        console.error("카테고리 로딩 에러:", err);
+        console.error("카테고리 로딩 실패:", err);
       }
     }
 
+    function renderCategoryDropdowns() {
+      const mainCatSelect = document.getElementById('filter-main-cat');
+      const adminParentSelect = document.getElementById('admin-cat-parent');
+      const prodMainSelect = document.getElementById('prod-main-cat');
+
+      const mainCategories = categoriesList.filter(c => !c.parent_id);
+
+      // 메인 검색 필터 대분류 채우기
+      mainCatSelect.innerHTML = '<option value="all">대분류 (전체)</option>';
+      adminParentSelect.innerHTML = '<option value="">(최상위 대분류로 등록)</option>';
+      prodMainSelect.innerHTML = '<option value="">대분류 선택</option>';
+
+      mainCategories.forEach(cat => {
+        const name = escapeHtml(cat.name);
+        mainCatSelect.innerHTML += `<option value="${cat.id}">${name}</option>`;
+        adminParentSelect.innerHTML += `<option value="${cat.id}">${name}</option>`;
+        prodMainSelect.innerHTML += `<option value="${cat.id}">${name}</option>`;
+      });
+    }
+
+    // 메인 검색창: 대분류 선택 변경 시 소분류 동적 세팅
+    function onMainCategoryChange() {
+      const mainId = document.getElementById('filter-main-cat').value;
+      const subCatSelect = document.getElementById('filter-sub-cat');
+
+      if (mainId === 'all') {
+        subCatSelect.innerHTML = '<option value="all">소분류 (전체)</option>';
+        subCatSelect.disabled = true;
+      } else {
+        const subCategories = categoriesList.filter(c => String(c.parent_id) === String(mainId));
+        subCatSelect.innerHTML = '<option value="all">소분류 (전체)</option>';
+        
+        subCategories.forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub.id}">${escapeHtml(sub.name)}</option>`;
+        });
+        subCatSelect.disabled = false;
+      }
+
+      loadProducts();
+    }
+
+    function resetCategoryFilter() {
+      document.getElementById('filter-main-cat').value = 'all';
+      onMainCategoryChange();
+    }
+
+    // 관리자 상품 등록창: 대분류 변경 시 소분류 동적 세팅
+    function onAdminMainCatChange() {
+      const mainId = document.getElementById('prod-main-cat').value;
+      const subCatSelect = document.getElementById('prod-sub-cat');
+
+      if (!mainId) {
+        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
+        subCatSelect.disabled = true;
+      } else {
+        const subCategories = categoriesList.filter(c => String(c.parent_id) === String(mainId));
+        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
+        subCategories.forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub.id}">${escapeHtml(sub.name)}</option>`;
+        });
+        subCatSelect.disabled = false;
+      }
+    }
+
+    // 2. 대분류/소분류 조건에 맞게 상품 로드 (IN 쿼리 활용)
     async function loadProducts() {
       const container = document.getElementById('product-list');
+      const mainCatId = document.getElementById('filter-main-cat').value;
+      const subCatId = document.getElementById('filter-sub-cat').value;
+
       try {
-        const categoryFilter = document.getElementById('category-filter').value;
         let query = sbClient.from('products').select('*').order('id', { ascending: false });
 
-        if (categoryFilter !== 'all') {
-          query = query.eq('category_id', categoryFilter);
+        if (subCatId !== 'all') {
+          // 1. 소분류가 특정되었을 때
+          query = query.eq('category_id', subCatId);
+        } else if (mainCatId !== 'all') {
+          // 2. 대분류만 특정되었을 때: 대분류 본인 ID + 해당 대분류 하위의 모든 소분류 ID 추출
+          const childCatIds = categoriesList
+            .filter(c => String(c.parent_id) === String(mainCatId))
+            .map(c => c.id);
+          
+          const targetIds = [parseInt(mainCatId), ...childCatIds];
+          query = query.in('category_id', targetIds);
         }
 
         const { data: products, error } = await query;
-
         if (error) throw error;
 
         if (!products || products.length === 0) {
-          productsList = [];
-          container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">등록된 도매 상품이 없습니다.</div>';
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">해당 카테고리에 등록된 상품이 없습니다.</div>';
           return;
         }
 
-        productsList = products;
-
-        container.innerHTML = products.map(p => {
-          const safeImgSrc = getSafeImageUrl(p.image_url);
-
-          return `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition">
-              <div class="h-48 bg-slate-100 relative">
-                <img src="${safeImgSrc}" 
-                     onerror="handleImageError(this)"
-                     class="w-full h-full object-cover">
-                <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
+        container.innerHTML = products.map(p => `
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition">
+            <div class="h-48 bg-slate-100 relative">
+              <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover">
+              <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div>
+                <h3 class="font-bold text-slate-800 text-base leading-snug">${escapeHtml(p.name)}</h3>
               </div>
-              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-                <div>
-                  <h3 class="font-bold text-slate-800 text-base leading-snug">${escapeHtml(p.name)}</h3>
-                  <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(p.description || '상세 설명 없음')}</p>
-                </div>
-                <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2 rounded">
-                  <div>⏰ 마감일: ${escapeHtml(p.deadline || '상시')}</div>
-                  <div>🚚 출고예정: ${escapeHtml(p.delivery_date || '미정')}</div>
-                  <div>📦 재고: <span class="font-bold ${p.stock > 0 ? 'text-emerald-600' : 'text-red-600'}">${p.stock} 개</span></div>
-                </div>
-                <div class="pt-2 border-t flex justify-between items-center">
-                  <div>
-                    <span class="text-xs text-slate-400 block">도매 공급가</span>
-                    <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
-                  </div>
-                  <button onclick="openOrderModal(${p.id})" 
-                    class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">
-                    발주 신청
-                  </button>
-                </div>
+              <div class="pt-2 border-t flex justify-between items-center">
+                <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                <button class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">발주 신청</button>
               </div>
             </div>
-          `;
-        }).join('');
-
-      } catch (err) {
-        console.error("상품 데이터 로드 실패:", err);
-        container.innerHTML = `
-          <div class="col-span-full text-center py-12 text-red-500 space-y-2">
-            <p class="font-bold text-base">⚠️ 상품 데이터를 불러오지 못했습니다.</p>
-            <p class="text-xs text-slate-500">${escapeHtml(err.message || String(err))}</p>
           </div>
-        `;
-      }
-    }
-
-    function openOrderModal(productId) {
-      if (!currentUser) return showAuthModal('login');
-      if (currentProfile?.status !== 'approved' && currentProfile?.role !== 'admin') {
-        return alert("사업자 회원 승인 완료 후 발주가 가능합니다.");
-      }
-
-      const product = productsList.find(item => item.id === productId);
-      if (!product) return alert("상품 정보를 찾을 수 없습니다.");
-
-      currentSelectedProduct = product;
-      document.getElementById('order-prod-id').value = product.id;
-      document.getElementById('order-prod-name').textContent = product.name;
-      document.getElementById('order-prod-price').textContent = Number(product.wholesale_price).toLocaleString();
-      document.getElementById('order-prod-moq').textContent = product.moq;
-      document.getElementById('order-prod-stock').textContent = product.stock;
-
-      const qtyInput = document.getElementById('order-qty');
-      qtyInput.value = product.moq;
-      qtyInput.min = product.moq;
-
-      calculateOrderTotal();
-      document.getElementById('modal-order').classList.remove('hidden');
-    }
-
-    function calculateOrderTotal() {
-      if (!currentSelectedProduct) return;
-      const qty = parseInt(document.getElementById('order-qty').value) || 0;
-      const isTax = document.getElementById('order-tax').checked;
-
-      const supply = currentSelectedProduct.wholesale_price * qty;
-      const vat = isTax ? Math.round(supply * 0.1) : 0;
-      const total = supply + vat;
-
-      document.getElementById('summary-supply').textContent = supply.toLocaleString();
-      document.getElementById('summary-vat').textContent = vat.toLocaleString();
-      document.getElementById('summary-total').textContent = total.toLocaleString();
-    }
-
-    async function submitOrderRPC() {
-      const prodId = parseInt(document.getElementById('order-prod-id').value);
-      const qty = parseInt(document.getElementById('order-qty').value);
-      const isTax = document.getElementById('order-tax').checked;
-
-      if (!currentSelectedProduct) return;
-
-      if (qty < currentSelectedProduct.moq) {
-        return alert(`최소 주문 수량(MOQ ${currentSelectedProduct.moq}개) 이상 발주해야 합니다.`);
-      }
-
-      const { data, error } = await sbClient.rpc('place_order_safe', {
-        p_product_id: prodId,
-        p_qty: qty,
-        p_is_tax: isTax
-      });
-
-      if (error) {
-        alert("발주 실패: " + error.message);
-      } else {
-        alert("성공적으로 도매 발주가 접수되었습니다!");
-        closeModal('modal-order');
-        await loadProducts();
-      }
-    }
-
-    async function loadMyOrders() {
-      if (!currentUser) return;
-      try {
-        const { data: orders, error } = await sbClient
-          .from('orders')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('created_at', { ascending: false });
-
-        const tbody = document.getElementById('my-orders-body');
-        if (error || !orders || orders.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6">주문 내역이 없습니다.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = orders.map(o => `
-          <tr class="border-b hover:bg-slate-50">
-            <td class="px-4 py-3 font-mono text-xs">${escapeHtml(o.id)}</td>
-            <td class="px-4 py-3 font-semibold">${escapeHtml(o.product_name)}</td>
-            <td class="px-4 py-3">${o.qty} 개</td>
-            <td class="px-4 py-3">${o.is_tax_invoice ? '발행요청' : '미발행'}</td>
-            <td class="px-4 py-3 font-bold">${Number(o.total_price).toLocaleString()} 원</td>
-            <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">${escapeHtml(o.status)}</span></td>
-            <td class="px-4 py-3 text-xs text-slate-400">${new Date(o.created_at).toLocaleString()}</td>
-          </tr>
         `).join('');
+
       } catch (err) {
-        console.error("주문 내역 로드 에러:", err);
+        console.error("상품 로드 실패:", err);
+        container.innerHTML = `<div class="col-span-full text-center py-12 text-red-500">오류가 발생했습니다: ${escapeHtml(err.message)}</div>`;
       }
     }
 
-    async function loadAdminDashboard() {
-      if (currentProfile?.role !== 'admin') {
-        alert("관리자 권한이 없습니다.");
-        return switchTab('catalog');
-      }
+    // 신규 카테고리 추가
+    async function handleCreateCategory(e) {
+      e.preventDefault();
+      const parentId = document.getElementById('admin-cat-parent').value || null;
+      const name = document.getElementById('admin-cat-name').value.trim();
 
-      try {
-        const { data: users, error } = await sbClient.from('profiles').select('*').order('created_at', { ascending: false });
-        const tbody = document.getElementById('admin-users-body');
-
-        if (error || !users || users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">등록된 가입자가 없습니다.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = users.map(u => `
-          <tr class="border-b">
-            <td class="p-2">${escapeHtml(u.email)}</td>
-            <td class="p-2 font-bold">${escapeHtml(u.biz_name || '-')}</td>
-            <td class="p-2">${escapeHtml(u.depositor_name || '-')}</td>
-            <td class="p-2">${escapeHtml(u.phone || '-')}</td>
-            <td class="p-2">
-              ${u.business_license_url ? `<a href="${getSafeImageUrl(u.business_license_url)}" target="_blank" class="text-blue-600 underline">보기</a>` : '미첨부'}
-            </td>
-            <td class="p-2">
-              <span class="px-2 py-0.5 rounded text-xs ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${escapeHtml(u.status)}
-              </span>
-            </td>
-            <td class="p-2">
-              ${u.status === 'pending' ? `
-                <button onclick="approveUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs">승인하기</button>
-              ` : '<span class="text-slate-400">완료됨</span>'}
-            </td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        console.error("관리자 대시보드 로드 에러:", err);
-      }
-    }
-
-    async function approveUser(userId) {
-      const { error } = await sbClient.from('profiles').update({ status: 'approved' }).eq('id', userId);
-      if (error) alert("승인 실패: " + error.message);
+      const { error } = await sbClient.from('categories').insert([{ name, parent_id: parentId }]);
+      if (error) alert("카테고리 추가 실패: " + error.message);
       else {
-        alert("사업자 회원이 승인되었습니다.");
-        loadAdminDashboard();
+        alert("카테고리가 성공적으로 등록되었습니다.");
+        document.getElementById('admin-cat-name').value = '';
+        await loadCategories();
       }
     }
 
+    // 신규 상품 등록
     async function handleCreateProduct(e) {
       e.preventDefault();
       const name = document.getElementById('prod-name').value;
-      const categoryId = document.getElementById('prod-category').value || null;
+      const mainCat = document.getElementById('prod-main-cat').value;
+      const subCat = document.getElementById('prod-sub-cat').value;
       const price = parseInt(document.getElementById('prod-price').value);
       const moq = parseInt(document.getElementById('prod-moq').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
-      const deadline = document.getElementById('prod-deadline').value;
-      const delivery = document.getElementById('prod-delivery').value;
-      const desc = document.getElementById('prod-desc').value;
-      
-      const imageUrlInput = document.getElementById('prod-image-url').value.trim();
-      const fileInput = document.getElementById('prod-file').files[0];
 
-      let imageUrl = null;
-
-      // 이미지 결정 우선순위: 1. 스크린샷 캡처 파일 -> 2. 파일 선택 -> 3. URL 직접 입력
-      const targetFile = pastedImageFile || fileInput;
-
-      if (targetFile) {
-        const safeName = (targetFile.name || 'screenshot.png').replace(/[^a-zA-Z0-9._-]/g, '_');
-        const filePath = `${Date.now()}_${safeName}`;
-
-        const { error: uploadError } = await sbClient.storage.from('product-images').upload(filePath, targetFile);
-        if (!uploadError) {
-          const { data: pubUrl } = sbClient.storage.from('product-images').getPublicUrl(filePath);
-          imageUrl = pubUrl.publicUrl;
-        } else {
-          console.error("이미지 업로드 오류:", uploadError);
-          return alert("이미지 업로드 실패: " + uploadError.message);
-        }
-      } else if (imageUrlInput) {
-        imageUrl = imageUrlInput;
-      }
+      // 소분류가 지정되어 있으면 소분류 ID 저장, 없으면 대분류 ID 저장
+      const targetCategoryId = subCat || mainCat;
 
       const { error } = await sbClient.from('products').insert([{
         name,
-        category_id: categoryId,
+        category_id: targetCategoryId,
         wholesale_price: price,
         moq,
-        stock,
-        deadline,
-        delivery_date: delivery,
-        description: desc,
-        image_url: imageUrl
+        stock
       }]);
 
-      if (error) {
-        alert("상품 등록 실패: " + error.message);
-      } else {
-        alert("신규 도매 상품이 성공적으로 등록되었습니다!");
+      if (error) alert("상품 등록 실패: " + error.message);
+      else {
+        alert("상품이 성공적으로 등록되었습니다!");
         document.getElementById('add-product-form').reset();
-        clearPastedImage();
         await loadProducts();
       }
     }
