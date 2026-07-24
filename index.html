@@ -13,7 +13,7 @@
 </head>
 <body class="bg-[#FDFBF7] text-stone-800 font-sans min-h-screen">
 
-  <!-- 헤더 / 내비게이션 (Warm Dark Stone Theme) -->
+  <!-- 헤더 / 내비게이션 -->
   <header class="bg-stone-900 text-white shadow-sm sticky top-0 z-50 border-b border-stone-800">
     <div class="max-w-[1500px] mx-auto px-6 py-3.5 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -29,7 +29,7 @@
         
         <!-- 인증 영역 -->
         <div id="auth-buttons">
-          <button onclick="showAuthModal('login')" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-stone-9 font-extrabold px-4 py-1.5 rounded-lg text-xs shadow-sm transition">로그인 / 회원가입</button>
+          <button onclick="showAuthModal('login')" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-stone-900 font-extrabold px-4 py-1.5 rounded-lg text-xs shadow-sm transition">로그인 / 회원가입</button>
         </div>
         <div id="user-info" class="hidden flex items-center space-x-3">
           <span id="user-display" class="text-xs text-stone-300 font-medium"></span>
@@ -41,7 +41,7 @@
 
   <main class="max-w-[1500px] mx-auto px-6 py-8 space-y-8">
 
-    <!-- 탭 1: 상품 카탈로그 (5x5 그리드 고정 + 웜톤 카드 디자인) -->
+    <!-- 탭 1: 상품 카탈로그 (5x5 그리드 + 한 줄 코멘트 및 이미지 적용) -->
     <section id="tab-catalog" class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-stone-200/80">
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -62,7 +62,7 @@
         </div>
       </div>
 
-      <!-- 5*5 Grid Layout (lg:grid-cols-5 호환 보장) -->
+      <!-- 5*5 Grid Layout -->
       <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
         <div class="col-span-full text-center py-16 text-stone-400 font-medium">상품 데이터를 불러오는 중입니다...</div>
       </div>
@@ -128,14 +128,20 @@
         </form>
       </div>
 
-      <!-- 상품 등록 -->
+      <!-- 신규 도매 상품 등록 (이미지 붙여넣기 및 한 줄 코멘트 추가) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4">
         <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">📦 신규 도매 상품 등록</h3>
         <form id="add-product-form" onsubmit="handleCreateProduct(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
+          <div class="md:col-span-2">
             <label class="block font-bold mb-1 text-xs text-stone-600">상품명 *</label>
-            <input type="text" id="prod-name" required class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-400">
+            <input type="text" id="prod-name" required placeholder="상품 기본 정보 및 모델명을 입력하세요" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-400">
           </div>
+          
+          <div>
+            <label class="block font-bold mb-1 text-xs text-amber-700">💬 한 줄 코멘트 (선택)</label>
+            <input type="text" id="prod-comment" maxlength="60" placeholder="예: [초인기] 입고 직후 품절 대란 상품!" class="w-full border border-amber-200 bg-amber-50/30 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-amber-400 font-medium">
+          </div>
+
           <div>
             <label class="block font-bold mb-1 text-xs text-stone-600">대분류 *</label>
             <select id="prod-main-cat" onchange="onAdminMainCatChange()" required class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs bg-white">
@@ -159,6 +165,32 @@
           <div>
             <label class="block font-bold mb-1 text-xs text-stone-600">초기 재고 *</label>
             <input type="number" id="prod-stock" required min="0" value="100" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold mb-1 text-xs text-stone-600">이미지 Direct URL (선택)</label>
+            <input type="url" id="prod-image-url-input" oninput="handleImageUrlInput(this.value)" placeholder="https://..." class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
+          </div>
+
+          <!-- 이미지 붙여넣기 / 스크린샷 캡처 존 -->
+          <div class="md:col-span-3 space-y-1.5">
+            <label class="block font-bold text-xs text-stone-600">🖼️ 상품 이미지 (스크린샷 Ctrl+V 붙여넣기 가능)</label>
+            
+            <div id="image-paste-zone" tabindex="0" class="border-2 border-dashed border-amber-300 bg-amber-50/20 hover:bg-amber-50/50 rounded-2xl p-4 text-center cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-400 relative min-h-[130px] flex flex-col justify-center items-center">
+              <input type="file" id="prod-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
+              <input type="hidden" id="prod-image-data">
+
+              <!-- 기본 플레이스홀더 안내 -->
+              <div id="paste-placeholder" class="space-y-1">
+                <p class="text-xs font-bold text-stone-700">📋 이 영역을 클릭하고 <span class="text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 font-mono">Ctrl + V</span> 키를 눌러 캡처본을 바로 붙여넣으세요!</p>
+                <p class="text-[11px] text-stone-400">또는 클릭하여 내 컴퓨터 파일 선택 / 이미지를 드래그하여 올려놓으세요.</p>
+              </div>
+
+              <!-- 이미지 미리보기 -->
+              <div id="image-preview-container" class="hidden relative group">
+                <img id="image-preview" src="" class="max-h-36 rounded-lg object-contain shadow-sm border border-stone-200">
+                <button type="button" onclick="clearImagePreview(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-6 h-6 text-xs font-bold shadow-md hover:bg-rose-700 transition">✕</button>
+              </div>
+            </div>
           </div>
           
           <div class="md:col-span-3 border-t border-stone-100 pt-4 flex justify-end">
@@ -291,7 +323,7 @@
     let currentAuthMode = 'login';
     let currentUser = null;
 
-    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f5f5f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23a8a29e'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
+    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23fdfbf7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d6d3d1' font-size='14'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
 
     function escapeHtml(str) {
       if (!str) return '';
@@ -397,7 +429,103 @@
       await checkAuthStatus();
       await loadCategories();
       await loadProducts(1);
+      setupImagePasteHandlers();
     });
+
+    // 스크린샷 붙여넣기 및 이미지 처리
+    function setupImagePasteHandlers() {
+      const zone = document.getElementById('image-paste-zone');
+
+      zone.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') {
+          document.getElementById('prod-image-file').click();
+        }
+      });
+
+      zone.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+          if (item.type.indexOf('image') === 0) {
+            const blob = item.getAsFile();
+            processAndPreviewImage(blob);
+            break;
+          }
+        }
+      });
+
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('border-amber-500', 'bg-amber-100/50');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('border-amber-500', 'bg-amber-100/50');
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('border-amber-500', 'bg-amber-100/50');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          processAndPreviewImage(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files[0]) {
+        processAndPreviewImage(e.target.files[0]);
+      }
+    }
+
+    function handleImageUrlInput(url) {
+      if (url.trim()) {
+        document.getElementById('prod-image-data').value = url.trim();
+        document.getElementById('image-preview').src = url.trim();
+        document.getElementById('image-preview-container').classList.remove('hidden');
+        document.getElementById('paste-placeholder').classList.add('hidden');
+      }
+    }
+
+    // 이미지를 Canvas로 800px 경량화 압축하여 Base64 변환
+    function processAndPreviewImage(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = Math.round(height * (MAX_WIDTH / width));
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.82);
+          document.getElementById('prod-image-data').value = compressedBase64;
+          document.getElementById('image-preview').src = compressedBase64;
+          document.getElementById('image-preview-container').classList.remove('hidden');
+          document.getElementById('paste-placeholder').classList.add('hidden');
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImagePreview(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('prod-image-data').value = '';
+      document.getElementById('prod-image-url-input').value = '';
+      document.getElementById('image-preview').src = '';
+      document.getElementById('image-preview-container').classList.add('hidden');
+      document.getElementById('paste-placeholder').classList.remove('hidden');
+    }
 
     // 카테고리
     async function loadCategories() {
@@ -456,7 +584,7 @@
       onMainCategoryChange();
     }
 
-    // 상품 로드 (Warm Card UI + 5열 반응형)
+    // 상품 로드 (구매자 화면: 이미지 + 한 줄 코멘트 렌더링)
     async function loadProducts(page = 1) {
       currentPage = page;
       const container = document.getElementById('product-list');
@@ -494,12 +622,13 @@
 
         container.innerHTML = products.map(p => `
           <div class="bg-white rounded-2xl shadow-sm shadow-stone-200/50 border border-stone-200/70 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition duration-200">
-            <div class="h-44 bg-stone-100 relative">
-              <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover">
+            <div class="h-44 bg-stone-100 relative overflow-hidden">
+              <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover transition hover:scale-105 duration-300">
               <span class="absolute top-2.5 right-2.5 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">MOQ ${p.moq}개</span>
             </div>
             <div class="p-3.5 flex-1 flex flex-col justify-between space-y-3">
-              <div>
+              <div class="space-y-1.5">
+                ${p.comment ? `<p class="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md truncate inline-block max-w-full">💬 ${escapeHtml(p.comment)}</p>` : ''}
                 <h3 class="font-bold text-stone-800 text-xs leading-snug line-clamp-2 h-8">${escapeHtml(p.name)}</h3>
               </div>
               <div class="pt-2.5 border-t border-stone-100 flex flex-col space-y-2.5">
@@ -638,7 +767,7 @@
       `).join('');
     }
 
-    // 관리자
+    // 관리자: 카테고리 & 상품 신규 생성
     function toggleCategoryParentSelect() {
       const type = document.getElementById('admin-cat-type').value;
       const parentGroup = document.getElementById('admin-parent-group');
@@ -690,26 +819,32 @@
     async function handleCreateProduct(e) {
       e.preventDefault();
       const name = document.getElementById('prod-name').value;
+      const comment = document.getElementById('prod-comment').value.trim();
       const mainCat = document.getElementById('prod-main-cat').value;
       const subCat = document.getElementById('prod-sub-cat').value;
       const price = parseInt(document.getElementById('prod-price').value);
       const moq = parseInt(document.getElementById('prod-moq').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
+      const imageUrl = document.getElementById('prod-image-data').value;
 
       const targetCategoryId = subCat || mainCat;
 
       const { error } = await sbClient.from('products').insert([{
         name,
+        comment,
         category_id: targetCategoryId,
         wholesale_price: price,
         moq,
-        stock
+        stock,
+        image_url: imageUrl || null
       }]);
 
-      if (error) alert("상품 등록 실패: " + error.message);
-      else {
-        alert("상품이 등록되었습니다.");
+      if (error) {
+        alert("상품 등록 실패: " + error.message);
+      } else {
+        alert("🎉 상품이 성공적으로 등록되었습니다!");
         document.getElementById('add-product-form').reset();
+        clearImagePreview();
         await loadProducts(1);
       }
     }
@@ -759,7 +894,7 @@
 
       } catch (err) {
         console.error("발주 집계 로드 오류:", err);
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">집계 오류: ${escapeHtml(err.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">집계 오류: ${escapeHtml(err.message)}</div>`;
       }
     }
 
