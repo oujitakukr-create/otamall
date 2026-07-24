@@ -271,18 +271,19 @@
   <!-- 3. JavaScript 연동 통합 로직 -->
   <script>
     // ========================================================
-    // 1. Supabase 접속 설정
+    // 1. Supabase 접속 설정 (전역 객체 충돌 방지를 위해 supabaseClient 이름 사용)
     // ========================================================
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
+    // ※ 주의: 아래 키가 올바른 anon public JWT 토큰(eyJ...)인지 확인하세요.
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 글로벌 메모리 상태 (HTML 속성 이스케이프 버그 방지용)
+    // 글로벌 메모리 상태
     let currentUser = null;
     let currentProfile = null;
     let categoriesList = [];
-    let productsList = []; // 상품 객체 안전 참조용 메모리 배열
+    let productsList = []; 
     let currentSelectedProduct = null;
 
     // ========================================================
@@ -295,18 +296,8 @@
     });
 
     async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        await fetchProfile();
-      } else {
-        currentUser = null;
-        currentProfile = null;
-        updateUIByAuth();
-      }
-
-      // 세션 상태 변경 리스너
-      supabase.auth.onAuthStateChange(async (event, session) => {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
           currentUser = session.user;
           await fetchProfile();
@@ -315,19 +306,36 @@
           currentProfile = null;
           updateUIByAuth();
         }
-      });
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+          if (session) {
+            currentUser = session.user;
+            await fetchProfile();
+          } else {
+            currentUser = null;
+            currentProfile = null;
+            updateUIByAuth();
+          }
+        });
+      } catch (err) {
+        console.error("세션 확인 실패:", err);
+      }
     }
 
     async function fetchProfile() {
       if (!currentUser) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .single();
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
 
-      if (!error && data) {
-        currentProfile = data;
+        if (!error && data) {
+          currentProfile = data;
+        }
+      } catch (err) {
+        console.error("프로필 로드 실패:", err);
       }
       updateUIByAuth();
     }
@@ -347,14 +355,12 @@
 
         navOrders.classList.remove('hidden');
 
-        // 승인 대기 알림 바
         if (currentProfile.status === 'pending' && currentProfile.role !== 'admin') {
           statusBanner.classList.remove('hidden');
         } else {
           statusBanner.classList.add('hidden');
         }
 
-        // Admin 탭 노출 여부
         if (currentProfile.role === 'admin') {
           navAdmin.classList.remove('hidden');
         } else {
@@ -419,7 +425,7 @@
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) {
         alert("로그인 실패: " + error.message);
       } else {
@@ -440,25 +446,22 @@
 
       let licenseUrl = null;
 
-      // Supabase Auth 가입
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
       if (authError || !authData?.user) return alert("회원가입 오류: " + (authError ? authError.message : "사용자 생성 실패"));
 
       const userId = authData.user.id;
 
-      // 사업자등록증 파일 업로드
       if (licenseFile) {
         const fileExt = licenseFile.name.split('.').pop();
         const filePath = `licenses/${userId}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, licenseFile);
+        const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(filePath, licenseFile);
         if (!uploadError) {
-          const { data: pubUrl } = supabase.storage.from('product-images').getPublicUrl(filePath);
+          const { data: pubUrl } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
           licenseUrl = pubUrl.publicUrl;
         }
       }
 
-      // Profile 레코드 생성
-      const { error: profileError } = await supabase.from('profiles').insert([{
+      const { error: profileError } = await supabaseClient.from('profiles').insert([{
         id: userId,
         email: email,
         biz_name: bizName,
@@ -473,86 +476,103 @@
       if (profileError) {
         alert("프로필 저장 실패: " + profileError.message);
       } else {
-        alert("사업자 가입 신청이 완료되었습니다. 관리자 승인 후 도매 발주가 가능합니다.");
+        alert("사업자 가입 신청이 완료되었습니다. 이메일 인증 링크 클릭 및 관리자 승인 후 도매 발주가 가능합니다.");
         closeModal('modal-auth');
       }
     }
 
     async function handleLogout() {
-      await supabase.auth.signOut();
+      await supabaseClient.auth.signOut();
       alert("로그아웃 되었습니다.");
       switchTab('catalog');
     }
 
     // ========================================================
-    // 5. 카테고리 & 상품 목록 조회 (메모리 배열 매핑 방식 적용)
+    // 5. 카테고리 & 상품 목록 조회 (try-catch 예외 처리 강화)
     // ========================================================
     async function loadCategories() {
-      const { data, error } = await supabase.from('categories').select('*');
-      if (!error && data) {
-        categoriesList = data;
-        const filterSelect = document.getElementById('category-filter');
-        const prodSelect = document.getElementById('prod-category');
+      try {
+        const { data, error } = await supabaseClient.from('categories').select('*');
+        if (!error && data) {
+          categoriesList = data;
+          const filterSelect = document.getElementById('category-filter');
+          const prodSelect = document.getElementById('prod-category');
 
-        filterSelect.innerHTML = '<option value="all">전체 상품 보기</option>';
-        prodSelect.innerHTML = '<option value="">(선택 안 함)</option>';
+          filterSelect.innerHTML = '<option value="all">전체 상품 보기</option>';
+          prodSelect.innerHTML = '<option value="">(선택 안 함)</option>';
 
-        data.forEach(cat => {
-          filterSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-          prodSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-        });
+          data.forEach(cat => {
+            filterSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+            prodSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+          });
+        }
+      } catch (err) {
+        console.error("카테고리 로딩 에러:", err);
       }
     }
 
     async function loadProducts() {
-      const categoryFilter = document.getElementById('category-filter').value;
-      let query = supabase.from('products').select('*').order('id', { ascending: false });
-
-      if (categoryFilter !== 'all') {
-        query = query.eq('category_id', categoryFilter);
-      }
-
-      const { data: products, error } = await query;
       const container = document.getElementById('product-list');
+      try {
+        const categoryFilter = document.getElementById('category-filter').value;
+        let query = supabaseClient.from('products').select('*').order('id', { ascending: false });
 
-      if (error || !products || products.length === 0) {
-        productsList = [];
-        container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">등록된 도매 상품이 없습니다.</div>';
-        return;
-      }
+        if (categoryFilter !== 'all') {
+          query = query.eq('category_id', categoryFilter);
+        }
 
-      // 상품 배열 저장 (HTML Attribute 파싱 에러 완벽 예방)
-      productsList = products;
+        const { data: products, error } = await query;
 
-      container.innerHTML = products.map(p => `
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div class="h-48 bg-slate-100 relative">
-            <img src="${p.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" class="w-full h-full object-cover">
-            <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
-          </div>
-          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-            <div>
-              <h3 class="font-bold text-slate-800 text-base leading-snug">${p.name}</h3>
-              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${p.description || '상세 설명 없음'}</p>
+        if (error) throw error;
+
+        if (!products || products.length === 0) {
+          productsList = [];
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">등록된 도매 상품이 없습니다.</div>';
+          return;
+        }
+
+        productsList = products;
+
+        container.innerHTML = products.map(p => `
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div class="h-48 bg-slate-100 relative">
+              <img src="${p.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" class="w-full h-full object-cover">
+              <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
             </div>
-            <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2 rounded">
-              <div>⏰ 마감일: ${p.deadline || '상시'}</div>
-              <div>🚚 출고예정: ${p.delivery_date || '미정'}</div>
-              <div>📦 재고: <span class="font-bold ${p.stock > 0 ? 'text-emerald-600' : 'text-red-600'}">${p.stock} 개</span></div>
-            </div>
-            <div class="pt-2 border-t flex justify-between items-center">
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
               <div>
-                <span class="text-xs text-slate-400 block">도매 공급가</span>
-                <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                <h3 class="font-bold text-slate-800 text-base leading-snug">${p.name}</h3>
+                <p class="text-xs text-slate-500 mt-1 line-clamp-2">${p.description || '상세 설명 없음'}</p>
               </div>
-              <button onclick="openOrderModal(${p.id})" 
-                class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">
-                발주 신청
-              </button>
+              <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2 rounded">
+                <div>⏰ 마감일: ${p.deadline || '상시'}</div>
+                <div>🚚 출고예정: ${p.delivery_date || '미정'}</div>
+                <div>📦 재고: <span class="font-bold ${p.stock > 0 ? 'text-emerald-600' : 'text-red-600'}">${p.stock} 개</span></div>
+              </div>
+              <div class="pt-2 border-t flex justify-between items-center">
+                <div>
+                  <span class="text-xs text-slate-400 block">도매 공급가</span>
+                  <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                </div>
+                <button onclick="openOrderModal(${p.id})" 
+                  class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">
+                  발주 신청
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
+
+      } catch (err) {
+        console.error("상품 데이터 로드 실패:", err);
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12 text-red-500 space-y-2">
+            <p class="font-bold text-base">⚠️ 상품 데이터를 불러오지 못했습니다.</p>
+            <p class="text-xs text-slate-500">${err.message || err}</p>
+            <p class="text-xs text-slate-400 mt-2">Supabase API Key 설정 및 products 테이블의 RLS 읽기 권한을 확인해 주세요.</p>
+          </div>
+        `;
+      }
     }
 
     // ========================================================
@@ -607,8 +627,7 @@
         return alert(`최소 주문 수량(MOQ ${currentSelectedProduct.moq}개) 이상 발주해야 합니다.`);
       }
 
-      // DB 원자성 유지를 위한 RPC 함수 호출
-      const { data, error } = await supabase.rpc('place_order_safe', {
+      const { data, error } = await supabaseClient.rpc('place_order_safe', {
         p_product_id: prodId,
         p_qty: qty,
         p_is_tax: isTax
@@ -628,29 +647,33 @@
     // ========================================================
     async function loadMyOrders() {
       if (!currentUser) return;
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+      try {
+        const { data: orders, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false });
 
-      const tbody = document.getElementById('my-orders-body');
-      if (error || !orders || orders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6">주문 내역이 없습니다.</td></tr>';
-        return;
+        const tbody = document.getElementById('my-orders-body');
+        if (error || !orders || orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6">주문 내역이 없습니다.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = orders.map(o => `
+          <tr class="border-b hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-xs">${o.id}</td>
+            <td class="px-4 py-3 font-semibold">${o.product_name}</td>
+            <td class="px-4 py-3">${o.qty} 개</td>
+            <td class="px-4 py-3">${o.is_tax_invoice ? '발행요청' : '미발행'}</td>
+            <td class="px-4 py-3 font-bold">${Number(o.total_price).toLocaleString()} 원</td>
+            <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">${o.status}</span></td>
+            <td class="px-4 py-3 text-xs text-slate-400">${new Date(o.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error("주문 내역 로드 에러:", err);
       }
-
-      tbody.innerHTML = orders.map(o => `
-        <tr class="border-b hover:bg-slate-50">
-          <td class="px-4 py-3 font-mono text-xs">${o.id}</td>
-          <td class="px-4 py-3 font-semibold">${o.product_name}</td>
-          <td class="px-4 py-3">${o.qty} 개</td>
-          <td class="px-4 py-3">${o.is_tax_invoice ? '발행요청' : '미발행'}</td>
-          <td class="px-4 py-3 font-bold">${Number(o.total_price).toLocaleString()} 원</td>
-          <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">${o.status}</span></td>
-          <td class="px-4 py-3 text-xs text-slate-400">${new Date(o.created_at).toLocaleString()}</td>
-        </tr>
-      `).join('');
     }
 
     // ========================================================
@@ -662,39 +685,43 @@
         return switchTab('catalog');
       }
 
-      const { data: users, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      const tbody = document.getElementById('admin-users-body');
+      try {
+        const { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+        const tbody = document.getElementById('admin-users-body');
 
-      if (error || !users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">등록된 가입자가 없습니다.</td></tr>';
-        return;
+        if (error || !users || users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">등록된 가입자가 없습니다.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+          <tr class="border-b">
+            <td class="p-2">${u.email}</td>
+            <td class="p-2 font-bold">${u.biz_name || '-'}</td>
+            <td class="p-2">${u.depositor_name || '-'}</td>
+            <td class="p-2">${u.phone || '-'}</td>
+            <td class="p-2">
+              ${u.business_license_url ? `<a href="${u.business_license_url}" target="_blank" class="text-blue-600 underline">보기</a>` : '미첨부'}
+            </td>
+            <td class="p-2">
+              <span class="px-2 py-0.5 rounded text-xs ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${u.status}
+              </span>
+            </td>
+            <td class="p-2">
+              ${u.status === 'pending' ? `
+                <button onclick="approveUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs">승인하기</button>
+              ` : '<span class="text-slate-400">완료됨</span>'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error("관리자 대시보드 로드 에러:", err);
       }
-
-      tbody.innerHTML = users.map(u => `
-        <tr class="border-b">
-          <td class="p-2">${u.email}</td>
-          <td class="p-2 font-bold">${u.biz_name || '-'}</td>
-          <td class="p-2">${u.depositor_name || '-'}</td>
-          <td class="p-2">${u.phone || '-'}</td>
-          <td class="p-2">
-            ${u.business_license_url ? `<a href="${u.business_license_url}" target="_blank" class="text-blue-600 underline">보기</a>` : '미첨부'}
-          </td>
-          <td class="p-2">
-            <span class="px-2 py-0.5 rounded text-xs ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-              ${u.status}
-            </span>
-          </td>
-          <td class="p-2">
-            ${u.status === 'pending' ? `
-              <button onclick="approveUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs">승인하기</button>
-            ` : '<span class="text-slate-400">완료됨</span>'}
-          </td>
-        </tr>
-      `).join('');
     }
 
     async function approveUser(userId) {
-      const { error } = await supabase.from('profiles').update({ status: 'approved' }).eq('id', userId);
+      const { error } = await supabaseClient.from('profiles').update({ status: 'approved' }).eq('id', userId);
       if (error) alert("승인 실패: " + error.message);
       else {
         alert("사업자 회원이 승인되었습니다.");
@@ -718,14 +745,14 @@
 
       if (file) {
         const filePath = `products/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, file);
+        const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(filePath, file);
         if (!uploadError) {
-          const { data: pubUrl } = supabase.storage.from('product-images').getPublicUrl(filePath);
+          const { data: pubUrl } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
           imageUrl = pubUrl.publicUrl;
         }
       }
 
-      const { error } = await supabase.from('products').insert([{
+      const { error } = await supabaseClient.from('products').insert([{
         name,
         category_id: categoryId,
         wholesale_price: price,
