@@ -56,7 +56,273 @@
     </table>
   </div>
 </div>
+<!-- ========================================== -->
+<!-- 1. HTML UI 구성 요소 (회원가입 폼 및 관리자 승인 테이블) -->
+<!-- ========================================== -->
 
+<!-- [A] 회원가입 모달 내부 (이메일/비밀번호 입력란 하단에 추가) -->
+<div id="auth-biz-group" class="hidden mt-3">
+  <label class="block text-xs font-bold text-stone-600 mb-1">사업자등록번호 (숫자만 입력)</label>
+  <input type="text" id="auth-biz-number" placeholder="예: 1234567890" class="w-full border border-stone-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+</div>
+
+<!-- [B] 관리자 대시보드 탭 내부 (#tab-admin 하단에 추가) -->
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4 mt-6">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-stone-100 pb-3">
+    <div>
+      <h3 class="text-base font-bold text-stone-800">👤 B2B 회원 가입 승인 관리</h3>
+      <p class="text-xs text-stone-400">신규 가입자의 사업자 정보를 확인하고 도매 권한을 승인/반려합니다.</p>
+    </div>
+    <button onclick="loadAdminUsers()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+      🔄 대기열 새로고침
+    </button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-stone-600">
+      <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+        <tr>
+          <th class="px-4 py-3">이메일</th>
+          <th class="px-4 py-3">사업자등록번호</th>
+          <th class="px-4 py-3 text-center">가입일시</th>
+          <th class="px-4 py-3 text-center">상태</th>
+          <th class="px-4 py-3 text-center">권한 관리</th>
+        </tr>
+      </thead>
+      <tbody id="admin-user-list-body">
+        <tr><td colspan="5" class="text-center py-8 text-stone-400">회원 데이터를 불러오는 중입니다...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ========================================== -->
+<!-- 2. JavaScript 비즈니스 로직 및 이벤트 핸들러 -->
+<!-- ========================================== -->
+<script>
+    let currentUserProfile = null; // 유저 승인 상태 및 권한 저장 전역 변수
+
+    // 탭 전환 시 관리자 회원 목록 연동
+    function switchTab(tabName) {
+      document.getElementById('tab-catalog').classList.toggle('hidden', tabName !== 'catalog');
+      document.getElementById('tab-orders').classList.toggle('hidden', tabName !== 'orders');
+      document.getElementById('tab-admin').classList.toggle('hidden', tabName !== 'admin');
+      
+      if (tabName === 'admin') {
+        if (typeof loadAdminOrderSummary === 'function') loadAdminOrderSummary();
+        if (typeof loadAdminProducts === 'function') loadAdminProducts();
+        loadAdminUsers(); 
+      } else if (tabName === 'orders') {
+        if (typeof loadMyOrders === 'function') loadMyOrders();
+      }
+    }
+
+    // 회원가입/로그인 모드 토글 (사업자번호 입력 폼 제어)
+    function toggleAuthMode(mode) {
+      currentAuthMode = mode;
+      const loginTab = document.getElementById('auth-tab-login');
+      const signupTab = document.getElementById('auth-tab-signup');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const bizGroup = document.getElementById('auth-biz-group');
+
+      if (mode === 'login') {
+        if (loginTab) loginTab.className = "flex-1 py-2.5 text-center font-extrabold border-b-2 border-amber-500 text-amber-600";
+        if (signupTab) signupTab.className = "flex-1 py-2.5 text-center font-extrabold text-stone-400 border-b-2 border-transparent";
+        if (submitBtn) submitBtn.innerText = "로그인하기";
+        if (bizGroup) bizGroup.classList.add('hidden');
+      } else {
+        if (signupTab) signupTab.className = "flex-1 py-2.5 text-center font-extrabold border-b-2 border-amber-500 text-amber-600";
+        if (loginTab) loginTab.className = "flex-1 py-2.5 text-center font-extrabold text-stone-400 border-b-2 border-transparent";
+        if (submitBtn) submitBtn.innerText = "회원가입 신청 (관리자 승인 후 이용 가능)";
+        if (bizGroup) bizGroup.classList.remove('hidden');
+      }
+    }
+
+    // 인증 제출 및 프로필 초기화 로직
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+      const bizNumber = document.getElementById('auth-biz-number') ? document.getElementById('auth-biz-number').value.trim() : '';
+
+      try {
+        if (currentAuthMode === 'login') {
+          const { error } = await sbClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          alert("로그인되었습니다.");
+        } else {
+          const { data, error } = await sbClient.auth.signUp({ email, password });
+          if (error) throw error;
+          
+          if (data.user) {
+             const { error: profileError } = await sbClient.from('profiles').insert([{ 
+                 id: data.user.id, 
+                 email: email,
+                 role: 'user',
+                 status: 'pending',
+                 business_number: bizNumber
+             }]);
+             if (profileError) console.error("프로필 생성 에러:", profileError);
+          }
+          alert("회원가입 신청이 완료되었습니다. 관리자 승인 후 도매가 확인 및 발주가 가능합니다.");
+        }
+        if (typeof closeAuthModal === 'function') closeAuthModal();
+        await checkAuthStatus();
+        if (typeof loadProducts === 'function') loadProducts();
+      } catch (err) {
+        alert("인증 오류: " + err.message);
+      }
+    }
+
+    // 유저 권한 및 승인 상태 체크 로직
+    async function checkAuthStatus() {
+      const { data: { user } } = await sbClient.auth.getUser();
+      currentUser = user;
+
+      const authButtons = document.getElementById('auth-buttons');
+      const userInfo = document.getElementById('user-info');
+      const userDisplay = document.getElementById('user-display');
+      const navOrders = document.getElementById('nav-orders');
+      const navAdmin = document.getElementById('nav-admin');
+
+      if (user) {
+        if (authButtons) authButtons.classList.add('hidden');
+        if (userInfo) userInfo.classList.remove('hidden');
+        if (navOrders) navOrders.classList.remove('hidden');
+
+        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
+        currentUserProfile = profile;
+
+        if (profile) {
+          if (profile.role === 'admin') {
+            if (navAdmin) navAdmin.classList.remove('hidden');
+            if (userDisplay) userDisplay.innerHTML = `<span class="text-rose-400 font-bold">[관리자]</span> ${user.email}`;
+          } else if (profile.status === 'pending') {
+            if (userDisplay) userDisplay.innerHTML = `${user.email} <span class="text-amber-400 font-bold">(승인 대기중)</span>`;
+          } else if (profile.status === 'approved') {
+            if (userDisplay) userDisplay.innerHTML = `${user.email} <span class="text-emerald-400 font-bold">(승인 완료)</span>`;
+          }
+        }
+      } else {
+        currentUserProfile = null;
+        if (authButtons) authButtons.classList.remove('hidden');
+        if (userInfo) userInfo.classList.add('hidden');
+        if (navOrders) navOrders.classList.add('hidden');
+        if (navAdmin) navAdmin.classList.add('hidden');
+      }
+    }
+
+    // 발주 모달 오픈 시 미승인 유저 차단 엣지 케이스 방어
+    function openOrderModal(id, name, price, moq, stock, deadlineStr, comment) {
+      if (!currentUser || !currentUserProfile) {
+        alert("도매 발주를 진행하시려면 먼저 로그인해 주세요.");
+        if (typeof showAuthModal === 'function') showAuthModal('login');
+        return;
+      }
+
+      if (currentUserProfile.role !== 'admin' && currentUserProfile.status !== 'approved') {
+        alert("🔒 사업자 승인 대기 중입니다.\n관리자가 가입을 승인한 이후에 발주를 진행할 수 있습니다.");
+        return;
+      }
+      
+      // 기존 모달 오픈 로직 연결 지점
+      if (typeof window._originalOpenOrderModal === 'function') {
+        window._originalOpenOrderModal(id, name, price, moq, stock, deadlineStr, comment);
+      } else {
+        // 단독 실행 시 기본 동작 (필요에 따라 기존 모달 함수명으로 매핑)
+        window.selectedProductId = id;
+        document.getElementById('modal-product-name').innerText = name;
+        document.getElementById('modal-product-price').innerText = Number(price).toLocaleString() + '원';
+        document.getElementById('order-modal').classList.remove('hidden');
+      }
+    }
+
+    // 안전한 RPC 함수를 호출하는 발주 실행 프로세스[cite: 2]
+    async function executeOrderSubmit(targetProductId, orderQuantity, orderComment) {
+      if (!currentUserProfile || currentUserProfile.status !== 'approved') {
+        alert("승인된 정회원만 발주할 수 있습니다.");
+        return;
+      }
+
+      const { data, error } = await sbClient.rpc('place_order_safe', {
+        p_product_id: targetProductId,
+        p_quantity: Number(orderQuantity),
+        p_comment: orderComment || ''
+      });
+
+      if (error) {
+        alert("발주 실패: " + error.message);
+        return;
+      }
+
+      alert("발주가 성공적으로 완료되었습니다.");
+      if (typeof closeOrderModal === 'function') closeOrderModal();
+      if (typeof loadProducts === 'function') loadProducts();
+      if (typeof loadMyOrders === 'function') loadMyOrders();
+    }
+
+    // 관리자 전용: 가입 대기 회원 목록 로드
+    async function loadAdminUsers() {
+      const tbody = document.getElementById('admin-user-list-body');
+      try {
+        if (!currentUserProfile || currentUserProfile.role !== 'admin') return;
+
+        const { data: users, error } = await sbClient.from('profiles').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+
+        if (!users || users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-stone-400">가입한 회원이 없습니다.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => {
+          const date = new Date(u.created_at || Date.now()).toLocaleDateString();
+          let statusBadge = '';
+          if (u.status === 'pending') statusBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">승인 대기</span>';
+          else if (u.status === 'approved') statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">승인 완료</span>';
+          else statusBadge = `<span class="bg-stone-200 text-stone-600 text-[10px] px-2 py-0.5 rounded-full font-bold">${u.status}</span>`;
+
+          return `
+            <tr class="border-b border-stone-100 hover:bg-stone-50/50">
+              <td class="px-4 py-3 font-bold text-stone-800 text-xs">${escapeHtml(u.email)} ${u.role === 'admin' ? '👑' : ''}</td>
+              <td class="px-4 py-3 font-mono text-stone-500 text-xs">${escapeHtml(u.business_number || '미입력')}</td>
+              <td class="px-4 py-3 text-center text-stone-500 text-xs">${date}</td>
+              <td class="px-4 py-3 text-center">${statusBadge}</td>
+              <td class="px-4 py-3 text-center space-x-1">
+                ${u.role !== 'admin' && u.status !== 'approved' ? `<button onclick="updateUserStatus('${u.id}', 'approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-md text-[11px] font-bold transition">가입 승인</button>` : ''}
+                ${u.role !== 'admin' && u.status === 'approved' ? `<button onclick="updateUserStatus('${u.id}', 'pending')" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-2.5 py-1 rounded-md text-[11px] font-bold transition">권한 회수</button>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">오류 발생: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // 관리자 전용: 회원 승인 상태 업데이트 API
+    async function updateUserStatus(userId, newStatus) {
+      if (!confirm(`해당 회원의 상태를 [${newStatus === 'approved' ? '승인' : '권한 회수'}] 처리하시겠습니까?`)) return;
+
+      try {
+        const { error } = await sbClient.from('profiles').update({ status: newStatus }).eq('id', userId);
+        if (error) throw error;
+        
+        alert("회원 상태가 성공적으로 변경되었습니다.");
+        await loadAdminUsers();
+      } catch (err) {
+        alert("상태 변경 실패: " + err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+</script>
 
 <!-- ========================================== -->
 <!-- 2. JavaScript 비즈니스 로직 및 이벤트 핸들러 -->
