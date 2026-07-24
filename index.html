@@ -25,7 +25,7 @@
         <button onclick="switchTab('orders')" id="nav-orders" class="hidden hover:text-amber-400">내 주문 내역</button>
         <button onclick="switchTab('admin')" id="nav-admin" class="hidden bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold">관리자 전용</button>
         
-        <!-- 인증 버튼 영역 -->
+        <!-- 인증 영역 -->
         <div id="auth-buttons">
           <button onclick="showAuthModal('login')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-1.5 rounded text-xs">로그인 / 회원가입</button>
         </div>
@@ -39,7 +39,7 @@
 
   <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
 
-    <!-- 탭 1: 상품 카탈로그 -->
+    <!-- 탭 1: 상품 카탈로그 (5x5 그리드 + 페이지네이션 적용) -->
     <section id="tab-catalog" class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -49,20 +49,24 @@
             <option value="all">대분류 (전체)</option>
           </select>
 
-          <select id="filter-sub-cat" onchange="loadProducts()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none disabled:bg-slate-200" disabled>
+          <select id="filter-sub-cat" onchange="loadProducts(1)" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none disabled:bg-slate-200" disabled>
             <option value="all">소분류 (전체)</option>
           </select>
 
           <button onclick="resetCategoryFilter()" class="text-xs text-slate-500 underline hover:text-slate-800">필터 초기화</button>
         </div>
         <div class="text-xs text-slate-500">
-          ※ 대분류 선택 시 하위 소분류 상품 전체가 포함되어 조회됩니다.
+          ※ 한 페이지당 최대 25개(5×5)의 상품이 표시됩니다.
         </div>
       </div>
 
-      <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- 5*5 Grid Layout (xl:grid-cols-5) -->
+      <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <div class="col-span-full text-center py-12 text-slate-400">상품 데이터를 불러오는 중...</div>
       </div>
+
+      <!-- 페이지네이션 UI -->
+      <div id="pagination-container" class="flex justify-center items-center space-x-2 pt-4"></div>
     </section>
 
     <!-- 탭 2: 내 주문 내역 -->
@@ -194,7 +198,7 @@
 
   </main>
 
-  <!-- [복구] 로그인 / 회원가입 팝업 모달 -->
+  <!-- 로그인 / 회원가입 팝업 모달 -->
   <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-6 relative">
       <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
@@ -221,11 +225,65 @@
     </div>
   </div>
 
+  <!-- [신규] 도매 발주 신청 모달 -->
+  <div id="order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-5 relative">
+      <button onclick="closeOrderModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+      
+      <h3 class="text-lg font-bold text-slate-900 border-b pb-3">📦 도매 발주 신청</h3>
+
+      <form onsubmit="handleOrderSubmit(event)" class="space-y-4">
+        <input type="hidden" id="order-prod-id">
+        <input type="hidden" id="order-prod-price">
+
+        <div>
+          <label class="block text-xs text-slate-500 font-semibold">상품명</label>
+          <div id="order-prod-name" class="text-base font-bold text-slate-800 mt-0.5"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-500 font-semibold">도매 단가</label>
+            <div id="order-prod-price-display" class="text-sm font-semibold text-slate-700 mt-0.5"></div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 font-semibold">현재 재고 / MOQ</label>
+            <div id="order-prod-stock-moq" class="text-sm text-slate-700 mt-0.5"></div>
+          </div>
+        </div>
+
+        <div class="border-t pt-3">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">발주 수량 *</label>
+          <input type="number" id="order-qty" required oninput="calculateOrderTotal()" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:border-amber-500 font-bold">
+          <p id="order-moq-notice" class="text-xs text-amber-600 mt-1"></p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="order-tax-invoice" onchange="calculateOrderTotal()" class="w-4 h-4 text-amber-500 rounded border-slate-300">
+          <label for="order-tax-invoice" class="text-xs font-semibold text-slate-700">세금계산서 발행 신청 (VAT 10% 별도 부과)</label>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-600">최종 결제예정금액</span>
+          <span id="order-total-price" class="text-xl font-extrabold text-amber-600">0원</span>
+        </div>
+
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-3 rounded-lg text-sm shadow">
+          발주 제출하기
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Javascript -->
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // 페이지네이션 설정 (한 페이지당 25개)
+    const PAGE_SIZE = 25;
+    let currentPage = 1;
 
     let categoriesList = []; 
     let aggregatedOrdersList = [];
@@ -239,7 +297,6 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // [복구] 탭 전환
     function switchTab(tabName) {
       document.getElementById('tab-catalog').classList.toggle('hidden', tabName !== 'catalog');
       document.getElementById('tab-orders').classList.toggle('hidden', tabName !== 'orders');
@@ -252,7 +309,7 @@
       }
     }
 
-    // [복구] 로그인 / 인증 관련 함수들
+    // 로그인 / 회원가입 관련
     function showAuthModal(mode = 'login') {
       toggleAuthMode(mode);
       document.getElementById('auth-modal').classList.remove('hidden');
@@ -323,7 +380,6 @@
         userDisplay.innerText = user.email;
         navOrders.classList.remove('hidden');
 
-        // 관리자 역할 확인
         const { data: profile } = await sbClient.from('profiles').select('role').eq('id', user.id).single();
         if (profile && profile.role === 'admin') {
           navAdmin.classList.remove('hidden');
@@ -339,10 +395,10 @@
     document.addEventListener("DOMContentLoaded", async () => {
       await checkAuthStatus();
       await loadCategories();
-      await loadProducts();
+      await loadProducts(1);
     });
 
-    // 1. 카테고리 로드 및 UI 연동
+    // 카테고리 로드 및 UI 연동
     async function loadCategories() {
       try {
         const { data, error } = await sbClient.from('categories').select('*');
@@ -391,7 +447,7 @@
         subCatSelect.disabled = false;
       }
 
-      loadProducts();
+      loadProducts(1);
     }
 
     function resetCategoryFilter() {
@@ -399,14 +455,19 @@
       onMainCategoryChange();
     }
 
-    // 2. 상품 조회
-    async function loadProducts() {
+    // [수정] 5x5 그리드 및 25개 단위 페이지네이션 적용된 상품 로드
+    async function loadProducts(page = 1) {
+      currentPage = page;
       const container = document.getElementById('product-list');
+      const paginationContainer = document.getElementById('pagination-container');
       const mainCatId = document.getElementById('filter-main-cat').value;
       const subCatId = document.getElementById('filter-sub-cat').value;
 
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       try {
-        let query = sbClient.from('products').select('*').order('id', { ascending: false });
+        let query = sbClient.from('products').select('*', { count: 'exact' }).order('id', { ascending: false });
 
         if (subCatId !== 'all') {
           query = query.eq('category_id', subCatId);
@@ -419,31 +480,46 @@
           query = query.in('category_id', targetIds);
         }
 
-        const { data: products, error } = await query;
+        // 25개 단위 페이징 범위 적용
+        query = query.range(from, to);
+
+        const { data: products, count, error } = await query;
         if (error) throw error;
 
         if (!products || products.length === 0) {
-          container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">해당 카테고리에 등록된 상품이 없습니다.</div>';
+          container.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">등록된 상품이 존재하지 않습니다.</div>';
+          paginationContainer.innerHTML = '';
           return;
         }
 
+        // 5열 그리드 렌더링
         container.innerHTML = products.map(p => `
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition">
-            <div class="h-48 bg-slate-100 relative">
+            <div class="h-40 bg-slate-100 relative">
               <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover">
-              <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
+              <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded">MOQ ${p.moq}개</span>
             </div>
-            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
               <div>
-                <h3 class="font-bold text-slate-800 text-base leading-snug">${escapeHtml(p.name)}</h3>
+                <h3 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2">${escapeHtml(p.name)}</h3>
               </div>
-              <div class="pt-2 border-t flex justify-between items-center">
-                <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
-                <button class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">발주 신청</button>
+              <div class="pt-2 border-t flex flex-col space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-slate-400">재고 ${p.stock}개</span>
+                  <span class="text-base font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                </div>
+                <!-- [수정] 발주 신청 버튼 onclick 핸들러 연결 -->
+                <button onclick="openOrderModal(${p.id}, '${escapeHtml(p.name)}', ${p.wholesale_price}, ${p.moq}, ${p.stock})" 
+                        class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs py-2 rounded-lg shadow-sm transition">
+                  발주 신청
+                </button>
               </div>
             </div>
           </div>
         `).join('');
+
+        // 페이지네이션 버튼 생성
+        renderPagination(count, page);
 
       } catch (err) {
         console.error("상품 로드 실패:", err);
@@ -451,7 +527,102 @@
       }
     }
 
-    // 3. 내 주문 내역
+    function renderPagination(totalCount, page) {
+      const paginationContainer = document.getElementById('pagination-container');
+      const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+      if (totalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      
+      // 이전 버튼
+      html += `<button onclick="loadProducts(${page - 1})" ${page === 1 ? 'disabled class="px-3 py-1 bg-slate-200 text-slate-400 text-xs rounded cursor-not-allowed"' : 'class="px-3 py-1 bg-white border border-slate-300 text-xs font-bold rounded hover:bg-slate-50"'}>이전</button>`;
+
+      // 페이지 번호들
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === page) {
+          html += `<button class="px-3 py-1 bg-amber-500 text-slate-900 text-xs font-extrabold rounded shadow-sm">${i}</button>`;
+        } else {
+          html += `<button onclick="loadProducts(${i})" class="px-3 py-1 bg-white border border-slate-300 text-xs font-semibold rounded hover:bg-slate-50">${i}</button>`;
+        }
+      }
+
+      // 다음 버튼
+      html += `<button onclick="loadProducts(${page + 1})" ${page === totalPages ? 'disabled class="px-3 py-1 bg-slate-200 text-slate-400 text-xs rounded cursor-not-allowed"' : 'class="px-3 py-1 bg-white border border-slate-300 text-xs font-bold rounded hover:bg-slate-50"'}>다음</button>`;
+
+      paginationContainer.innerHTML = html;
+    }
+
+    // [신규] 도매 발주 모달 연동 로직
+    function openOrderModal(id, name, price, moq, stock) {
+      if (!currentUser) {
+        alert("도매 발주를 진행하시려면 먼저 로그인해 주세요.");
+        showAuthModal('login');
+        return;
+      }
+
+      document.getElementById('order-prod-id').value = id;
+      document.getElementById('order-prod-price').value = price;
+      document.getElementById('order-prod-name').innerText = name;
+      document.getElementById('order-prod-price-display').innerText = `${price.toLocaleString()}원`;
+      document.getElementById('order-prod-stock-moq').innerText = `${stock}개 / MOQ ${moq}개`;
+
+      const qtyInput = document.getElementById('order-qty');
+      qtyInput.value = moq;
+      qtyInput.min = moq;
+      qtyInput.max = stock;
+
+      document.getElementById('order-moq-notice').innerText = `최소 주문 수량(MOQ)은 ${moq}개 이상입니다.`;
+      document.getElementById('order-tax-invoice').checked = false;
+
+      calculateOrderTotal();
+      document.getElementById('order-modal').classList.remove('hidden');
+    }
+
+    function closeOrderModal() {
+      document.getElementById('order-modal').classList.add('hidden');
+    }
+
+    function calculateOrderTotal() {
+      const price = parseInt(document.getElementById('order-prod-price').value) || 0;
+      const qty = parseInt(document.getElementById('order-qty').value) || 0;
+      const isTax = document.getElementById('order-tax-invoice').checked;
+
+      const subtotal = price * qty;
+      const vat = isTax ? Math.round(subtotal * 0.1) : 0;
+      const grandTotal = subtotal + vat;
+
+      document.getElementById('order-total-price').innerText = `${grandTotal.toLocaleString()}원`;
+    }
+
+    async function handleOrderSubmit(e) {
+      e.preventDefault();
+      const productId = parseInt(document.getElementById('order-prod-id').value);
+      const qty = parseInt(document.getElementById('order-qty').value);
+      const isTax = document.getElementById('order-tax-invoice').checked;
+
+      try {
+        // Supabase 안전 발주 RPC 함수(place_order_safe) 호출
+        const { error } = await sbClient.rpc('place_order_safe', {
+          p_product_id: productId,
+          p_qty: qty,
+          p_is_tax: isTax
+        });
+
+        if (error) throw error;
+
+        alert("🎉 도매 발주 신청이 성공적으로 완료되었습니다!");
+        closeOrderModal();
+        await loadProducts(currentPage);
+      } catch (err) {
+        alert("발주 실패: " + err.message);
+      }
+    }
+
+    // 내 주문 내역
     async function loadMyOrders() {
       if (!currentUser) return;
       const tbody = document.getElementById('my-orders-body');
@@ -474,7 +645,7 @@
       `).join('');
     }
 
-    // 4. 관리자 등록 로직
+    // 관리자 기능
     function toggleCategoryParentSelect() {
       const type = document.getElementById('admin-cat-type').value;
       const parentGroup = document.getElementById('admin-parent-group');
@@ -546,11 +717,11 @@
       else {
         alert("상품이 성공적으로 등록되었습니다!");
         document.getElementById('add-product-form').reset();
-        await loadProducts();
+        await loadProducts(1);
       }
     }
 
-    // 5. 관리자 집계 및 엑셀 다운로드
+    // 관리자 집계 및 엑셀 다운로드
     async function loadAdminOrderSummary() {
       const tbody = document.getElementById('admin-order-summary-body');
       
