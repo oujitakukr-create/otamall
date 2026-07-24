@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오타몰 B2B 도매 플랫폼</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- SheetJS (Excel Export Library) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
+  <!-- 헤더 / 내비게이션 -->
   <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -17,151 +22,159 @@
       </div>
       <nav class="flex items-center space-x-4 text-sm font-medium">
         <button onclick="switchTab('catalog')" class="hover:text-amber-400">상품 카탈로그</button>
-        <button onclick="switchTab('orders')" id="nav-orders" class="hidden hover:text-amber-400">내 주문 내역</button>
-        <button onclick="switchTab('admin')" id="nav-admin" class="hidden bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">관리자 전용</button>
-        <div id="auth-buttons">
-          <button onclick="showAuthModal('login')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-1.5 rounded">로그인 / 회원가입</button>
-        </div>
-        <div id="user-info" class="hidden flex items-center space-x-2">
-          <span id="user-display" class="text-xs text-slate-300"></span>
-          <button onclick="handleLogout()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1 rounded">로그아웃</button>
-        </div>
+        <button onclick="switchTab('admin')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold">관리자 패널</button>
       </nav>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6">
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
 
-    <!-- TAB 1: 상품 카탈로그 -->
+    <!-- 탭 1: 상품 카탈로그 (동적 필터 및 상품 검색) -->
     <section id="tab-catalog" class="space-y-6">
-      
-      <!-- 대분류 / 소분류 필터링 검색 바 -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <span class="text-sm font-bold text-slate-700">📂 카테고리 검색:</span>
           
-          <!-- 1차 대분류 선택 -->
+          <!-- 대분류 선택 -->
           <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none">
             <option value="all">대분류 (전체)</option>
           </select>
 
-          <!-- 2차 소분류 선택 -->
+          <!-- 소분류 선택 (대분류 선택에 따라 동적 변경) -->
           <select id="filter-sub-cat" onchange="loadProducts()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none disabled:bg-slate-200" disabled>
             <option value="all">소분류 (전체)</option>
           </select>
 
           <button onclick="resetCategoryFilter()" class="text-xs text-slate-500 underline hover:text-slate-800">필터 초기화</button>
         </div>
-        
         <div class="text-xs text-slate-500">
-          ※ 대분류 선택 시 해당 카테고리의 모든 하위 상품이 자동 포함됩니다.
+          ※ 대분류 선택 시 하위 소분류 상품 전체가 포함되어 조회됩니다.
         </div>
       </div>
 
-      <!-- 상품 카드 그리드 -->
+      <!-- 상품 카드 출력 영역 -->
       <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div class="col-span-full text-center py-12 text-slate-400">상품 데이터를 불러오는 중...</div>
       </div>
     </section>
 
-    <!-- TAB 2: 내 주문 내역 -->
-    <section id="tab-orders" class="hidden space-y-4">
-      <h2 class="text-xl font-bold border-b border-slate-300 pb-2">내 도매 주문 기록</h2>
-      <div class="bg-white rounded-lg shadow border border-slate-200 overflow-x-auto">
-        <table class="w-full text-sm text-left text-slate-600">
-          <thead class="text-xs text-slate-700 uppercase bg-slate-100 border-b">
-            <tr>
-              <th class="px-4 py-3">주문번호</th>
-              <th class="px-4 py-3">상품명</th>
-              <th class="px-4 py-3">수량</th>
-              <th class="px-4 py-3">세금계산서</th>
-              <th class="px-4 py-3">총 결제금액</th>
-              <th class="px-4 py-3">상태</th>
-              <th class="px-4 py-3">주문일시</th>
-            </tr>
-          </thead>
-          <tbody id="my-orders-body">
-            <tr><td colspan="7" class="text-center py-6">주문 내역이 없습니다.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- TAB 3: 관리자 패널 -->
-    <section id="tab-admin" class="hidden space-y-8">
+    <!-- 탭 2: 관리자 패널 (카테고리 등록 + 상품 등록 + 발주 집계 & 엑셀 내보내기) -->
+    <section id="tab-admin" class="space-y-8">
       <div class="border-b border-slate-300 pb-3 flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-red-600">관리자(Admin) 전용 대시보드</h2>
-        <span class="text-xs bg-red-100 text-red-800 px-2.5 py-1 rounded border border-red-200">시스템 최고 관리자</span>
+        <h2 class="text-2xl font-bold text-red-600">관리자(Admin) 통합 대시보드</h2>
+        <span class="text-xs bg-red-100 text-red-800 px-2.5 py-1 rounded border border-red-200 font-bold">시스템 최고 관리자</span>
       </div>
 
-      <!-- 카테고리 자체 추가 폼 (대분류/소분류) -->
+      <!-- 1. 카테고리 신규 등록 폼 (대분류/소분류 선택 가능) -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
-        <h3 class="text-lg font-bold border-b pb-2 text-slate-700">🏷️ 카테고리 구조 관리 (신규 등록)</h3>
-        <form onsubmit="handleCreateCategory(event)" class="flex flex-wrap items-end gap-3 text-sm">
+        <h3 class="text-lg font-bold border-b pb-2 text-slate-700">🏷️ 카테고리 신규 등록</h3>
+        <form onsubmit="handleCreateCategory(event)" class="flex flex-wrap items-end gap-4 text-sm">
           <div>
-            <label class="block font-semibold mb-1 text-xs">상위 대분류 선택</label>
-            <select id="admin-cat-parent" class="border rounded px-3 py-1.5 bg-slate-50 text-xs">
-              <option value="">(최상위 대분류로 등록)</option>
+            <label class="block font-semibold mb-1 text-xs text-slate-600">분류 유형 *</label>
+            <select id="admin-cat-type" onchange="toggleCategoryParentSelect()" class="border rounded px-3 py-1.5 bg-slate-50 text-xs font-semibold">
+              <option value="main">1차 대분류 신규 생성</option>
+              <option value="sub">2차 소분류 신규 생성</option>
             </select>
           </div>
-          <div>
-            <label class="block font-semibold mb-1 text-xs">카테고리명 *</label>
-            <input type="text" id="admin-cat-name" required placeholder="예: 의류 또는 상의" class="border rounded px-3 py-1.5 text-xs">
+          
+          <div id="admin-parent-group" class="hidden">
+            <label class="block font-semibold mb-1 text-xs text-slate-600">상위 대분류 선택 *</label>
+            <select id="admin-cat-parent" class="border rounded px-3 py-1.5 bg-slate-50 text-xs">
+              <!-- JS로 대분류 목록 동적 로드 -->
+            </select>
           </div>
-          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-1.5 rounded text-xs">카테고리 추가</button>
+
+          <div>
+            <label class="block font-semibold mb-1 text-xs text-slate-600">카테고리명 *</label>
+            <input type="text" id="admin-cat-name" required placeholder="예: 의류 또는 상의" class="border rounded px-3 py-1.5 text-xs w-48">
+          </div>
+
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-1.5 rounded text-xs">
+            카테고리 저장
+          </button>
         </form>
       </div>
 
-      <!-- 신규 상품 등록 서식 -->
+      <!-- 2. 신규 상품 등록 서식 -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
         <h3 class="text-lg font-bold border-b pb-2 text-slate-700">📦 신규 도매 상품 등록</h3>
         <form id="add-product-form" onsubmit="handleCreateProduct(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <label class="block font-semibold mb-1">상품명 *</label>
-            <input type="text" id="prod-name" required class="w-full border rounded px-3 py-1.5">
+            <label class="block font-semibold mb-1 text-xs">상품명 *</label>
+            <input type="text" id="prod-name" required class="w-full border rounded px-3 py-1.5 text-xs">
           </div>
           <div>
-            <label class="block font-semibold mb-1">대분류 *</label>
-            <select id="prod-main-cat" onchange="onAdminMainCatChange()" required class="w-full border rounded px-3 py-1.5 bg-white">
+            <label class="block font-semibold mb-1 text-xs">대분류 *</label>
+            <select id="prod-main-cat" onchange="onAdminMainCatChange()" required class="w-full border rounded px-3 py-1.5 text-xs bg-white">
               <option value="">대분류 선택</option>
             </select>
           </div>
           <div>
-            <label class="block font-semibold mb-1">소분류</label>
-            <select id="prod-sub-cat" class="w-full border rounded px-3 py-1.5 bg-white disabled:bg-slate-100" disabled>
+            <label class="block font-semibold mb-1 text-xs">소분류</label>
+            <select id="prod-sub-cat" class="w-full border rounded px-3 py-1.5 text-xs bg-white disabled:bg-slate-100" disabled>
               <option value="">소분류 선택 (선택사항)</option>
             </select>
           </div>
           <div>
-            <label class="block font-semibold mb-1">도매 단가(원) *</label>
-            <input type="number" id="prod-price" required min="0" class="w-full border rounded px-3 py-1.5">
+            <label class="block font-semibold mb-1 text-xs">도매 단가(원) *</label>
+            <input type="number" id="prod-price" required min="0" class="w-full border rounded px-3 py-1.5 text-xs">
           </div>
           <div>
-            <label class="block font-semibold mb-1">MOQ (최소주문수량)</label>
-            <input type="number" id="prod-moq" value="1" min="1" class="w-full border rounded px-3 py-1.5">
+            <label class="block font-semibold mb-1 text-xs">MOQ (최소주문수량)</label>
+            <input type="number" id="prod-moq" value="1" min="1" class="w-full border rounded px-3 py-1.5 text-xs">
           </div>
           <div>
-            <label class="block font-semibold mb-1">초기 재고 *</label>
-            <input type="number" id="prod-stock" required min="0" value="100" class="w-full border rounded px-3 py-1.5">
+            <label class="block font-semibold mb-1 text-xs">초기 재고 *</label>
+            <input type="number" id="prod-stock" required min="0" value="100" class="w-full border rounded px-3 py-1.5 text-xs">
           </div>
           
           <div class="md:col-span-3 border-t pt-3 flex justify-end">
-            <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-6 py-2 rounded">상품 등록 완료</button>
+            <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-6 py-2 rounded text-xs">상품 등록 완료</button>
           </div>
         </form>
+      </div>
+
+      <!-- 3. 발주 상품별 집계 현황 및 엑셀 내보내기 -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+          <div>
+            <h3 class="text-lg font-bold text-slate-700">📊 상품별 발주 집계 현황</h3>
+            <p class="text-xs text-slate-500">유저들이 발주한 전체 주문 내역을 상품 단위로 합산 및 정렬하여 보여줍니다.</p>
+          </div>
+          <button onclick="exportOrdersToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-xs flex items-center gap-1.5 shadow-sm">
+            <span>📊 엑셀 파일 다운로드 (.xlsx)</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-slate-600">
+            <thead class="text-xs text-slate-700 uppercase bg-slate-100 border-b">
+              <tr>
+                <th class="px-4 py-3">상품 ID</th>
+                <th class="px-4 py-3">상품명</th>
+                <th class="px-4 py-3 text-right">누적 발주 수량</th>
+                <th class="px-4 py-3 text-right">총 결제 금액</th>
+                <th class="px-4 py-3 text-center">주문 건수</th>
+              </tr>
+            </thead>
+            <tbody id="admin-order-summary-body">
+              <tr><td colspan="5" class="text-center py-6 text-slate-400">발주 데이터를 분석 중입니다...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <!-- JS Logic -->
+  <!-- Javascript -->
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let categoriesList = []; // 전체 카테고리 데이터 (parent_id 포함)
-    let productsList = []; 
+    let categoriesList = []; 
+    let aggregatedOrdersList = []; // 엑셀 추출용 집계 데이터 저장소
 
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8'%3E이미지 없음%3C/text%3E%3C/svg%3E";
 
@@ -170,12 +183,20 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function switchTab(tabName) {
+      document.getElementById('tab-catalog').classList.toggle('hidden', tabName !== 'catalog');
+      document.getElementById('tab-admin').classList.toggle('hidden', tabName !== 'admin');
+      if (tabName === 'admin') {
+        loadAdminOrderSummary();
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       await loadCategories();
       await loadProducts();
     });
 
-    // 1. 카테고리 데이터 로드 및 계층화 분리
+    // 1. 카테고리 로드 및 UI 동적 구성
     async function loadCategories() {
       try {
         const { data, error } = await sbClient.from('categories').select('*');
@@ -184,7 +205,7 @@
         categoriesList = data || [];
         renderCategoryDropdowns();
       } catch (err) {
-        console.error("카테고리 로딩 실패:", err);
+        console.error("카테고리 로딩 오류:", err);
       }
     }
 
@@ -195,9 +216,8 @@
 
       const mainCategories = categoriesList.filter(c => !c.parent_id);
 
-      // 메인 검색 필터 대분류 채우기
       mainCatSelect.innerHTML = '<option value="all">대분류 (전체)</option>';
-      adminParentSelect.innerHTML = '<option value="">(최상위 대분류로 등록)</option>';
+      adminParentSelect.innerHTML = '<option value="">대분류를 선택하세요</option>';
       prodMainSelect.innerHTML = '<option value="">대분류 선택</option>';
 
       mainCategories.forEach(cat => {
@@ -208,7 +228,7 @@
       });
     }
 
-    // 메인 검색창: 대분류 선택 변경 시 소분류 동적 세팅
+    // 대분류 선택 변경 시 소분류 동적 세팅
     function onMainCategoryChange() {
       const mainId = document.getElementById('filter-main-cat').value;
       const subCatSelect = document.getElementById('filter-sub-cat');
@@ -234,25 +254,7 @@
       onMainCategoryChange();
     }
 
-    // 관리자 상품 등록창: 대분류 변경 시 소분류 동적 세팅
-    function onAdminMainCatChange() {
-      const mainId = document.getElementById('prod-main-cat').value;
-      const subCatSelect = document.getElementById('prod-sub-cat');
-
-      if (!mainId) {
-        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
-        subCatSelect.disabled = true;
-      } else {
-        const subCategories = categoriesList.filter(c => String(c.parent_id) === String(mainId));
-        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
-        subCategories.forEach(sub => {
-          subCatSelect.innerHTML += `<option value="${sub.id}">${escapeHtml(sub.name)}</option>`;
-        });
-        subCatSelect.disabled = false;
-      }
-    }
-
-    // 2. 대분류/소분류 조건에 맞게 상품 로드 (IN 쿼리 활용)
+    // 2. 카테고리 조건에 맞는 상품 검색 (대분류 선택 시 하위 소분류 전체 검색 포함)
     async function loadProducts() {
       const container = document.getElementById('product-list');
       const mainCatId = document.getElementById('filter-main-cat').value;
@@ -262,10 +264,10 @@
         let query = sbClient.from('products').select('*').order('id', { ascending: false });
 
         if (subCatId !== 'all') {
-          // 1. 소분류가 특정되었을 때
+          // 특정 소분류만 선택된 경우
           query = query.eq('category_id', subCatId);
         } else if (mainCatId !== 'all') {
-          // 2. 대분류만 특정되었을 때: 대분류 본인 ID + 해당 대분류 하위의 모든 소분류 ID 추출
+          // 대분류만 선택된 경우: 대분류 ID + 하위 소분류 ID 전체 묶음 검색
           const childCatIds = categoriesList
             .filter(c => String(c.parent_id) === String(mainCatId))
             .map(c => c.id);
@@ -306,22 +308,61 @@
       }
     }
 
-    // 신규 카테고리 추가
+    // 3. 관리자 카테고리 신규 등록 (대분류 vs 소분류)
+    function toggleCategoryParentSelect() {
+      const type = document.getElementById('admin-cat-type').value;
+      const parentGroup = document.getElementById('admin-parent-group');
+      const parentSelect = document.getElementById('admin-cat-parent');
+
+      if (type === 'sub') {
+        parentGroup.classList.remove('hidden');
+        parentSelect.required = true;
+      } else {
+        parentGroup.classList.add('hidden');
+        parentSelect.required = false;
+        parentSelect.value = '';
+      }
+    }
+
     async function handleCreateCategory(e) {
       e.preventDefault();
-      const parentId = document.getElementById('admin-cat-parent').value || null;
+      const type = document.getElementById('admin-cat-type').value;
+      const parentId = type === 'sub' ? document.getElementById('admin-cat-parent').value : null;
       const name = document.getElementById('admin-cat-name').value.trim();
 
+      if (type === 'sub' && !parentId) {
+        alert("소분류를 생성하려면 상위 대분류를 먼저 선택해야 합니다.");
+        return;
+      }
+
       const { error } = await sbClient.from('categories').insert([{ name, parent_id: parentId }]);
-      if (error) alert("카테고리 추가 실패: " + error.message);
-      else {
-        alert("카테고리가 성공적으로 등록되었습니다.");
+      if (error) {
+        alert("카테고리 등록 실패: " + error.message);
+      } else {
+        alert("카테고리가 정상적으로 추가되었습니다.");
         document.getElementById('admin-cat-name').value = '';
         await loadCategories();
       }
     }
 
-    // 신규 상품 등록
+    // 관리자 상품 등록 시 소분류 동적 변경
+    function onAdminMainCatChange() {
+      const mainId = document.getElementById('prod-main-cat').value;
+      const subCatSelect = document.getElementById('prod-sub-cat');
+
+      if (!mainId) {
+        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
+        subCatSelect.disabled = true;
+      } else {
+        const subCategories = categoriesList.filter(c => String(c.parent_id) === String(mainId));
+        subCatSelect.innerHTML = '<option value="">소분류 선택 (선택사항)</option>';
+        subCategories.forEach(sub => {
+          subCatSelect.innerHTML += `<option value="${sub.id}">${escapeHtml(sub.name)}</option>`;
+        });
+        subCatSelect.disabled = false;
+      }
+    }
+
     async function handleCreateProduct(e) {
       e.preventDefault();
       const name = document.getElementById('prod-name').value;
@@ -331,7 +372,6 @@
       const moq = parseInt(document.getElementById('prod-moq').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
 
-      // 소분류가 지정되어 있으면 소분류 ID 저장, 없으면 대분류 ID 저장
       const targetCategoryId = subCat || mainCat;
 
       const { error } = await sbClient.from('products').insert([{
@@ -348,6 +388,84 @@
         document.getElementById('add-product-form').reset();
         await loadProducts();
       }
+    }
+
+    // 4. 발주 상품별 집계 테이블 로드 및 정렬
+    async function loadAdminOrderSummary() {
+      const tbody = document.getElementById('admin-order-summary-body');
+      
+      try {
+        const { data: orders, error } = await sbClient.from('orders').select('*');
+        if (error) throw error;
+
+        if (!orders || orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">발주 내역이 존재하지 않습니다.</td></tr>';
+          aggregatedOrdersList = [];
+          return;
+        }
+
+        // 상품별(product_id 기준) 발주 내역 그룹핑
+        const summaryMap = {};
+
+        orders.forEach(order => {
+          const key = order.product_id || order.product_name;
+          if (!summaryMap[key]) {
+            summaryMap[key] = {
+              productId: order.product_id || 'N/A',
+              productName: order.product_name,
+              totalQty: 0,
+              totalPrice: 0,
+              orderCount: 0
+            };
+          }
+          summaryMap[key].totalQty += order.qty;
+          summaryMap[key].totalPrice += order.total_price;
+          summaryMap[key].orderCount += 1;
+        });
+
+        // 수량 기준 내림차순 정렬
+        aggregatedOrdersList = Object.values(summaryMap).sort((a, b) => b.totalQty - a.totalQty);
+
+        tbody.innerHTML = aggregatedOrdersList.map(item => `
+          <tr class="border-b hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-xs">${item.productId}</td>
+            <td class="px-4 py-3 font-bold text-slate-800">${escapeHtml(item.productName)}</td>
+            <td class="px-4 py-3 text-right font-extrabold text-amber-600">${item.totalQty.toLocaleString()}개</td>
+            <td class="px-4 py-3 text-right font-bold text-slate-900">${item.totalPrice.toLocaleString()}원</td>
+            <td class="px-4 py-3 text-center text-xs bg-slate-100 rounded">${item.orderCount}건</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error("발주 집계 로드 오류:", err);
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500">집계 오류: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // 5. 엑셀 파일 다운로드 (.xlsx)
+    function exportOrdersToExcel() {
+      if (!aggregatedOrdersList || aggregatedOrdersList.length === 0) {
+        alert("다운로드할 발주 집계 데이터가 없습니다.");
+        return;
+      }
+
+      // 엑셀 워크시트에 들어갈 데이터 구조화
+      const excelData = aggregatedOrdersList.map(item => ({
+        "상품 ID": item.productId,
+        "상품명": item.productName,
+        "총 발주 수량(개)": item.totalQty,
+        "총 결제 금액(원)": item.totalPrice,
+        "주문 건수(건)": item.orderCount
+      }));
+
+      // SheetJS 워크북 생성
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "상품별_발주집계");
+
+      // 오늘 날짜로 파일명 생성 및 파일 저장 다운로드
+      const today = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `오타몰_상품별_발주집계_${today}.xlsx`);
     }
   </script>
 </body>
