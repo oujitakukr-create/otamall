@@ -282,6 +282,27 @@
     // 안전하게 URL 인코딩 처리된 SVG 대체 이미지
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='100%25' height='100%25' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='14'%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EB%A1%9C%EB%93%9C%20%EB%B6%88%EA%B0%80%3C/text%3E%3C/svg%3E";
 
+    // 1. 이미지 URL 유효성 검증 함수 (깨진 HTML 문자열 방어)
+    function getSafeImageUrl(url) {
+      if (!url || typeof url !== 'string') return FALLBACK_IMAGE;
+      const trimmed = url.trim();
+      if (/^https?:\/\/[^\s"'<>]+$/i.test(trimmed)) {
+        return trimmed;
+      }
+      return FALLBACK_IMAGE;
+    }
+
+    // 2. HTML 이스케이프 방어 함수 (XSS 및 속성 파괴 방지)
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // 이미지 로드 실패 시 예외 처리 함수 (무한 루프 방지)
     function handleImageError(img) {
       img.onerror = null;
@@ -350,7 +371,7 @@
       if (currentUser && currentProfile) {
         authButtons.classList.add('hidden');
         userInfo.classList.remove('hidden');
-        userDisplay.textContent = `${currentProfile.biz_name || currentUser.email} 님 (${currentProfile.status === 'approved' ? '정회원' : '승인대기'})`;
+        userDisplay.textContent = `${escapeHtml(currentProfile.biz_name || currentUser.email)} 님 (${currentProfile.status === 'approved' ? '정회원' : '승인대기'})`;
 
         navOrders.classList.remove('hidden');
 
@@ -492,8 +513,9 @@
           prodSelect.innerHTML = '<option value="">(선택 안 함)</option>';
 
           data.forEach(cat => {
-            filterSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-            prodSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+            const catName = escapeHtml(cat.name);
+            filterSelect.innerHTML += `<option value="${cat.id}">${catName}</option>`;
+            prodSelect.innerHTML += `<option value="${cat.id}">${catName}</option>`;
           });
         }
       } catch (err) {
@@ -523,44 +545,48 @@
 
         productsList = products;
 
-        container.innerHTML = products.map(p => `
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-            <div class="h-48 bg-slate-100 relative">
-              <img src="${p.image_url || FALLBACK_IMAGE}" 
-                   onerror="handleImageError(this)"
-                   class="w-full h-full object-cover">
-              <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
-            </div>
-            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-              <div>
-                <h3 class="font-bold text-slate-800 text-base leading-snug">${p.name}</h3>
-                <p class="text-xs text-slate-500 mt-1 line-clamp-2">${p.description || '상세 설명 없음'}</p>
+        container.innerHTML = products.map(p => {
+          const safeImgSrc = getSafeImageUrl(p.image_url);
+
+          return `
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+              <div class="h-48 bg-slate-100 relative">
+                <img src="${safeImgSrc}" 
+                     onerror="handleImageError(this)"
+                     class="w-full h-full object-cover">
+                <span class="absolute top-2 right-2 bg-slate-900/80 text-amber-400 text-xs px-2 py-0.5 rounded font-bold">MOQ ${p.moq}개</span>
               </div>
-              <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2 rounded">
-                <div>⏰ 마감일: ${p.deadline || '상시'}</div>
-                <div>🚚 출고예정: ${p.delivery_date || '미정'}</div>
-                <div>📦 재고: <span class="font-bold ${p.stock > 0 ? 'text-emerald-600' : 'text-red-600'}">${p.stock} 개</span></div>
-              </div>
-              <div class="pt-2 border-t flex justify-between items-center">
+              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
                 <div>
-                  <span class="text-xs text-slate-400 block">도매 공급가</span>
-                  <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                  <h3 class="font-bold text-slate-800 text-base leading-snug">${escapeHtml(p.name)}</h3>
+                  <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(p.description || '상세 설명 없음')}</p>
                 </div>
-                <button onclick="openOrderModal(${p.id})" 
-                  class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">
-                  발주 신청
-                </button>
+                <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2 rounded">
+                  <div>⏰ 마감일: ${escapeHtml(p.deadline || '상시')}</div>
+                  <div>🚚 출고예정: ${escapeHtml(p.delivery_date || '미정')}</div>
+                  <div>📦 재고: <span class="font-bold ${p.stock > 0 ? 'text-emerald-600' : 'text-red-600'}">${p.stock} 개</span></div>
+                </div>
+                <div class="pt-2 border-t flex justify-between items-center">
+                  <div>
+                    <span class="text-xs text-slate-400 block">도매 공급가</span>
+                    <span class="text-lg font-extrabold text-slate-900">${Number(p.wholesale_price).toLocaleString()}원</span>
+                  </div>
+                  <button onclick="openOrderModal(${p.id})" 
+                    class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs px-3.5 py-2 rounded-lg">
+                    발주 신청
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
       } catch (err) {
         console.error("상품 데이터 로드 실패:", err);
         container.innerHTML = `
           <div class="col-span-full text-center py-12 text-red-500 space-y-2">
             <p class="font-bold text-base">⚠️ 상품 데이터를 불러오지 못했습니다.</p>
-            <p class="text-xs text-slate-500">${err.message || err}</p>
+            <p class="text-xs text-slate-500">${escapeHtml(err.message || String(err))}</p>
           </div>
         `;
       }
@@ -647,12 +673,12 @@
 
         tbody.innerHTML = orders.map(o => `
           <tr class="border-b hover:bg-slate-50">
-            <td class="px-4 py-3 font-mono text-xs">${o.id}</td>
-            <td class="px-4 py-3 font-semibold">${o.product_name}</td>
+            <td class="px-4 py-3 font-mono text-xs">${escapeHtml(o.id)}</td>
+            <td class="px-4 py-3 font-semibold">${escapeHtml(o.product_name)}</td>
             <td class="px-4 py-3">${o.qty} 개</td>
             <td class="px-4 py-3">${o.is_tax_invoice ? '발행요청' : '미발행'}</td>
             <td class="px-4 py-3 font-bold">${Number(o.total_price).toLocaleString()} 원</td>
-            <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">${o.status}</span></td>
+            <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">${escapeHtml(o.status)}</span></td>
             <td class="px-4 py-3 text-xs text-slate-400">${new Date(o.created_at).toLocaleString()}</td>
           </tr>
         `).join('');
@@ -678,16 +704,16 @@
 
         tbody.innerHTML = users.map(u => `
           <tr class="border-b">
-            <td class="p-2">${u.email}</td>
-            <td class="p-2 font-bold">${u.biz_name || '-'}</td>
-            <td class="p-2">${u.depositor_name || '-'}</td>
-            <td class="p-2">${u.phone || '-'}</td>
+            <td class="p-2">${escapeHtml(u.email)}</td>
+            <td class="p-2 font-bold">${escapeHtml(u.biz_name || '-')}</td>
+            <td class="p-2">${escapeHtml(u.depositor_name || '-')}</td>
+            <td class="p-2">${escapeHtml(u.phone || '-')}</td>
             <td class="p-2">
-              ${u.business_license_url ? `<a href="${u.business_license_url}" target="_blank" class="text-blue-600 underline">보기</a>` : '미첨부'}
+              ${u.business_license_url ? `<a href="${getSafeImageUrl(u.business_license_url)}" target="_blank" class="text-blue-600 underline">보기</a>` : '미첨부'}
             </td>
             <td class="p-2">
               <span class="px-2 py-0.5 rounded text-xs ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${u.status}
+                ${escapeHtml(u.status)}
               </span>
             </td>
             <td class="p-2">
