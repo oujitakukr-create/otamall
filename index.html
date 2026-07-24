@@ -41,7 +41,7 @@
 
   <main class="max-w-[1500px] mx-auto px-6 py-8 space-y-8">
 
-    <!-- 탭 1: 상품 카탈로그 (5x5 그리드 + 한 줄 코멘트 및 이미지 적용) -->
+    <!-- 탭 1: 상품 카탈로그 -->
     <section id="tab-catalog" class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-stone-200/80">
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -128,7 +128,7 @@
         </form>
       </div>
 
-      <!-- 신규 도매 상품 등록 (이미지 붙여넣기 및 한 줄 코멘트 추가) -->
+      <!-- 신규 도매 상품 등록 (발주 마감일 설정 포함) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4">
         <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">📦 신규 도매 상품 등록</h3>
         <form id="add-product-form" onsubmit="handleCreateProduct(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -166,7 +166,14 @@
             <label class="block font-bold mb-1 text-xs text-stone-600">초기 재고 *</label>
             <input type="number" id="prod-stock" required min="0" value="100" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
           </div>
+
+          <!-- 발주 마감일 설정 (복원 및 추가) -->
           <div>
+            <label class="block font-bold mb-1 text-xs text-rose-700">⏰ 발주 마감일시 (선택)</label>
+            <input type="datetime-local" id="prod-deadline" class="w-full border border-rose-200 bg-rose-50/20 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-400 font-medium">
+          </div>
+
+          <div class="md:col-span-2">
             <label class="block font-bold mb-1 text-xs text-stone-600">이미지 Direct URL (선택)</label>
             <input type="url" id="prod-image-url-input" oninput="handleImageUrlInput(this.value)" placeholder="https://..." class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
           </div>
@@ -179,13 +186,11 @@
               <input type="file" id="prod-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
               <input type="hidden" id="prod-image-data">
 
-              <!-- 기본 플레이스홀더 안내 -->
               <div id="paste-placeholder" class="space-y-1">
                 <p class="text-xs font-bold text-stone-700">📋 이 영역을 클릭하고 <span class="text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 font-mono">Ctrl + V</span> 키를 눌러 캡처본을 바로 붙여넣으세요!</p>
                 <p class="text-[11px] text-stone-400">또는 클릭하여 내 컴퓨터 파일 선택 / 이미지를 드래그하여 올려놓으세요.</p>
               </div>
 
-              <!-- 이미지 미리보기 -->
               <div id="image-preview-container" class="hidden relative group">
                 <img id="image-preview" src="" class="max-h-36 rounded-lg object-contain shadow-sm border border-stone-200">
                 <button type="button" onclick="clearImagePreview(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-6 h-6 text-xs font-bold shadow-md hover:bg-rose-700 transition">✕</button>
@@ -342,7 +347,7 @@
       }
     }
 
-    // 로그인 / 회원가입 관련
+    // 로그인 / 회원가입
     function showAuthModal(mode = 'login') {
       toggleAuthMode(mode);
       document.getElementById('auth-modal').classList.remove('hidden');
@@ -486,7 +491,6 @@
       }
     }
 
-    // 이미지를 Canvas로 800px 경량화 압축하여 Base64 변환
     function processAndPreviewImage(file) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -584,7 +588,7 @@
       onMainCategoryChange();
     }
 
-    // 상품 로드 (구매자 화면: 이미지 + 한 줄 코멘트 렌더링)
+    // 상품 로드 (구매자 화면: 마감일자 검증 반영)
     async function loadProducts(page = 1) {
       currentPage = page;
       const container = document.getElementById('product-list');
@@ -620,30 +624,60 @@
           return;
         }
 
-        container.innerHTML = products.map(p => `
-          <div class="bg-white rounded-2xl shadow-sm shadow-stone-200/50 border border-stone-200/70 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition duration-200">
-            <div class="h-44 bg-stone-100 relative overflow-hidden">
-              <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover transition hover:scale-105 duration-300">
-              <span class="absolute top-2.5 right-2.5 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">MOQ ${p.moq}개</span>
-            </div>
-            <div class="p-3.5 flex-1 flex flex-col justify-between space-y-3">
-              <div class="space-y-1.5">
-                ${p.comment ? `<p class="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md truncate inline-block max-w-full">💬 ${escapeHtml(p.comment)}</p>` : ''}
-                <h3 class="font-bold text-stone-800 text-xs leading-snug line-clamp-2 h-8">${escapeHtml(p.name)}</h3>
+        const now = new Date();
+
+        container.innerHTML = products.map(p => {
+          // 마감 여부 계산
+          const isExpired = p.deadline ? new Date(p.deadline) < now : false;
+
+          // 마감일 뱃지 텍스트 포맷팅
+          let deadlineBadgeHtml = '';
+          if (p.deadline) {
+            const dDate = new Date(p.deadline);
+            const formattedDeadline = `${dDate.getMonth() + 1}/${dDate.getDate()} ${String(dDate.getHours()).padStart(2, '0')}:${String(dDate.getMinutes()).padStart(2, '0')}`;
+            
+            if (isExpired) {
+              deadlineBadgeHtml = `<span class="bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-black px-2 py-0.5 rounded-full">🔴 발주 마감 (${formattedDeadline})</span>`;
+            } else {
+              deadlineBadgeHtml = `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black px-2 py-0.5 rounded-full">⏰ 마감: ${formattedDeadline}</span>`;
+            }
+          }
+
+          return `
+            <div class="bg-white rounded-2xl shadow-sm shadow-stone-200/50 border border-stone-200/70 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition duration-200 ${isExpired ? 'opacity-75' : ''}">
+              <div class="h-44 bg-stone-100 relative overflow-hidden">
+                <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover transition hover:scale-105 duration-300 ${isExpired ? 'grayscale-30' : ''}">
+                <span class="absolute top-2.5 right-2.5 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">MOQ ${p.moq}개</span>
               </div>
-              <div class="pt-2.5 border-t border-stone-100 flex flex-col space-y-2.5">
-                <div class="flex justify-between items-baseline">
-                  <span class="text-[11px] font-medium text-stone-400">재고 ${p.stock}개</span>
-                  <span class="text-sm font-black text-stone-900">${Number(p.wholesale_price).toLocaleString()}<span class="text-xs font-bold text-stone-500">원</span></span>
+              <div class="p-3.5 flex-1 flex flex-col justify-between space-y-3">
+                <div class="space-y-1.5">
+                  <div class="flex flex-wrap gap-1 items-center">
+                    ${deadlineBadgeHtml}
+                    ${p.comment ? `<span class="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md truncate max-w-full">💬 ${escapeHtml(p.comment)}</span>` : ''}
+                  </div>
+                  <h3 class="font-bold text-stone-800 text-xs leading-snug line-clamp-2 h-8">${escapeHtml(p.name)}</h3>
                 </div>
-                <button onclick="openOrderModal(${p.id}, '${escapeHtml(p.name)}', ${p.wholesale_price}, ${p.moq}, ${p.stock})" 
-                        class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-stone-900 font-extrabold text-xs py-2 rounded-xl shadow-xs transition">
-                  발주 신청
-                </button>
+                <div class="pt-2.5 border-t border-stone-100 flex flex-col space-y-2.5">
+                  <div class="flex justify-between items-baseline">
+                    <span class="text-[11px] font-medium text-stone-400">재고 ${p.stock}개</span>
+                    <span class="text-sm font-black text-stone-900">${Number(p.wholesale_price).toLocaleString()}<span class="text-xs font-bold text-stone-500">원</span></span>
+                  </div>
+
+                  ${isExpired ? `
+                    <button disabled class="w-full bg-stone-200 text-stone-400 font-extrabold text-xs py-2 rounded-xl cursor-not-allowed">
+                      발주 마감됨
+                    </button>
+                  ` : `
+                    <button onclick="openOrderModal(${p.id}, '${escapeHtml(p.name)}', ${p.wholesale_price}, ${p.moq}, ${p.stock}, '${p.deadline || ''}')" 
+                            class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-stone-900 font-extrabold text-xs py-2 rounded-xl shadow-xs transition">
+                      발주 신청
+                    </button>
+                  `}
+                </div>
               </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         renderPagination(count, page);
 
@@ -663,7 +697,6 @@
       }
 
       let html = '';
-      
       html += `<button onclick="loadProducts(${page - 1})" ${page === 1 ? 'disabled class="px-3.5 py-1.5 bg-stone-100 text-stone-300 text-xs rounded-xl cursor-not-allowed"' : 'class="px-3.5 py-1.5 bg-white border border-stone-200 text-xs font-bold text-stone-700 rounded-xl hover:bg-stone-50 transition"'}>이전</button>`;
 
       for (let i = 1; i <= totalPages; i++) {
@@ -679,12 +712,20 @@
       paginationContainer.innerHTML = html;
     }
 
-    // 도매 발주 모달
-    function openOrderModal(id, name, price, moq, stock) {
+    // 도매 발주 모달 (마감일 시간 2차 방어)
+    function openOrderModal(id, name, price, moq, stock, deadlineStr) {
       if (!currentUser) {
         alert("도매 발주를 진행하시려면 먼저 로그인해 주세요.");
         showAuthModal('login');
         return;
+      }
+
+      if (deadlineStr) {
+        const deadline = new Date(deadlineStr);
+        if (deadline < new Date()) {
+          alert("⚠️ 발주 마감 기한이 지난 상품입니다.");
+          return;
+        }
       }
 
       document.getElementById('order-prod-id').value = id;
@@ -767,7 +808,7 @@
       `).join('');
     }
 
-    // 관리자: 카테고리 & 상품 신규 생성
+    // 관리자: 카테고리 & 상품 신규 생성 (deadline 인자 전달)
     function toggleCategoryParentSelect() {
       const type = document.getElementById('admin-cat-type').value;
       const parentGroup = document.getElementById('admin-parent-group');
@@ -825,9 +866,11 @@
       const price = parseInt(document.getElementById('prod-price').value);
       const moq = parseInt(document.getElementById('prod-moq').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
+      const deadlineVal = document.getElementById('prod-deadline').value;
       const imageUrl = document.getElementById('prod-image-data').value;
 
       const targetCategoryId = subCat || mainCat;
+      const deadline = deadlineVal ? new Date(deadlineVal).toISOString() : null;
 
       const { error } = await sbClient.from('products').insert([{
         name,
@@ -836,6 +879,7 @@
         wholesale_price: price,
         moq,
         stock,
+        deadline: deadline,
         image_url: imageUrl || null
       }]);
 
