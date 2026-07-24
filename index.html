@@ -204,7 +204,7 @@
         </form>
       </div>
 
-      <!-- 복구됨: 등록 상품 목록 및 수정/삭제 관리 -->
+      <!-- 등록 상품 목록 및 수정/삭제 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4">
         <div class="flex justify-between items-center border-b border-stone-100 pb-3">
           <div>
@@ -347,7 +347,7 @@
     </div>
   </div>
 
-  <!-- 복구됨: 관리자 상품 수정 팝업 모달 -->
+  <!-- 관리자 상품 수정 팝업 모달 -->
   <div id="edit-product-modal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl p-7 space-y-5 relative border border-stone-100 max-h-[90vh] overflow-y-auto">
       <button onclick="closeEditModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
@@ -991,7 +991,7 @@
       }
     }
 
-    // 복구됨: 관리자 등록 상품 목록 불러오기
+    // 관리자 등록 상품 목록 불러오기
     async function loadAdminProducts() {
       const tbody = document.getElementById('admin-product-list-body');
       
@@ -1042,7 +1042,7 @@
       }
     }
 
-    // 복구됨: 개별 상품 수정 모달 및 업데이트 처리
+    // 개별 상품 수정 모달 및 업데이트 처리
     function openEditModal(id, name, comment, price, moq, stock, deadlineIso, imageUrl) {
       document.getElementById('edit-prod-id').value = id;
       document.getElementById('edit-prod-name').value = name;
@@ -1104,7 +1104,7 @@
       }
     }
 
-    // 복구됨: 개별 상품 삭제 처리
+    // 개별 상품 삭제 처리
     async function handleDeleteProduct(id) {
       if (!confirm(`정말로 상품 ID [${id}] 번을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`)) return;
 
