@@ -128,7 +128,7 @@
         </form>
       </div>
 
-      <!-- 신규 도매 상품 등록 (발주 마감일 설정 포함) -->
+      <!-- 신규 도매 상품 등록 (날짜 단위 마감일 설정) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4">
         <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">📦 신규 도매 상품 등록</h3>
         <form id="add-product-form" onsubmit="handleCreateProduct(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -167,10 +167,10 @@
             <input type="number" id="prod-stock" required min="0" value="100" class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
           </div>
 
-          <!-- 발주 마감일 설정 (복원 및 추가) -->
+          <!-- 마감일 (날짜만 선택하도록 설정) -->
           <div>
-            <label class="block font-bold mb-1 text-xs text-rose-700">⏰ 발주 마감일시 (선택)</label>
-            <input type="datetime-local" id="prod-deadline" class="w-full border border-rose-200 bg-rose-50/20 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-400 font-medium">
+            <label class="block font-bold mb-1 text-xs text-rose-700">⏰ 발주 마감일 (선택)</label>
+            <input type="date" id="prod-deadline" class="w-full border border-rose-200 bg-rose-50/20 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-400 font-medium">
           </div>
 
           <div class="md:col-span-2">
@@ -178,7 +178,7 @@
             <input type="url" id="prod-image-url-input" oninput="handleImageUrlInput(this.value)" placeholder="https://..." class="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs">
           </div>
 
-          <!-- 이미지 붙여넣기 / 스크린샷 캡처 존 -->
+          <!-- 스크린샷 캡처 존 -->
           <div class="md:col-span-3 space-y-1.5">
             <label class="block font-bold text-xs text-stone-600">🖼️ 상품 이미지 (스크린샷 Ctrl+V 붙여넣기 가능)</label>
             
@@ -264,7 +264,7 @@
     </div>
   </div>
 
-  <!-- 도매 발주 신청 모달 -->
+  <!-- 도매 발주 신청 모달 (코멘트 표시 영역 추가) -->
   <div id="order-modal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-7 space-y-6 relative border border-stone-100">
       <button onclick="closeOrderModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
@@ -275,9 +275,11 @@
         <input type="hidden" id="order-prod-id">
         <input type="hidden" id="order-prod-price">
 
-        <div>
+        <div class="space-y-1">
           <label class="block text-xs text-stone-400 font-bold uppercase tracking-wider">상품명</label>
-          <div id="order-prod-name" class="text-base font-bold text-stone-800 mt-1"></div>
+          <div id="order-prod-name" class="text-base font-bold text-stone-800"></div>
+          <!-- 코멘트 노출 영역 -->
+          <div id="order-prod-comment" class="hidden text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200/80 px-3 py-1.5 rounded-xl mt-1"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 bg-stone-50 p-3.5 rounded-2xl border border-stone-100">
@@ -588,7 +590,7 @@
       onMainCategoryChange();
     }
 
-    // 상품 로드 (구매자 화면: 마감일자 검증 반영)
+    // 상품 로드 (날짜 마감 포맷팅)
     async function loadProducts(page = 1) {
       currentPage = page;
       const container = document.getElementById('product-list');
@@ -627,21 +629,22 @@
         const now = new Date();
 
         container.innerHTML = products.map(p => {
-          // 마감 여부 계산
           const isExpired = p.deadline ? new Date(p.deadline) < now : false;
 
-          // 마감일 뱃지 텍스트 포맷팅
           let deadlineBadgeHtml = '';
           if (p.deadline) {
             const dDate = new Date(p.deadline);
-            const formattedDeadline = `${dDate.getMonth() + 1}/${dDate.getDate()} ${String(dDate.getHours()).padStart(2, '0')}:${String(dDate.getMinutes()).padStart(2, '0')}`;
+            const formattedDeadline = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}-${String(dDate.getDate()).padStart(2, '0')}`;
             
             if (isExpired) {
               deadlineBadgeHtml = `<span class="bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-black px-2 py-0.5 rounded-full">🔴 발주 마감 (${formattedDeadline})</span>`;
             } else {
-              deadlineBadgeHtml = `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black px-2 py-0.5 rounded-full">⏰ 마감: ${formattedDeadline}</span>`;
+              deadlineBadgeHtml = `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black px-2 py-0.5 rounded-full">⏰ 마감일: ${formattedDeadline}</span>`;
             }
           }
+
+          const safeName = escapeHtml(p.name).replace(/'/g, "\\'");
+          const safeComment = escapeHtml(p.comment || '').replace(/'/g, "\\'");
 
           return `
             <div class="bg-white rounded-2xl shadow-sm shadow-stone-200/50 border border-stone-200/70 overflow-hidden flex flex-col hover:shadow-md hover:-translate-y-0.5 transition duration-200 ${isExpired ? 'opacity-75' : ''}">
@@ -668,7 +671,7 @@
                       발주 마감됨
                     </button>
                   ` : `
-                    <button onclick="openOrderModal(${p.id}, '${escapeHtml(p.name)}', ${p.wholesale_price}, ${p.moq}, ${p.stock}, '${p.deadline || ''}')" 
+                    <button onclick="openOrderModal(${p.id}, '${safeName}', ${p.wholesale_price}, ${p.moq}, ${p.stock}, '${p.deadline || ''}', '${safeComment}')" 
                             class="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-stone-900 font-extrabold text-xs py-2 rounded-xl shadow-xs transition">
                       발주 신청
                     </button>
@@ -712,8 +715,8 @@
       paginationContainer.innerHTML = html;
     }
 
-    // 도매 발주 모달 (마감일 시간 2차 방어)
-    function openOrderModal(id, name, price, moq, stock, deadlineStr) {
+    // 도매 발주 모달 (코멘트 바인딩)
+    function openOrderModal(id, name, price, moq, stock, deadlineStr, comment) {
       if (!currentUser) {
         alert("도매 발주를 진행하시려면 먼저 로그인해 주세요.");
         showAuthModal('login');
@@ -731,6 +734,17 @@
       document.getElementById('order-prod-id').value = id;
       document.getElementById('order-prod-price').value = price;
       document.getElementById('order-prod-name').innerText = name;
+
+      // 코멘트 바인딩
+      const commentEl = document.getElementById('order-prod-comment');
+      if (comment && comment.trim()) {
+        commentEl.innerText = `💬 ${comment}`;
+        commentEl.classList.remove('hidden');
+      } else {
+        commentEl.classList.add('hidden');
+        commentEl.innerText = '';
+      }
+
       document.getElementById('order-prod-price-display').innerText = `${price.toLocaleString()}원`;
       document.getElementById('order-prod-stock-moq').innerText = `${stock}개 / MOQ ${moq}개`;
 
@@ -808,7 +822,7 @@
       `).join('');
     }
 
-    // 관리자: 카테고리 & 상품 신규 생성 (deadline 인자 전달)
+    // 관리자: 카테고리 & 상품 신규 생성 (당일 23:59:59 마감 처리)
     function toggleCategoryParentSelect() {
       const type = document.getElementById('admin-cat-type').value;
       const parentGroup = document.getElementById('admin-parent-group');
@@ -870,7 +884,8 @@
       const imageUrl = document.getElementById('prod-image-data').value;
 
       const targetCategoryId = subCat || mainCat;
-      const deadline = deadlineVal ? new Date(deadlineVal).toISOString() : null;
+      // 선택한 날짜의 당일 밤 23:59:59까지 발주 가능하도록 처리
+      const deadline = deadlineVal ? new Date(`${deadlineVal}T23:59:59`).toISOString() : null;
 
       const { error } = await sbClient.from('products').insert([{
         name,
