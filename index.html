@@ -272,12 +272,12 @@
         </div>
       </div>
 
-      <!-- 개별 발주 목록 및 3단계 상태 관리 섹션 -->
+      <!-- 관리자 개별 주문 및 3단계 상태 관리 (입금대기 / 입고대기 / 배송완료) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200/80 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-stone-100 pb-3">
           <div>
-            <h3 class="text-base font-bold text-stone-800">📋 개별 발주 내역 및 단계별 상태 관리</h3>
-            <p class="text-xs text-stone-400">입금 확인 및 입고 상황에 따라 주문 상태를 변경하세요.</p>
+            <h3 class="text-base font-bold text-stone-800">📋 개별 주문 내역 및 3단계 상태 관리</h3>
+            <p class="text-xs text-stone-400">고객별 주문 건을 확인하고 입금대기, 입고대기, 배송완료 상태로 실시간 변경합니다.</p>
           </div>
           <button onclick="loadAdminIndividualOrders()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold px-3 py-1.5 rounded-lg text-xs transition">
             🔄 주문 목록 새로고침
@@ -289,15 +289,16 @@
             <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
               <tr>
                 <th class="px-4 py-3">주문번호</th>
-                <th class="px-4 py-3">주문자 ID/이메일</th>
+                <th class="px-4 py-3">회원ID(앞자리)</th>
                 <th class="px-4 py-3">상품명 / 수량</th>
-                <th class="px-4 py-3 text-right">총 결제금액</th>
-                <th class="px-4 py-3 text-center">현재 상태</th>
-                <th class="px-4 py-3 text-center">상태 변경 (3단계)</th>
+                <th class="px-4 py-3">결제금액</th>
+                <th class="px-4 py-3">세금계산서</th>
+                <th class="px-4 py-3 text-center">주문 상태</th>
+                <th class="px-4 py-3 text-center">상태 변경 관리</th>
               </tr>
             </thead>
-            <tbody id="admin-individual-orders-body">
-              <tr><td colspan="6" class="text-center py-8 text-stone-400">주문 데이터를 불러오는 중입니다...</td></tr>
+            <tbody id="admin-orders-body">
+              <tr><td colspan="7" class="text-center py-8 text-stone-400">주문 내역을 불러오는 중입니다...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1166,67 +1167,63 @@
       }
     }
 
-    // 개별 발주 목록 및 3단계 상태 관리 로직
+    // 관리자 개별 주문 및 3단계 상태 관리 로직
     async function loadAdminIndividualOrders() {
-      const tbody = document.getElementById('admin-individual-orders-body');
+      const tbody = document.getElementById('admin-orders-body');
+      if (!tbody) return;
 
       try {
-        const { data: orders, error } = await sbClient
-          .from('orders')
-          .select('*')
-          .order('id', { ascending: false });
-
+        const { data: orders, error } = await sbClient.from('orders').select('*').order('id', { ascending: false });
         if (error) throw error;
 
         if (!orders || orders.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-stone-400">등록된 발주 내역이 없습니다.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-stone-400">주문 내역이 없습니다.</td></tr>';
           return;
         }
 
         tbody.innerHTML = orders.map(o => {
-          const currentStatus = o.status || '입금대기';
+          let statusBadge = '';
+          if (o.status === '입금대기') {
+            statusBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">입금대기</span>';
+          } else if (o.status === '입고대기') {
+            statusBadge = '<span class="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">입고대기</span>';
+          } else if (o.status === '배송완료') {
+            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">배송완료</span>';
+          } else {
+            statusBadge = `<span class="bg-stone-100 text-stone-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">${escapeHtml(o.status)}</span>`;
+          }
 
-          let statusBadgeClass = 'bg-stone-100 text-stone-700';
-          if (currentStatus === '입금대기') statusBadgeClass = 'bg-amber-100 text-amber-800';
-          else if (currentStatus === '입고대기') statusBadgeClass = 'bg-blue-100 text-blue-800';
-          else if (currentStatus === '배송완료') statusBadgeClass = 'bg-emerald-100 text-emerald-800';
+          const shortUserId = o.user_id ? `${o.user_id.slice(0, 8)}...` : '비회원';
 
           return `
             <tr class="border-b border-stone-100 hover:bg-stone-50/50">
-              <td class="px-4 py-3.5 font-mono text-xs text-stone-500">#${o.id}</td>
-              <td class="px-4 py-3.5 text-xs text-stone-600 truncate max-w-[150px]" title="${o.user_id}">${o.user_id}</td>
-              <td class="px-4 py-3.5">
-                <div class="font-bold text-stone-800 text-xs">${escapeHtml(o.product_name)}</div>
-                <div class="text-[11px] text-stone-500">수량: ${o.qty}개 | 세금계산서: ${o.is_tax_invoice ? '신청' : '미신청'}</div>
-              </td>
-              <td class="px-4 py-3.5 text-right font-black text-stone-900 text-xs">${Number(o.total_price).toLocaleString()}원</td>
-              <td class="px-4 py-3.5 text-center">
-                <span class="text-xs px-2.5 py-1 rounded-full font-extrabold ${statusBadgeClass}">${currentStatus}</span>
-              </td>
-              <td class="px-4 py-3.5 text-center space-x-1">
-                <button onclick="updateOrderStatus(${o.id}, '입금대기')" class="px-2 py-1 text-[11px] font-bold rounded ${currentStatus === '입금대기' ? 'bg-amber-500 text-stone-900' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'} transition">입금대기</button>
-                <button onclick="updateOrderStatus(${o.id}, '입고대기')" class="px-2 py-1 text-[11px] font-bold rounded ${currentStatus === '입고대기' ? 'bg-blue-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'} transition">입고대기</button>
-                <button onclick="updateOrderStatus(${o.id}, '배송완료')" class="px-2 py-1 text-[11px] font-bold rounded ${currentStatus === '배송완료' ? 'bg-emerald-600 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'} transition">배송완료</button>
+              <td class="px-4 py-3 font-mono text-xs text-stone-500">${o.id}</td>
+              <td class="px-4 py-3 text-xs text-stone-600 font-mono">${shortUserId}</td>
+              <td class="px-4 py-3 font-bold text-stone-800 text-xs">${escapeHtml(o.product_name)} <span class="text-amber-600 font-extrabold">(${o.qty}개)</span></td>
+              <td class="px-4 py-3 font-black text-stone-900 text-xs">${Number(o.total_price).toLocaleString()}원</td>
+              <td class="px-4 py-3 text-xs text-stone-500">${o.is_tax_invoice ? '발행' : '미발행'}</td>
+              <td class="px-4 py-3 text-center">${statusBadge}</td>
+              <td class="px-4 py-3 text-center space-x-1">
+                <button onclick="updateOrderStatus(${o.id}, '입금대기')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-[11px] font-bold transition">입금대기</button>
+                <button onclick="updateOrderStatus(${o.id}, '입고대기')" class="bg-blue-50 hover:bg-blue-100 text-blue-800 px-2.5 py-1 rounded-lg text-[11px] font-bold transition">입고대기</button>
+                <button onclick="updateOrderStatus(${o.id}, '배송완료')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg text-[11px] font-bold transition">배송완료</button>
               </td>
             </tr>
           `;
         }).join('');
-
       } catch (err) {
-        console.error("개별 발주 목록 로드 실패:", err);
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-rose-500">데이터 로드 오류: ${escapeHtml(err.message)}</td></tr>`;
+        console.error("관리자 개별 주문 로드 실패:", err);
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-rose-500">로드 실패: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
     async function updateOrderStatus(orderId, newStatus) {
       try {
-        const { error } = await sbClient
-          .from('orders')
-          .update({ status: newStatus })
-          .eq('id', orderId);
-
+        const { error } = await sbClient.from('orders').update({ status: newStatus }).eq('id', orderId);
         if (error) throw error;
+        alert(`주문 ID [${orderId}] 상태가 '${newStatus}'(으)로 변경되었습니다.`);
         await loadAdminIndividualOrders();
+        await loadAdminOrderSummary();
       } catch (err) {
         alert("상태 변경 실패: " + err.message);
       }
