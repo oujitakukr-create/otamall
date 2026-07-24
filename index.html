@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS (Excel Export Library) -->
+  <!-- SheetJS (Excel Export) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
@@ -22,25 +22,33 @@
       </div>
       <nav class="flex items-center space-x-4 text-sm font-medium">
         <button onclick="switchTab('catalog')" class="hover:text-amber-400">상품 카탈로그</button>
-        <button onclick="switchTab('admin')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold">관리자 패널</button>
+        <button onclick="switchTab('orders')" id="nav-orders" class="hidden hover:text-amber-400">내 주문 내역</button>
+        <button onclick="switchTab('admin')" id="nav-admin" class="hidden bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold">관리자 전용</button>
+        
+        <!-- 인증 버튼 영역 -->
+        <div id="auth-buttons">
+          <button onclick="showAuthModal('login')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-1.5 rounded text-xs">로그인 / 회원가입</button>
+        </div>
+        <div id="user-info" class="hidden flex items-center space-x-2">
+          <span id="user-display" class="text-xs text-slate-300"></span>
+          <button onclick="handleLogout()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1 rounded">로그아웃</button>
+        </div>
       </nav>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
 
-    <!-- 탭 1: 상품 카탈로그 (동적 필터 및 상품 검색) -->
+    <!-- 탭 1: 상품 카탈로그 -->
     <section id="tab-catalog" class="space-y-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <span class="text-sm font-bold text-slate-700">📂 카테고리 검색:</span>
           
-          <!-- 대분류 선택 -->
           <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none">
             <option value="all">대분류 (전체)</option>
           </select>
 
-          <!-- 소분류 선택 (대분류 선택에 따라 동적 변경) -->
           <select id="filter-sub-cat" onchange="loadProducts()" class="border border-slate-300 rounded px-3 py-1.5 text-sm bg-slate-50 focus:outline-none disabled:bg-slate-200" disabled>
             <option value="all">소분류 (전체)</option>
           </select>
@@ -52,20 +60,41 @@
         </div>
       </div>
 
-      <!-- 상품 카드 출력 영역 -->
       <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div class="col-span-full text-center py-12 text-slate-400">상품 데이터를 불러오는 중...</div>
       </div>
     </section>
 
-    <!-- 탭 2: 관리자 패널 (카테고리 등록 + 상품 등록 + 발주 집계 & 엑셀 내보내기) -->
-    <section id="tab-admin" class="space-y-8">
+    <!-- 탭 2: 내 주문 내역 -->
+    <section id="tab-orders" class="hidden space-y-4">
+      <h2 class="text-xl font-bold border-b border-slate-300 pb-2">내 도매 주문 기록</h2>
+      <div class="bg-white rounded-lg shadow border border-slate-200 overflow-x-auto">
+        <table class="w-full text-sm text-left text-slate-600">
+          <thead class="text-xs text-slate-700 uppercase bg-slate-100 border-b">
+            <tr>
+              <th class="px-4 py-3">주문번호</th>
+              <th class="px-4 py-3">상품명</th>
+              <th class="px-4 py-3">수량</th>
+              <th class="px-4 py-3">세금계산서</th>
+              <th class="px-4 py-3">총 결제금액</th>
+              <th class="px-4 py-3">상태</th>
+            </tr>
+          </thead>
+          <tbody id="my-orders-body">
+            <tr><td colspan="6" class="text-center py-6">주문 내역이 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 탭 3: 관리자 대시보드 -->
+    <section id="tab-admin" class="hidden space-y-8">
       <div class="border-b border-slate-300 pb-3 flex justify-between items-center">
         <h2 class="text-2xl font-bold text-red-600">관리자(Admin) 통합 대시보드</h2>
         <span class="text-xs bg-red-100 text-red-800 px-2.5 py-1 rounded border border-red-200 font-bold">시스템 최고 관리자</span>
       </div>
 
-      <!-- 1. 카테고리 신규 등록 폼 (대분류/소분류 선택 가능) -->
+      <!-- 카테고리 신규 등록 -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
         <h3 class="text-lg font-bold border-b pb-2 text-slate-700">🏷️ 카테고리 신규 등록</h3>
         <form onsubmit="handleCreateCategory(event)" class="flex flex-wrap items-end gap-4 text-sm">
@@ -79,9 +108,7 @@
           
           <div id="admin-parent-group" class="hidden">
             <label class="block font-semibold mb-1 text-xs text-slate-600">상위 대분류 선택 *</label>
-            <select id="admin-cat-parent" class="border rounded px-3 py-1.5 bg-slate-50 text-xs">
-              <!-- JS로 대분류 목록 동적 로드 -->
-            </select>
+            <select id="admin-cat-parent" class="border rounded px-3 py-1.5 bg-slate-50 text-xs"></select>
           </div>
 
           <div>
@@ -95,7 +122,7 @@
         </form>
       </div>
 
-      <!-- 2. 신규 상품 등록 서식 -->
+      <!-- 상품 등록 -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
         <h3 class="text-lg font-bold border-b pb-2 text-slate-700">📦 신규 도매 상품 등록</h3>
         <form id="add-product-form" onsubmit="handleCreateProduct(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -134,15 +161,15 @@
         </form>
       </div>
 
-      <!-- 3. 발주 상품별 집계 현황 및 엑셀 내보내기 -->
+      <!-- 발주 집계 & 엑셀 -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
           <div>
             <h3 class="text-lg font-bold text-slate-700">📊 상품별 발주 집계 현황</h3>
-            <p class="text-xs text-slate-500">유저들이 발주한 전체 주문 내역을 상품 단위로 합산 및 정렬하여 보여줍니다.</p>
+            <p class="text-xs text-slate-500">유저들이 발주한 전체 주문 내역을 상품 단위로 합산 및 정렬합니다.</p>
           </div>
-          <button onclick="exportOrdersToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-xs flex items-center gap-1.5 shadow-sm">
-            <span>📊 엑셀 파일 다운로드 (.xlsx)</span>
+          <button onclick="exportOrdersToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded text-xs shadow-sm">
+            📊 엑셀 파일 다운로드 (.xlsx)
           </button>
         </div>
 
@@ -167,6 +194,33 @@
 
   </main>
 
+  <!-- [복구] 로그인 / 회원가입 팝업 모달 -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-6 relative">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+      
+      <div class="flex border-b border-slate-200">
+        <button id="auth-tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 text-center font-bold border-b-2 border-amber-500 text-amber-600">로그인</button>
+        <button id="auth-tab-signup" onclick="toggleAuthMode('signup')" class="flex-1 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent">회원가입</button>
+      </div>
+
+      <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">이메일 주소</label>
+          <input type="email" id="auth-email" required placeholder="example@domain.com" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">비밀번호</label>
+          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2.5 rounded text-sm transition">
+          로그인하기
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Javascript -->
   <script>
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
@@ -174,7 +228,9 @@
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let categoriesList = []; 
-    let aggregatedOrdersList = []; // 엑셀 추출용 집계 데이터 저장소
+    let aggregatedOrdersList = [];
+    let currentAuthMode = 'login';
+    let currentUser = null;
 
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23f8fafc'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8'%3E이미지 없음%3C/text%3E%3C/svg%3E";
 
@@ -183,20 +239,110 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // [복구] 탭 전환
     function switchTab(tabName) {
       document.getElementById('tab-catalog').classList.toggle('hidden', tabName !== 'catalog');
+      document.getElementById('tab-orders').classList.toggle('hidden', tabName !== 'orders');
       document.getElementById('tab-admin').classList.toggle('hidden', tabName !== 'admin');
+      
       if (tabName === 'admin') {
         loadAdminOrderSummary();
+      } else if (tabName === 'orders') {
+        loadMyOrders();
+      }
+    }
+
+    // [복구] 로그인 / 인증 관련 함수들
+    function showAuthModal(mode = 'login') {
+      toggleAuthMode(mode);
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    function toggleAuthMode(mode) {
+      currentAuthMode = mode;
+      const loginTab = document.getElementById('auth-tab-login');
+      const signupTab = document.getElementById('auth-tab-signup');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      if (mode === 'login') {
+        loginTab.className = "flex-1 py-2 text-center font-bold border-b-2 border-amber-500 text-amber-600";
+        signupTab.className = "flex-1 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent";
+        submitBtn.innerText = "로그인하기";
+      } else {
+        signupTab.className = "flex-1 py-2 text-center font-bold border-b-2 border-amber-500 text-amber-600";
+        loginTab.className = "flex-1 py-2 text-center font-bold text-slate-400 border-b-2 border-transparent";
+        submitBtn.innerText = "회원가입하기";
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      try {
+        if (currentAuthMode === 'login') {
+          const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          alert("로그인에 성공했습니다.");
+        } else {
+          const { data, error } = await sbClient.auth.signUp({ email, password });
+          if (error) throw error;
+          alert("회원가입 신청이 완료되었습니다.");
+        }
+        closeAuthModal();
+        await checkAuthStatus();
+      } catch (err) {
+        alert("인증 오류: " + err.message);
+      }
+    }
+
+    async function handleLogout() {
+      await sbClient.auth.signOut();
+      alert("로그아웃 되었습니다.");
+      location.reload();
+    }
+
+    async function checkAuthStatus() {
+      const { data: { user } } = await sbClient.auth.getUser();
+      currentUser = user;
+
+      const authButtons = document.getElementById('auth-buttons');
+      const userInfo = document.getElementById('user-info');
+      const userDisplay = document.getElementById('user-display');
+      const navOrders = document.getElementById('nav-orders');
+      const navAdmin = document.getElementById('nav-admin');
+
+      if (user) {
+        authButtons.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        userDisplay.innerText = user.email;
+        navOrders.classList.remove('hidden');
+
+        // 관리자 역할 확인
+        const { data: profile } = await sbClient.from('profiles').select('role').eq('id', user.id).single();
+        if (profile && profile.role === 'admin') {
+          navAdmin.classList.remove('hidden');
+        }
+      } else {
+        authButtons.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+        navOrders.classList.add('hidden');
+        navAdmin.classList.add('hidden');
       }
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
+      await checkAuthStatus();
       await loadCategories();
       await loadProducts();
     });
 
-    // 1. 카테고리 로드 및 UI 동적 구성
+    // 1. 카테고리 로드 및 UI 연동
     async function loadCategories() {
       try {
         const { data, error } = await sbClient.from('categories').select('*');
@@ -228,7 +374,6 @@
       });
     }
 
-    // 대분류 선택 변경 시 소분류 동적 세팅
     function onMainCategoryChange() {
       const mainId = document.getElementById('filter-main-cat').value;
       const subCatSelect = document.getElementById('filter-sub-cat');
@@ -254,7 +399,7 @@
       onMainCategoryChange();
     }
 
-    // 2. 카테고리 조건에 맞는 상품 검색 (대분류 선택 시 하위 소분류 전체 검색 포함)
+    // 2. 상품 조회
     async function loadProducts() {
       const container = document.getElementById('product-list');
       const mainCatId = document.getElementById('filter-main-cat').value;
@@ -264,10 +409,8 @@
         let query = sbClient.from('products').select('*').order('id', { ascending: false });
 
         if (subCatId !== 'all') {
-          // 특정 소분류만 선택된 경우
           query = query.eq('category_id', subCatId);
         } else if (mainCatId !== 'all') {
-          // 대분류만 선택된 경우: 대분류 ID + 하위 소분류 ID 전체 묶음 검색
           const childCatIds = categoriesList
             .filter(c => String(c.parent_id) === String(mainCatId))
             .map(c => c.id);
@@ -308,7 +451,30 @@
       }
     }
 
-    // 3. 관리자 카테고리 신규 등록 (대분류 vs 소분류)
+    // 3. 내 주문 내역
+    async function loadMyOrders() {
+      if (!currentUser) return;
+      const tbody = document.getElementById('my-orders-body');
+
+      const { data: orders, error } = await sbClient.from('orders').select('*').eq('user_id', currentUser.id).order('id', { ascending: false });
+      if (error || !orders || orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">발주 내역이 없습니다.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => `
+        <tr class="border-b">
+          <td class="px-4 py-3 font-mono text-xs">${o.id}</td>
+          <td class="px-4 py-3 font-bold">${escapeHtml(o.product_name)}</td>
+          <td class="px-4 py-3">${o.qty}개</td>
+          <td class="px-4 py-3">${o.is_tax_invoice ? '발행' : '미발행'}</td>
+          <td class="px-4 py-3 font-bold">${Number(o.total_price).toLocaleString()}원</td>
+          <td class="px-4 py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded">${o.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // 4. 관리자 등록 로직
     function toggleCategoryParentSelect() {
       const type = document.getElementById('admin-cat-type').value;
       const parentGroup = document.getElementById('admin-parent-group');
@@ -330,22 +496,16 @@
       const parentId = type === 'sub' ? document.getElementById('admin-cat-parent').value : null;
       const name = document.getElementById('admin-cat-name').value.trim();
 
-      if (type === 'sub' && !parentId) {
-        alert("소분류를 생성하려면 상위 대분류를 먼저 선택해야 합니다.");
-        return;
-      }
-
       const { error } = await sbClient.from('categories').insert([{ name, parent_id: parentId }]);
       if (error) {
         alert("카테고리 등록 실패: " + error.message);
       } else {
-        alert("카테고리가 정상적으로 추가되었습니다.");
+        alert("카테고리가 성공적으로 추가되었습니다.");
         document.getElementById('admin-cat-name').value = '';
         await loadCategories();
       }
     }
 
-    // 관리자 상품 등록 시 소분류 동적 변경
     function onAdminMainCatChange() {
       const mainId = document.getElementById('prod-main-cat').value;
       const subCatSelect = document.getElementById('prod-sub-cat');
@@ -390,7 +550,7 @@
       }
     }
 
-    // 4. 발주 상품별 집계 테이블 로드 및 정렬
+    // 5. 관리자 집계 및 엑셀 다운로드
     async function loadAdminOrderSummary() {
       const tbody = document.getElementById('admin-order-summary-body');
       
@@ -404,9 +564,7 @@
           return;
         }
 
-        // 상품별(product_id 기준) 발주 내역 그룹핑
         const summaryMap = {};
-
         orders.forEach(order => {
           const key = order.product_id || order.product_name;
           if (!summaryMap[key]) {
@@ -423,7 +581,6 @@
           summaryMap[key].orderCount += 1;
         });
 
-        // 수량 기준 내림차순 정렬
         aggregatedOrdersList = Object.values(summaryMap).sort((a, b) => b.totalQty - a.totalQty);
 
         tbody.innerHTML = aggregatedOrdersList.map(item => `
@@ -442,14 +599,12 @@
       }
     }
 
-    // 5. 엑셀 파일 다운로드 (.xlsx)
     function exportOrdersToExcel() {
       if (!aggregatedOrdersList || aggregatedOrdersList.length === 0) {
         alert("다운로드할 발주 집계 데이터가 없습니다.");
         return;
       }
 
-      // 엑셀 워크시트에 들어갈 데이터 구조화
       const excelData = aggregatedOrdersList.map(item => ({
         "상품 ID": item.productId,
         "상품명": item.productName,
@@ -458,12 +613,10 @@
         "주문 건수(건)": item.orderCount
       }));
 
-      // SheetJS 워크북 생성
       const worksheet = XLSX.utils.json_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "상품별_발주집계");
 
-      // 오늘 날짜로 파일명 생성 및 파일 저장 다운로드
       const today = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `오타몰_상품별_발주집계_${today}.xlsx`);
     }
