@@ -85,7 +85,7 @@
         <h2 class="text-xl font-extrabold text-stone-800">나의 발주 내역</h2>
         <label class="flex items-center space-x-2 text-xs font-bold text-stone-600 cursor-pointer">
           <input type="checkbox" id="filter-not-completed-user" onchange="loadMyOrders()" class="w-4 h-4 text-amber-500 rounded focus:ring-amber-400">
-          <span>진행중인 상품만 보기 (배송완료 제외)</span>
+          <span>진행중인 상품만 보기 (배송완료/취소 제외)</span>
         </label>
       </div>
       <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
@@ -164,7 +164,7 @@
           <div class="flex gap-3 items-center">
             <label class="flex items-center space-x-2 text-xs font-bold text-stone-600">
               <input type="checkbox" id="filter-not-completed-admin" onchange="loadAdminOrders()" class="w-4 h-4 text-amber-500 rounded">
-              <span>배송완료 제외</span>
+              <span>배송완료/취소 제외</span>
             </label>
             <button onclick="exportOrdersToExcel()" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">엑셀 다운로드</button>
           </div>
@@ -182,7 +182,6 @@
       <button onclick="closeOrderChoiceModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
-      <!-- 상품 상세 정보 영역 -->
       <div class="flex gap-4 items-start pt-1">
         <img id="oc-image" src="" class="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-sm shrink-0">
         <div class="space-y-1.5 flex-1">
@@ -235,7 +234,7 @@
     </div>
   </div>
 
-  <!-- 공지사항 읽기 모달 -->
+  <!-- 공지사항 모달 -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -249,7 +248,6 @@
     </div>
   </div>
 
-  <!-- 공지사항 쓰기/수정 모달 -->
   <div id="notice-write-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative shadow-xl">
       <button onclick="document.getElementById('notice-write-modal').classList.add('hidden')" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -261,7 +259,7 @@
     </div>
   </div>
 
-  <!-- 인증(로그인/회원가입) 모달 -->
+  <!-- 인증 모달 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -336,7 +334,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 (스토리지 업로드 로직 포함) -->
+  <!-- 상품 등록 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -381,7 +379,6 @@
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ✅ 변수 스코프 누락 수정 완벽 적용
     const PAGE_SIZE = 25;
     let currentPage = 1;
 
@@ -605,7 +602,7 @@
       loadAdminProducts();
     }
 
-    // --- 카탈로그 ---
+    // --- 카탈로그 (마감일 방어 및 뱃지) ---
     function isFeeProduct(catId) {
       const cat = categoriesList.find(c => String(c.id) === String(catId));
       const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
@@ -613,7 +610,7 @@
     }
 
     async function loadProducts(page = 1) {
-      currentPage = page; // 현재 페이지 기억
+      currentPage = page; 
       const sort = document.getElementById('catalog-sort').value;
       let query = sbClient.from('products').select('*', { count: 'exact' }).eq('is_archived', false);
       
@@ -854,17 +851,26 @@
     async function loadMyOrders() {
       const hide = document.getElementById('filter-not-completed-user').checked;
       let query = sbClient.from('orders').select('*, products(name)').eq('user_id', currentUser.id).order('created_at', {ascending: false});
-      if (hide) query = query.neq('status', '배송완료');
+      if (hide) {
+        query = query.neq('status', '배송완료').neq('status', '취소').neq('status', '자동취소(미입금)');
+      }
       const { data } = await query;
-      document.getElementById('my-order-list-body').innerHTML = (data||[]).map(o => `
+      
+      document.getElementById('my-order-list-body').innerHTML = (data||[]).map(o => {
+        let statusClass = "bg-amber-100 text-amber-800";
+        if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
+        else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
+        else if(o.status === '입고대기') statusClass = "bg-blue-100 text-blue-800";
+
+        return `
         <tr class="border-b border-stone-100 hover:bg-stone-50">
           <td class="px-5 py-3 text-xs text-stone-500 font-mono">${new Date(o.created_at).toLocaleDateString()}</td>
           <td class="px-5 py-3 font-bold">${escapeHtml(o.products?.name)}</td>
           <td class="px-5 py-3 text-center text-xs font-bold">${o.quantity}개</td>
           <td class="px-5 py-3 text-right font-black text-amber-600">${o.total_price.toLocaleString()}원</td>
-          <td class="px-5 py-3 text-center"><span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-[10px] font-bold">${o.status}</span></td>
-        </tr>
-      `).join('');
+          <td class="px-5 py-3 text-center"><span class="${statusClass} px-2.5 py-0.5 rounded-full text-[10px] font-bold">${o.status}</span></td>
+        </tr>`
+      }).join('');
     }
 
     // --- 관리자 카테고리 ---
@@ -910,7 +916,7 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (스토리지 저장 방식) ---
+    // --- 스크린샷 캡처 (워터마크 강제 삽입 추가) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -929,6 +935,7 @@
     }
 
     function handleFileSelect(e) { if(e.target.files[0]) processAndPreviewImage(e.target.files[0]); }
+    
     function processAndPreviewImage(file) {
       const reader = new FileReader();
       reader.onload = e => {
@@ -936,9 +943,34 @@
         img.onload = () => {
           const canvas = document.createElement('canvas');
           let [w, h] = [img.width, img.height];
+          
           if(w > 800) { h = Math.round(h*(800/w)); w = 800; }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const ctx = canvas.getContext('2d');
+          
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          // ==========================================
+          // 워터마크 강제 삽입 로직
+          // ==========================================
+          ctx.save(); 
+          ctx.translate(w / 2, h / 2); 
+          ctx.rotate(-Math.PI / 6);    
+          
+          const fontSize = Math.max(w / 8, 30); 
+          ctx.font = `900 ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.lineWidth = Math.max(w / 200, 2); 
+          ctx.strokeText('OTAMALL B2B', 0, 0);
+          
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillText('OTAMALL B2B', 0, 0);
+          ctx.restore(); 
+          // ==========================================
+
           const b64 = canvas.toDataURL('image/jpeg', 0.85);
           document.getElementById('p-image-data').value = b64;
           document.getElementById('image-preview').src = b64;
@@ -949,6 +981,7 @@
       };
       reader.readAsDataURL(file);
     }
+    
     function handleImageUrlInput(url) {
       if(url.trim()){
         document.getElementById('p-image-data').value = url.trim();
@@ -979,7 +1012,6 @@
     }
     function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
 
-    // ✅ 성공 메시지 추가 및 스토리지 예외처리 보완
     async function saveProduct(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-save-product');
@@ -1010,12 +1042,10 @@
         if(id) await sbClient.from('products').update(payload).eq('id', id);
         else await sbClient.from('products').insert([payload]);
         
-        // 성공 메세지 출력!
         alert("✅ 상품이 성공적으로 등록(수정)되었습니다.");
-        
         closeProductModal(); 
         loadAdminProducts(); 
-        loadProducts(currentPage); // 저장한 후에도 현재 페이지 유지
+        loadProducts(currentPage); 
       } catch(err) { 
         alert("저장 실패: " + err.message); 
       } finally { 
@@ -1110,10 +1140,19 @@
     async function loadAdminOrders() {
       const hide = document.getElementById('filter-not-completed-admin').checked;
       let query = sbClient.from('orders').select('*, profiles(company_name, depositor_name), products(name)').order('id',{ascending:false});
-      if(hide) query = query.neq('status','배송완료');
+      if(hide) {
+        query = query.neq('status','배송완료').neq('status', '취소').neq('status', '자동취소(미입금)');
+      }
       const { data } = await query;
       aggregatedOrdersList = data||[];
-      document.getElementById('admin-orders-body').innerHTML = aggregatedOrdersList.map(o=>`
+      
+      document.getElementById('admin-orders-body').innerHTML = aggregatedOrdersList.map(o=> {
+        let statusClass = "text-stone-800";
+        if(o.status.includes('취소')) statusClass = "text-rose-600";
+        else if(o.status === '배송완료') statusClass = "text-emerald-600";
+        else if(o.status === '입고대기') statusClass = "text-blue-600";
+
+        return `
         <tr class="border-b text-xs hover:bg-stone-50">
           <td class="px-4 py-2 font-mono">${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
           <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'비회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
@@ -1124,16 +1163,17 @@
               ${o.is_tax_invoice ? (o.tax_invoice_issued ? '발급완료' : '미발급(신청)') : '신청안함'}
             </button>
           </td>
-          <td class="px-4 py-2 text-center space-x-1 flex flex-col gap-1">
-            <span class="font-bold text-stone-800">${o.status}</span>
-            <div class="flex justify-center gap-1">
-              <button onclick="sbClient.from('orders').update({status:'입금대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-amber-100 px-2 py-0.5 rounded text-[10px]">입금대기</button>
-              <button onclick="sbClient.from('orders').update({status:'입고대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-blue-100 px-2 py-0.5 rounded text-[10px]">입고대기</button>
-              <button onclick="sbClient.from('orders').update({status:'배송완료'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-emerald-100 px-2 py-0.5 rounded text-[10px]">배송완료</button>
+          <td class="px-4 py-2 text-center flex flex-col gap-1">
+            <span class="font-bold ${statusClass}">${o.status}</span>
+            <div class="flex flex-wrap justify-center gap-1 mt-1">
+              <button onclick="sbClient.from('orders').update({status:'입금대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-amber-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold">입금대기</button>
+              <button onclick="sbClient.from('orders').update({status:'입고대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold">입고대기</button>
+              <button onclick="sbClient.from('orders').update({status:'배송완료'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-emerald-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold">배송완료</button>
+              <button onclick="if(confirm('이 발주를 취소 처리하시겠습니까? (재고는 롤백되지 않습니다)')) sbClient.from('orders').update({status:'취소'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-[10px] font-bold">취소</button>
             </div>
           </td>
-        </tr>
-      `).join('');
+        </tr>`
+      }).join('');
     }
 
     function exportOrdersToExcel() {
