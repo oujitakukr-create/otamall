@@ -95,20 +95,19 @@
 
     <!-- 탭 4: 관리자 -->
     <section id="tab-admin" class="space-y-8 hidden">
-      <!-- 1. 단체 메일 발송 UI -->
+      <!-- 1. 단체 메일 발송 UI (Resend API 서버 연동) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex justify-between items-center border-b border-stone-100 pb-3">
           <div>
-            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송</h3>
-            <p class="text-xs text-stone-400">가입된 회원들에게 단체 메일을 발송합니다. (개인정보 보호를 위해 숨은참조(BCC)로 발송됩니다)</p>
+            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
+            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
           </div>
         </div>
         <div class="space-y-3">
           <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400">
-          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (작성 후 버튼을 누르면 기본 메일 앱이 실행됩니다)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
+          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (HTML 적용 및 줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
           <div class="flex justify-end gap-2">
-            <button onclick="copyAllEmails()" class="bg-stone-100 hover:bg-stone-200 px-4 py-2 rounded-xl text-xs font-bold text-stone-700 transition">회원 이메일 전체 복사</button>
-            <button onclick="sendBulkEmail()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm transition">메일 앱으로 발송 (BCC)</button>
+            <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">서버를 통해 메일 발송하기</button>
           </div>
         </div>
       </div>
@@ -192,15 +191,12 @@
     </section>
   </main>
 
-  <!-- ========================================== -->
   <!-- 모달 1: 수량 선택 및 발주 2-WAY 분기 모달 -->
-  <!-- ========================================== -->
   <div id="order-choice-modal" onclick="if(event.target===this) closeOrderChoiceModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeOrderChoiceModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
-      <!-- 상품 상세 정보 영역 -->
       <div class="flex gap-4 items-start pt-1">
         <img id="oc-image" src="" class="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-sm shrink-0">
         <div class="space-y-1.5 flex-1">
@@ -225,9 +221,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 모달 2: 결제 (장바구니 & 다이렉트 통합) 모달 -->
-  <!-- ========================================== -->
+  <!-- 모달 2: 결제 모달 -->
   <div id="checkout-modal" onclick="if(event.target===this) closeCheckoutModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeCheckoutModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -523,29 +517,38 @@
     }
     async function handleLogout() { await sbClient.auth.signOut(); window.location.reload(); }
 
-    // --- 단체 메일 발송 로직 ---
+    // --- Resend API 단체 메일 발송 ---
     async function getRecipientEmails() {
-      // 관리자를 제외한 모든 가입된 회원의 이메일을 가져옵니다.
       const { data } = await sbClient.from('profiles').select('email').neq('role', 'admin');
       return (data || []).map(u => u.email).filter(e => e);
     }
 
-    async function copyAllEmails() {
-      const emails = await getRecipientEmails();
-      if (emails.length === 0) return alert("발송할 회원 이메일이 없습니다.");
-      navigator.clipboard.writeText(emails.join(', ')).then(() => alert(`총 ${emails.length}명의 이메일이 클립보드에 복사되었습니다.\n메일 앱의 '숨은참조(BCC)' 칸에 붙여넣기 하세요.`));
-    }
+    async function sendBulkEmailApi() {
+      const subject = document.getElementById('admin-mail-subject').value.trim();
+      const body = document.getElementById('admin-mail-body').value.trim();
+      
+      if (!subject || !body) return alert("제목과 내용을 모두 입력하세요.");
 
-    async function sendBulkEmail() {
       const emails = await getRecipientEmails();
       if (emails.length === 0) return alert("발송할 회원 이메일이 없습니다.");
-      
-      const subject = encodeURIComponent(document.getElementById('admin-mail-subject').value);
-      const body = encodeURIComponent(document.getElementById('admin-mail-body').value);
-      
-      // 개인정보 보호를 위해 받는 사람(to)은 비워두고, bcc(숨은참조)에 이메일 배열을 넣습니다.
-      const mailtoLink = `mailto:?bcc=${emails.join(',')}&subject=${subject}&body=${body}`;
-      window.location.href = mailtoLink;
+
+      const btn = document.getElementById('btn-send-mail');
+      btn.innerText = '발송 중...'; btn.disabled = true;
+
+      try {
+        const { data, error } = await sbClient.functions.invoke('send-bulk-email', {
+          body: { subject: subject, html: body, bcc: emails }
+        });
+
+        if (error) throw error;
+        alert("성공적으로 단체 메일이 발송되었습니다!");
+        document.getElementById('admin-mail-subject').value = '';
+        document.getElementById('admin-mail-body').value = '';
+      } catch (err) {
+        alert("메일 발송 실패: " + err.message);
+      } finally {
+        btn.innerText = '서버를 통해 메일 발송하기'; btn.disabled = false;
+      }
     }
 
     // --- 공지사항 ---
@@ -716,7 +719,6 @@
           deadlineBadge = `<span class="absolute top-1 left-1 bg-stone-800/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm shadow-sm">⏰ ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} 마감</span>`;
         }
 
-        // 예상 배송시기 노출 추가
         const deliveryHtml = p.delivery_date ? `<p class="text-[10px] font-bold text-blue-600 mt-1">🚚 예상배송: ${escapeHtml(p.delivery_date)}</p>` : '';
 
         return `
@@ -779,7 +781,6 @@
         deadlineEl.classList.add('hidden');
       }
 
-      // 예상 배송시기 모달 노출 추가
       const deliveryEl = document.getElementById('oc-delivery');
       if (deliveryStr) {
         deliveryEl.innerText = `🚚 예상배송: ${deliveryStr}`;
@@ -986,7 +987,7 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (워터마크 로직) ---
+    // --- 스크린샷 캡처 (워터마크 강제 삽입 추가) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -1020,7 +1021,6 @@
           
           ctx.drawImage(img, 0, 0, w, h);
           
-          // 워터마크 강제 삽입 로직
           ctx.save(); 
           ctx.translate(w / 2, h / 2); 
           ctx.rotate(-Math.PI / 6);    
@@ -1171,7 +1171,7 @@
       document.getElementById('p-moq').value = p.moq; document.getElementById('p-stock').value = p.stock;
       document.getElementById('p-comment').value = p.comment||'';
       if(p.deadline) document.getElementById('p-deadline').value = p.deadline.split('T')[0];
-      document.getElementById('p-delivery-date').value = p.delivery_date || ''; // 예상배송시기 바인딩
+      document.getElementById('p-delivery-date').value = p.delivery_date || ''; 
       if(p.image_url) handleImageUrlInput(p.image_url); else clearImagePreview();
       openProductModal(id);
     }
