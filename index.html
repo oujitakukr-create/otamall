@@ -135,10 +135,26 @@
         </div>
       </div>
 
-      <!-- 회원 승인 관리 -->
+      <!-- 회원 승인 관리 (UI 개선) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 관리</h3>
-        <div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody id="admin-user-list-body"></tbody></table></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-stone-600">
+            <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+              <tr>
+                <th class="px-4 py-3 w-64">사업자정보 (상호 / 번호)</th>
+                <th class="px-4 py-3">대표자 / 연락처</th>
+                <th class="px-4 py-3">이메일 / 입금자</th>
+                <th class="px-4 py-3 text-center">사업자등록증</th>
+                <th class="px-4 py-3 text-center">상태</th>
+                <th class="px-4 py-3 text-center">승인 제어</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-list-body">
+              <tr><td colspan="6" class="text-center py-8 text-stone-400">회원 데이터를 불러오는 중입니다...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- 발주 내역 관리 -->
@@ -166,7 +182,7 @@
       <button onclick="closeOrderChoiceModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
-      <!-- 상품 상세 정보 영역 (이미지, 이름, 코멘트, 마감일, 가격) -->
+      <!-- 상품 상세 정보 영역 -->
       <div class="flex gap-4 items-start pt-1">
         <img id="oc-image" src="" class="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-sm shrink-0">
         <div class="space-y-1.5 flex-1">
@@ -219,14 +235,13 @@
     </div>
   </div>
 
-  <!-- 공지사항 읽기 모달 -->
+  <!-- 공지사항 및 인증 모달 생략 불가 (전체 코드 유지) -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
       <h3 id="rn-title" class="text-lg font-extrabold text-stone-800 pr-6"></h3>
       <p id="rn-date" class="text-xs text-stone-400 mt-1 pb-3 border-b border-stone-100"></p>
       <div id="rn-content" class="mt-4 whitespace-pre-wrap text-sm text-stone-700 min-h-[100px] max-h-60 overflow-y-auto leading-relaxed"></div>
-      
       <div id="rn-admin-actions" class="hidden mt-4 pt-3 border-t border-stone-100 flex justify-end gap-2">
         <button id="rn-edit-btn" class="bg-stone-200 px-4 py-2 rounded-xl text-xs font-bold text-stone-700">수정</button>
         <button id="rn-del-btn" class="bg-rose-100 px-4 py-2 rounded-xl text-xs font-bold text-rose-600">삭제</button>
@@ -234,7 +249,6 @@
     </div>
   </div>
 
-  <!-- 공지사항 쓰기/수정 모달 -->
   <div id="notice-write-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative shadow-xl">
       <button onclick="document.getElementById('notice-write-modal').classList.add('hidden')" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -246,7 +260,6 @@
     </div>
   </div>
 
-  <!-- 인증(로그인/회원가입) 모달 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -255,8 +268,6 @@
         <button id="auth-tab-signup" onclick="toggleAuthMode('signup')" class="flex-1 py-2 font-extrabold text-stone-400 border-transparent">회원가입</button>
       </div>
       <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
-        
-        <!-- 제휴 계약서 영역 -->
         <div id="auth-contract-group" class="hidden">
           <label class="block text-[11px] font-bold text-stone-600 mb-1">📜 이용 약관 및 제휴 계약서 (스크롤하여 확인)</label>
           <div class="contract-box mb-2 text-stone-600">
@@ -323,7 +334,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 (스크린샷 캡처 및 닫기) -->
+  <!-- 상품 등록 모달 (스토리지 업로드 로직 포함) -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -356,7 +367,7 @@
         
         <div class="flex justify-end gap-2 pt-2 border-t border-stone-100">
           <button type="button" onclick="closeProductModal()" class="bg-stone-100 px-4 py-2 rounded-xl font-bold">취소</button>
-          <button type="submit" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold">저장</button>
+          <button type="submit" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold" id="btn-save-product">저장</button>
         </div>
       </form>
     </div>
@@ -374,7 +385,7 @@
     let currentUserProfile = null;
     let cart = [];
     
-    // 결제 모드 ('cart' 또는 'direct')
+    // 결제 모드
     let checkoutMode = 'cart'; 
     let directCheckoutItem = null;
 
@@ -454,8 +465,11 @@
           let fileUrl = '';
           const fileInput = document.getElementById('auth-biz-file');
           if (fileInput.files[0]) {
-            const { error: upErr } = await sbClient.storage.from('business-licenses').upload(`${data.user.id}.jpg`, fileInput.files[0]);
-            if (!upErr) fileUrl = sbClient.storage.from('business-licenses').getPublicUrl(`${data.user.id}.jpg`).data.publicUrl;
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${data.user.id}_${Date.now()}.${fileExt}`;
+            const { error: upErr } = await sbClient.storage.from('business-licenses').upload(fileName, file);
+            if (!upErr) fileUrl = fileName;
           }
 
           await sbClient.from('profiles').insert([{
@@ -476,12 +490,11 @@
     }
     async function handleLogout() { await sbClient.auth.signOut(); window.location.reload(); }
 
-    // --- 공지사항 로직 ---
+    // --- 공지사항 ---
     async function loadNotices() {
       const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('notice-list-body');
       if (!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-stone-400">등록된 공지사항이 없습니다.</td></tr>';
-      
       tbody.innerHTML = data.map((n, i) => `
         <tr class="border-b border-stone-100 hover:bg-stone-50/50 cursor-pointer" onclick="openNoticeReadModal(${n.id}, '${escapeHtml(n.title)}', '${escapeHtml(n.content).replace(/\n/g, '\\n')}', '${n.created_at}')">
           <td class="px-5 py-3 text-center text-xs text-stone-400 font-mono">${data.length - i}</td>
@@ -495,19 +508,15 @@
       document.getElementById('rn-title').innerText = title;
       document.getElementById('rn-date').innerText = new Date(dateStr).toLocaleString();
       document.getElementById('rn-content').innerText = content.replace(/\\n/g, '\n');
-      
       const adminActions = document.getElementById('rn-admin-actions');
       if (currentUserProfile?.role === 'admin') {
         adminActions.classList.remove('hidden');
         document.getElementById('rn-edit-btn').onclick = () => { closeNoticeReadModal(); openNoticeWriteModal(id, title, content); };
         document.getElementById('rn-del-btn').onclick = () => deleteNotice(id);
-      } else {
-        adminActions.classList.add('hidden');
-      }
+      } else adminActions.classList.add('hidden');
       document.getElementById('notice-read-modal').classList.remove('hidden');
     }
     function closeNoticeReadModal() { document.getElementById('notice-read-modal').classList.add('hidden'); }
-
     function openNoticeWriteModal(id = null, title = '', content = '') {
       document.getElementById('wn-modal-title').innerText = id ? '공지사항 수정' : '공지사항 작성';
       document.getElementById('wn-id').value = id || '';
@@ -515,27 +524,19 @@
       document.getElementById('wn-content').value = content.replace(/\\n/g, '\n');
       document.getElementById('notice-write-modal').classList.remove('hidden');
     }
-
     async function saveNotice() {
       const id = document.getElementById('wn-id').value;
-      const payload = {
-        title: document.getElementById('wn-title').value.trim(),
-        content: document.getElementById('wn-content').value.trim()
-      };
+      const payload = { title: document.getElementById('wn-title').value.trim(), content: document.getElementById('wn-content').value.trim() };
       if (!payload.title || !payload.content) return alert("제목과 내용을 입력하세요.");
-
       if (id) await sbClient.from('notices').update(payload).eq('id', id);
       else await sbClient.from('notices').insert([payload]);
-      
       document.getElementById('notice-write-modal').classList.add('hidden');
       loadNotices();
     }
-
     async function deleteNotice(id) {
       if (!confirm("공지사항을 삭제하시겠습니까?")) return;
       await sbClient.from('notices').delete().eq('id', id);
-      closeNoticeReadModal();
-      loadNotices();
+      closeNoticeReadModal(); loadNotices();
     }
 
     // --- 카테고리 ---
@@ -557,7 +558,6 @@
       const aSel = document.getElementById('admin-cat-parent');
 
       const mainCats = categoriesList.filter(c => !c.parent_id);
-
       mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
       aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
       aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
@@ -600,7 +600,7 @@
       loadAdminProducts();
     }
 
-    // --- 카탈로그 (회비 식별 포함) ---
+    // --- 카탈로그 (마감일 방어 및 뱃지) ---
     function isFeeProduct(catId) {
       const cat = categoriesList.find(c => String(c.id) === String(catId));
       const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
@@ -688,7 +688,7 @@
       container.innerHTML = html;
     }
 
-    // --- 수량 선택 및 2-Way 모달 (장바구니 vs 바로결제) ---
+    // --- 수량 선택 및 2-Way 모달 ---
     let pendingOrderItem = null;
 
     function openOrderChoiceModal(id, name, price, moq, stock, catId, isFee, imageUrl, comment, deadlineStr) {
@@ -770,19 +770,17 @@
       openCheckout('direct');
     }
 
-    // --- 결제 모달 (장바구니/다이렉트 통합) ---
+    // --- 결제 모달 ---
     function openCheckout(mode) {
       if (mode === 'cart' && cart.length === 0) return alert("장바구니가 비어있습니다.");
       checkoutMode = mode;
       document.getElementById('checkout-modal').classList.remove('hidden');
       renderCheckout();
     }
-    
     function toggleCart() {
       if (document.getElementById('checkout-modal').classList.contains('hidden')) openCheckout('cart');
       else closeCheckoutModal();
     }
-
     function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); }
 
     function renderCheckout() {
@@ -808,14 +806,13 @@
         `;
       }).join('');
 
-      // 회비는 배송비/부가세 제외
       const shipping = (normalSubtotal >= 200000 || normalSubtotal === 0) ? 0 : 4000;
       const isTax = document.getElementById('checkout-tax-invoice')?.checked || false;
       const taxAmount = isTax ? Math.floor(normalSubtotal * 0.1) : 0; 
       
       document.getElementById('checkout-subtotal').innerText = (normalSubtotal + feeSubtotal).toLocaleString() + '원';
       document.getElementById('checkout-shipping').innerText = shipping > 0 ? '4,000원' : '무료';
-      document.getElementById('checkout-shipping-label').innerText = normalSubtotal === 0 ? '배송비 (회비 단독 결제 무료)' : '배송비 (20만원 이상 무료)';
+      document.getElementById('checkout-shipping-label').innerText = normalSubtotal === 0 ? '배송비 (회비 결제 무료)' : '배송비 (20만원 이상 무료)';
       document.getElementById('checkout-total').innerText = (normalSubtotal + feeSubtotal + shipping + taxAmount).toLocaleString() + '원';
     }
 
@@ -907,7 +904,7 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (Ctrl+V) ---
+    // --- 스크린샷 캡처 (스토리지 업로드 로직 포함) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -916,6 +913,13 @@
           if (item.type.indexOf('image') === 0) { processAndPreviewImage(item.getAsFile()); break; }
         }
       });
+    }
+
+    function dataURLtoFile(dataurl, filename) {
+      let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+      return new File([u8arr], filename, {type:mime});
     }
 
     function handleFileSelect(e) { if(e.target.files[0]) processAndPreviewImage(e.target.files[0]); }
@@ -929,7 +933,7 @@
           if(w > 800) { h = Math.round(h*(800/w)); w = 800; }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const b64 = canvas.toDataURL('image/jpeg', 0.8);
+          const b64 = canvas.toDataURL('image/jpeg', 0.85);
           document.getElementById('p-image-data').value = b64;
           document.getElementById('image-preview').src = b64;
           document.getElementById('image-preview-container').classList.remove('hidden');
@@ -955,7 +959,7 @@
       document.getElementById('paste-placeholder').classList.remove('hidden');
     }
 
-    // --- 상품 등록/수정 모달 ---
+    // --- 상품 등록/수정 모달 (스토리지 저장 로직 수정됨) ---
     function openProductModal(id=null) {
       document.getElementById('p-id').value = id || '';
       document.getElementById('modal-p-title').innerText = id ? '✏️ 상품 수정' : '📦 신규 등록';
@@ -971,19 +975,37 @@
 
     async function saveProduct(e) {
       e.preventDefault();
+      const btn = document.getElementById('btn-save-product');
+      btn.innerText = '저장 중...'; btn.disabled = true;
+
       const id = document.getElementById('p-id').value;
+      let finalImageUrl = document.getElementById('p-image-data').value;
+
+      // Base64 이미지일 경우 스토리지에 파일로 업로드 후 URL 반환
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        const file = dataURLtoFile(finalImageUrl, `prod_${Date.now()}.jpg`);
+        const { error: upErr } = await sbClient.storage.from('product-images').upload(file.name, file);
+        if (!upErr) {
+          finalImageUrl = sbClient.storage.from('product-images').getPublicUrl(file.name).data.publicUrl;
+        } else {
+          console.error("이미지 업로드 실패:", upErr);
+        }
+      }
+
       const payload = {
         name: document.getElementById('p-name').value, category_id: document.getElementById('p-cat').value,
         wholesale_price: document.getElementById('p-price').value, moq: document.getElementById('p-moq').value,
         stock: document.getElementById('p-stock').value, comment: document.getElementById('p-comment').value,
         deadline: document.getElementById('p-deadline').value ? new Date(document.getElementById('p-deadline').value+'T23:59:59').toISOString() : null,
-        image_url: document.getElementById('p-image-data').value || null
+        image_url: finalImageUrl || null
       };
+
       try {
         if(id) await sbClient.from('products').update(payload).eq('id', id);
         else await sbClient.from('products').insert([payload]);
         closeProductModal(); loadAdminProducts(); loadProducts(currentPage);
       } catch(err) { alert(err.message); }
+      finally { btn.innerText = '저장'; btn.disabled = false; }
     }
 
     // --- 관리자 상품 리스트 ---
@@ -993,9 +1015,8 @@
 
       let query = sbClient.from('products').select('*').eq('is_archived', false).order('id', {ascending: false});
       
-      if (subCatId !== 'all') {
-        query = query.eq('category_id', subCatId);
-      } else if (mainCatId !== 'all') {
+      if (subCatId !== 'all') query = query.eq('category_id', subCatId);
+      else if (mainCatId !== 'all') {
         const childCatIds = categoriesList.filter(c => String(c.parent_id) === String(mainCatId)).map(c => c.id);
         query = query.in('category_id', [parseInt(mainCatId), ...childCatIds]);
       }
@@ -1004,7 +1025,14 @@
         const { data, error } = await query;
         if (error) throw error;
         
-        document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => `
+        document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => {
+          let deadlineStr = '-';
+          if (p.deadline) {
+            const d = new Date(p.deadline);
+            deadlineStr = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`;
+          }
+
+          return `
           <tr class="border-b border-stone-100 text-xs hover:bg-stone-50">
             <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
             <td class="px-4 py-2 font-bold">${escapeHtml(p.name)}<br><span class="text-stone-400 font-normal">[${escapeHtml(getCatName(p.category_id))}]</span></td>
@@ -1014,8 +1042,8 @@
               <button onclick="editProduct(${p.id})" class="bg-stone-200 px-2 py-1 rounded font-bold">수정</button>
               <button onclick="deleteProduct(${p.id})" class="bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">삭제</button>
             </td>
-          </tr>
-        `).join('');
+          </tr>`
+        }).join('');
       } catch (err) {
         document.getElementById('admin-product-list-body').innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">상품 로드 중 오류가 발생했습니다.</td></tr>`;
       }
@@ -1038,20 +1066,20 @@
       loadAdminProducts(); loadProducts(currentPage);
     }
 
-    // --- 회원 및 발주 관리 ---
+    // --- 회원 승인 관리 (UI 개선 적용 완료) ---
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
       document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
         const fileHtml = u.business_license_url 
-          ? `<a href="${u.business_license_url}" target="_blank"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
+          ? `<a href="${u.business_license_url}" target="_blank" title="사업자등록증 원본 보기"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
           : '<span class="text-stone-400">미첨부</span>';
 
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
-          <td class="px-4 py-2 font-bold">${escapeHtml(u.email)}<br><span class="text-stone-400 font-normal">${escapeHtml(u.company_name)}</span></td>
+          <td class="px-4 py-2"><span class="font-bold text-stone-800 text-sm">${escapeHtml(u.company_name)}</span><br><span class="font-mono text-stone-500 font-bold">${escapeHtml(u.business_number)}</span></td>
           <td class="px-4 py-2">${escapeHtml(u.ceo_name)}<br>${escapeHtml(u.phone)}</td>
-          <td class="px-4 py-2 font-mono">${escapeHtml(u.business_number)}<br><span class="font-normal text-stone-400">입금자: ${escapeHtml(u.depositor_name)}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(u.email)}<br><span class="font-normal text-stone-400">입금자: ${escapeHtml(u.depositor_name)}</span></td>
           <td class="px-4 py-2 text-center align-middle">${fileHtml}</td>
           <td class="px-4 py-2 text-center font-bold text-amber-600">${u.status}</td>
           <td class="px-4 py-2 text-center space-x-1">
