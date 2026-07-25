@@ -135,7 +135,7 @@
         </div>
       </div>
 
-      <!-- 회원 승인 관리 (UI 개선) -->
+      <!-- 회원 승인 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 관리</h3>
         <div class="overflow-x-auto">
@@ -235,7 +235,7 @@
     </div>
   </div>
 
-  <!-- 공지사항 및 인증 모달 생략 불가 (전체 코드 유지) -->
+  <!-- 공지사항 읽기 모달 -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -249,6 +249,7 @@
     </div>
   </div>
 
+  <!-- 공지사항 쓰기/수정 모달 -->
   <div id="notice-write-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative shadow-xl">
       <button onclick="document.getElementById('notice-write-modal').classList.add('hidden')" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -260,6 +261,7 @@
     </div>
   </div>
 
+  <!-- 인증(로그인/회원가입) 모달 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -379,13 +381,16 @@
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ✅ 변수 스코프 누락 수정 완벽 적용
+    const PAGE_SIZE = 25;
+    let currentPage = 1;
+
     let categoriesList = []; 
     let aggregatedOrdersList = [];
     let currentAuthMode = 'login';
     let currentUserProfile = null;
     let cart = [];
     
-    // 결제 모드
     let checkoutMode = 'cart'; 
     let directCheckoutItem = null;
 
@@ -399,7 +404,7 @@
     window.addEventListener("DOMContentLoaded", async () => {
       await checkAuthStatus();
       await loadCategories();
-      loadProducts(1);
+      loadProducts(currentPage);
       setupImagePasteHandlers();
     });
 
@@ -409,7 +414,7 @@
       if (tab === 'admin') { loadAdminCategories(); loadAdminProducts(); loadAdminUsers(); loadAdminOrders(); }
       if (tab === 'orders') loadMyOrders();
       if (tab === 'notice') loadNotices();
-      if (tab === 'catalog') loadProducts(1);
+      if (tab === 'catalog') loadProducts(currentPage);
     }
 
     // --- 인증 ---
@@ -600,7 +605,7 @@
       loadAdminProducts();
     }
 
-    // --- 카탈로그 (마감일 방어 및 뱃지) ---
+    // --- 카탈로그 ---
     function isFeeProduct(catId) {
       const cat = categoriesList.find(c => String(c.id) === String(catId));
       const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
@@ -608,6 +613,7 @@
     }
 
     async function loadProducts(page = 1) {
+      currentPage = page; // 현재 페이지 기억
       const sort = document.getElementById('catalog-sort').value;
       let query = sbClient.from('products').select('*', { count: 'exact' }).eq('is_archived', false);
       
@@ -621,7 +627,7 @@
       if (sort === 'price_desc') query = query.order('wholesale_price', {ascending: false});
       if (sort === 'price_asc') query = query.order('wholesale_price', {ascending: true});
 
-      query = query.range((page-1)*25, page*25 - 1);
+      query = query.range((page-1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       const { data, count } = await query;
 
       const grid = document.getElementById('product-grid');
@@ -812,7 +818,7 @@
       
       document.getElementById('checkout-subtotal').innerText = (normalSubtotal + feeSubtotal).toLocaleString() + '원';
       document.getElementById('checkout-shipping').innerText = shipping > 0 ? '4,000원' : '무료';
-      document.getElementById('checkout-shipping-label').innerText = normalSubtotal === 0 ? '배송비 (회비 결제 무료)' : '배송비 (20만원 이상 무료)';
+      document.getElementById('checkout-shipping-label').innerText = normalSubtotal === 0 ? '배송비 (회비 단독 결제 무료)' : '배송비 (20만원 이상 무료)';
       document.getElementById('checkout-total').innerText = (normalSubtotal + feeSubtotal + shipping + taxAmount).toLocaleString() + '원';
     }
 
@@ -904,7 +910,7 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (스토리지 업로드 로직 포함) ---
+    // --- 스크린샷 캡처 (스토리지 저장 방식) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -959,7 +965,7 @@
       document.getElementById('paste-placeholder').classList.remove('hidden');
     }
 
-    // --- 상품 등록/수정 모달 (스토리지 저장 로직 수정됨) ---
+    // --- 상품 등록/수정 모달 ---
     function openProductModal(id=null) {
       document.getElementById('p-id').value = id || '';
       document.getElementById('modal-p-title').innerText = id ? '✏️ 상품 수정' : '📦 신규 등록';
@@ -973,6 +979,7 @@
     }
     function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
 
+    // ✅ 성공 메시지 추가 및 스토리지 예외처리 보완
     async function saveProduct(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-save-product');
@@ -981,7 +988,6 @@
       const id = document.getElementById('p-id').value;
       let finalImageUrl = document.getElementById('p-image-data').value;
 
-      // Base64 이미지일 경우 스토리지에 파일로 업로드 후 URL 반환
       if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
         const file = dataURLtoFile(finalImageUrl, `prod_${Date.now()}.jpg`);
         const { error: upErr } = await sbClient.storage.from('product-images').upload(file.name, file);
@@ -1003,9 +1009,19 @@
       try {
         if(id) await sbClient.from('products').update(payload).eq('id', id);
         else await sbClient.from('products').insert([payload]);
-        closeProductModal(); loadAdminProducts(); loadProducts(currentPage);
-      } catch(err) { alert(err.message); }
-      finally { btn.innerText = '저장'; btn.disabled = false; }
+        
+        // 성공 메세지 출력!
+        alert("✅ 상품이 성공적으로 등록(수정)되었습니다.");
+        
+        closeProductModal(); 
+        loadAdminProducts(); 
+        loadProducts(currentPage); // 저장한 후에도 현재 페이지 유지
+      } catch(err) { 
+        alert("저장 실패: " + err.message); 
+      } finally { 
+        btn.innerText = '저장'; 
+        btn.disabled = false; 
+      }
     }
 
     // --- 관리자 상품 리스트 ---
@@ -1066,7 +1082,7 @@
       loadAdminProducts(); loadProducts(currentPage);
     }
 
-    // --- 회원 승인 관리 (UI 개선 적용 완료) ---
+    // --- 회원 승인 관리 ---
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
