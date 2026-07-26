@@ -95,24 +95,7 @@
 
     <!-- 탭 4: 관리자 -->
     <section id="tab-admin" class="space-y-8 hidden">
-      <!-- 1. 단체 메일 발송 UI -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
-        <div class="flex justify-between items-center border-b border-stone-100 pb-3">
-          <div>
-            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
-            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400">
-          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (HTML 적용 및 줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
-          <div class="flex justify-end gap-2">
-            <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">서버를 통해 메일 발송하기</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. 카테고리 관리 -->
+      <!-- 1. 카테고리 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">🏷️ 카테고리 관리</h3>
         <p class="text-xs text-rose-500 font-bold mb-2">💡 '회비'라는 이름으로 대분류를 만들면 자동으로 재고 무제한 및 단독 발주(배송비/부가세 면제) 혜택이 적용됩니다.</p>
@@ -124,7 +107,7 @@
         <div id="admin-category-tree" class="space-y-3 pt-2"></div>
       </div>
 
-      <!-- 3. 상품 관리 -->
+      <!-- 2. 상품 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-100 pb-3 gap-3">
           <div>
@@ -152,7 +135,7 @@
         </div>
       </div>
 
-      <!-- 4. 회원 승인 관리 -->
+      <!-- 3. 회원 승인 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 관리</h3>
         <div class="overflow-x-auto">
@@ -174,7 +157,7 @@
         </div>
       </div>
 
-      <!-- 5. 발주 내역 관리 -->
+      <!-- 4. 발주 내역 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex justify-between items-center border-b border-stone-100 pb-3">
           <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
@@ -187,6 +170,23 @@
           </div>
         </div>
         <div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody id="admin-orders-body"></tbody></table></div>
+      </div>
+
+      <!-- 5. 단체 메일 발송 UI (가장 아래로 이동) -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+        <div class="flex justify-between items-center border-b border-stone-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
+            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400">
+          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (HTML 적용 및 줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
+          <div class="flex justify-end gap-2">
+            <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">서버를 통해 메일 발송하기</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -206,7 +206,7 @@
           <p id="oc-name" class="font-bold text-stone-800 text-sm leading-snug line-clamp-2"></p>
           <p id="oc-comment" class="hidden text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block mt-0.5"></p>
           
-          <!-- 개당 단가 노출 영역 추가 -->
+          <!-- 개당 단가 노출 영역 -->
           <p id="oc-unit-price" class="hidden text-xs font-bold text-stone-500 mt-0.5"></p>
           
           <p id="oc-price" class="text-amber-600 font-black text-base pt-0.5"></p>
@@ -364,7 +364,6 @@
         <input type="text" id="p-name" placeholder="상품명 *" class="w-full border px-3 py-2 rounded-xl" required>
         <select id="p-cat" class="w-full border px-3 py-2 rounded-xl bg-stone-50" required><option value="">카테고리 선택 *</option></select>
         
-        <!-- 그리드 구조 개편: 2x2로 확장하여 입수량 추가 -->
         <div class="grid grid-cols-2 gap-2">
           <input type="number" id="p-price" placeholder="도매가 (박스 총액) *" class="w-full border px-3 py-2 rounded-xl" required>
           <input type="number" id="p-qty-per-box" placeholder="입수량 (1박스당 개수) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
@@ -671,7 +670,7 @@
       loadAdminProducts();
     }
 
-    // --- 카탈로그 (입수량 표시 적용) ---
+    // --- 카탈로그 ---
     function isFeeProduct(catId) {
       const cat = categoriesList.find(c => String(c.id) === String(catId));
       const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
@@ -703,7 +702,7 @@
         const isExpired = p.deadline && new Date(p.deadline) < new Date();
         const isFee = isFeeProduct(p.category_id);
         const isOut = !isFee && p.stock < 1;
-        const qtyBox = p.quantity_per_box || 1; // 입수량 데이터 (없으면 1)
+        const qtyBox = p.quantity_per_box || 1;
         
         const safeName = escapeHtml(p.name).replace(/'/g, "\\'");
         const safeComment = escapeHtml(p.comment || '').replace(/'/g, "\\'");
@@ -715,7 +714,6 @@
         let btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">조회 불가</button>`;
         
         if (isApproved) {
-          // 도매가 옆에 입수량 노출
           priceHtml = `
             <div class="flex items-baseline gap-1">
               <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
@@ -723,7 +721,6 @@
             </div>
             <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
           `;
-          
           if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
           else if (isOut) btnHtml = `<button disabled class="w-full bg-rose-100 text-rose-500 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">품절</button>`;
           else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}', ${qtyBox})" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
@@ -788,7 +785,6 @@
         commentEl.classList.add('hidden'); 
       }
 
-      // 개당 단가 자동 계산 및 노출 (회비 제외, 입수량 2 이상일 때)
       const unitPriceEl = document.getElementById('oc-unit-price');
       if (!isFee && qtyBox > 1) {
         const unitPrice = Math.floor(price / qtyBox);
@@ -1013,7 +1009,7 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (워터마크 강제 삽입 로직) ---
+    // --- 스크린샷 캡처 (워터마크 로직) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -1099,7 +1095,7 @@
         document.getElementById('p-name').value = ''; 
         document.getElementById('p-cat').value = '';
         document.getElementById('p-price').value = ''; 
-        document.getElementById('p-qty-per-box').value = '1'; // 입수량 초기화
+        document.getElementById('p-qty-per-box').value = '1'; 
         document.getElementById('p-moq').value = '1';
         document.getElementById('p-stock').value = '100'; 
         document.getElementById('p-deadline').value = '';
@@ -1133,7 +1129,7 @@
         name: document.getElementById('p-name').value, 
         category_id: document.getElementById('p-cat').value,
         wholesale_price: document.getElementById('p-price').value, 
-        quantity_per_box: document.getElementById('p-qty-per-box').value || 1, // DB 전송 추가
+        quantity_per_box: document.getElementById('p-qty-per-box').value || 1, 
         moq: document.getElementById('p-moq').value,
         stock: document.getElementById('p-stock').value, 
         comment: document.getElementById('p-comment').value,
@@ -1202,7 +1198,7 @@
       document.getElementById('p-name').value = p.name;
       document.getElementById('p-cat').value = p.category_id||''; 
       document.getElementById('p-price').value = p.wholesale_price;
-      document.getElementById('p-qty-per-box').value = p.quantity_per_box || 1; // 입수량 데이터 바인딩
+      document.getElementById('p-qty-per-box').value = p.quantity_per_box || 1; 
       document.getElementById('p-moq').value = p.moq; 
       document.getElementById('p-stock').value = p.stock;
       document.getElementById('p-comment').value = p.comment||'';
