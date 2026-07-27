@@ -337,6 +337,7 @@
         <input type="password" id="auth-password" required placeholder="비밀번호 *" class="w-full border rounded-xl px-3 py-2 text-sm">
         
         <div id="auth-biz-group" class="hidden space-y-2 border-t pt-2 mt-2">
+          <!-- 컬럼명 불일치 해소를 위한 id 값 확인 -->
           <input type="text" id="auth-company-name" placeholder="상호명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
           <input type="text" id="auth-biz-number" placeholder="사업자등록번호 (숫자만 10자리) *" class="w-full border rounded-xl px-3 py-2 text-sm">
           <input type="text" id="auth-ceo-name" placeholder="대표자 성명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
@@ -386,8 +387,13 @@
     });
 
     function switchTab(tab) {
-      ['catalog', 'notice', 'orders', 'admin'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      ['catalog', 'notice', 'orders', 'admin'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if(el) el.classList.add('hidden');
+      });
+      const targetEl = document.getElementById(`tab-${tab}`);
+      if(targetEl) targetEl.classList.remove('hidden');
+      
       if (tab === 'admin') { loadAdminCategories(); loadAdminProducts(); loadAdminUsers(); loadAdminOrders(); }
       if (tab === 'orders') loadMyOrders();
       if (tab === 'notice') loadNotices();
@@ -492,14 +498,12 @@
           
           if (profileErr) {
             console.error("Profile Insert Error:", profileErr);
-            throw new Error("회원 정보 저장에 실패했습니다. (SQL 보안 정책을 확인해주세요)");
+            throw new Error("회원 정보 저장에 실패했습니다. (SQL 편집기에서 ALTER TABLE 쿼리를 실행해 컬럼을 추가해주세요.)");
           }
 
-          // 이메일 인증이 꺼져있으므로 안내 문구를 직관적으로 변경
           alert("🎉 회원가입 신청이 완료되었습니다!\n관리자가 사업자등록증 검수 후 승인 처리를 진행할 예정입니다. 승인 완료 후 로그인하시면 도매가를 확인하실 수 있습니다.");
           closeAuthModal();
           
-          // 방금 가입한 유저의 세션이 자동으로 남아있을 수 있으므로 안전하게 로그아웃 후 새로고침 (승인 대기 상태 유지)
           await sbClient.auth.signOut();
           window.location.reload();
         }
@@ -517,8 +521,6 @@
 
     // --- Resend API 단체 메일 발송 ---
     async function getRecipientEmails() {
-      // 🚨 [보안 보완] 상태가 'approved(승인 완료)'인 진짜 정회원에게만 발송하도록 조건 변경
-      // 이렇게 하면 가짜 이메일이나 오타로 가입한 미승인 계정에는 메일이 발송되지 않아 도메인 스팸 처리를 방지합니다.
       const { data } = await sbClient.from('profiles').select('email').eq('status', 'approved');
       return (data || []).map(u => u.email).filter(e => e);
     }
@@ -530,7 +532,7 @@
       if (!subject || !body) return alert("제목과 내용을 모두 입력하세요.");
 
       const emails = await getRecipientEmails();
-      if (emails.length === 0) return alert("발송할 회원 이메일이 없습니다.");
+      if (emails.length === 0) return alert("발송할 승인된 회원 이메일이 없습니다.");
 
       const btn = document.getElementById('btn-send-mail');
       btn.innerText = '발송 중...'; btn.disabled = true;
@@ -555,6 +557,8 @@
     async function loadNotices() {
       const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('notice-list-body');
+      if(!tbody) return;
+      
       if (!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-stone-400">등록된 공지사항이 없습니다.</td></tr>';
       tbody.innerHTML = data.map((n, i) => `
         <tr class="border-b border-stone-100 hover:bg-stone-50/50 cursor-pointer" onclick="openNoticeReadModal(${n.id}, '${escapeHtml(n.title)}', '${escapeHtml(n.content).replace(/\n/g, '\\n')}', '${n.created_at}')">
@@ -571,10 +575,12 @@
       document.getElementById('rn-content').innerText = content.replace(/\\n/g, '\n');
       const adminActions = document.getElementById('rn-admin-actions');
       if (currentUserProfile?.role === 'admin') {
-        adminActions.classList.remove('hidden');
+        if(adminActions) adminActions.classList.remove('hidden');
         document.getElementById('rn-edit-btn').onclick = () => { closeNoticeReadModal(); openNoticeWriteModal(id, title, content); };
         document.getElementById('rn-del-btn').onclick = () => deleteNotice(id);
-      } else adminActions.classList.add('hidden');
+      } else {
+        if(adminActions) adminActions.classList.add('hidden');
+      }
       document.getElementById('notice-read-modal').classList.remove('hidden');
     }
     function closeNoticeReadModal() { document.getElementById('notice-read-modal').classList.add('hidden'); }
@@ -612,6 +618,7 @@
       return cat ? cat.name : '미분류';
     }
 
+    // 🚨 렌더링 시 발생했던 null 태그 에러를 막기 위한 방어 코드(If 검사) 적용 완료
     function renderCategoryDropdowns() {
       const mSel = document.getElementById('filter-main-cat');
       const aMSel = document.getElementById('admin-filter-main-cat');
@@ -619,18 +626,20 @@
       const aSel = document.getElementById('admin-cat-parent');
 
       const mainCats = categoriesList.filter(c => !c.parent_id);
-      mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
-      aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
-      aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
-      pSel.innerHTML = '<option value="">카테고리 선택</option>';
+      
+      if(mSel) mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      if(aMSel) aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      if(aSel) aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
+      if(pSel) pSel.innerHTML = '<option value="">카테고리 선택</option>';
 
       mainCats.forEach(cat => {
-        mSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        aMSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        aSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        pSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)} (대분류)</option>`;
+        if(mSel) mSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        if(aMSel) aMSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        if(aSel) aSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        if(pSel) pSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)} (대분류)</option>`;
+        
         categoriesList.filter(s => String(s.parent_id) === String(cat.id)).forEach(sub => {
-          pSel.innerHTML += `<option value="${sub.id}"> └ ${escapeHtml(sub.name)}</option>`;
+          if(pSel) pSel.innerHTML += `<option value="${sub.id}"> └ ${escapeHtml(sub.name)}</option>`;
         });
       });
     }
@@ -638,6 +647,7 @@
     function onMainCategoryChange() {
       const mainId = document.getElementById('filter-main-cat').value;
       const sSel = document.getElementById('filter-sub-cat');
+      if(!sSel) return;
       sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
       sSel.disabled = mainId === 'all';
       if(mainId !== 'all') {
@@ -651,6 +661,7 @@
     function onAdminProductMainCatChange() {
       const mainId = document.getElementById('admin-filter-main-cat').value;
       const sSel = document.getElementById('admin-filter-sub-cat');
+      if(!sSel) return;
       sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
       sSel.disabled = mainId === 'all';
       if(mainId !== 'all') {
@@ -670,11 +681,16 @@
 
     async function loadProducts(page = 1) {
       currentPage = page; 
-      const sort = document.getElementById('catalog-sort').value;
+      const sortEl = document.getElementById('catalog-sort');
+      const sort = sortEl ? sortEl.value : 'id_desc';
+      
       let query = sbClient.from('products').select('*', { count: 'exact' }).eq('is_archived', false);
       
-      const mCat = document.getElementById('filter-main-cat').value;
-      const sCat = document.getElementById('filter-sub-cat').value;
+      const mCatEl = document.getElementById('filter-main-cat');
+      const sCatEl = document.getElementById('filter-sub-cat');
+      const mCat = mCatEl ? mCatEl.value : 'all';
+      const sCat = sCatEl ? sCatEl.value : 'all';
+      
       if (sCat !== 'all') query = query.eq('category_id', sCat);
       else if (mCat !== 'all') query = query.in('category_id', [mCat, ...categoriesList.filter(c=>String(c.parent_id)===String(mCat)).map(c=>c.id)]);
 
@@ -687,6 +703,8 @@
       const { data, count } = await query;
 
       const grid = document.getElementById('product-grid');
+      if(!grid) return;
+      
       const isApproved = currentUserProfile?.status === 'approved' || currentUserProfile?.role === 'admin';
 
       grid.innerHTML = (data || []).map(p => {
@@ -748,6 +766,7 @@
 
     function renderPagination(totalCount, page) {
       const container = document.getElementById('pagination-container');
+      if(!container) return;
       const totalPages = Math.ceil(totalCount / PAGE_SIZE);
       if (totalPages <= 1) return container.innerHTML = '';
 
@@ -941,7 +960,10 @@
       }
       const { data } = await query;
       
-      document.getElementById('my-order-list-body').innerHTML = (data||[]).map(o => {
+      const tbody = document.getElementById('my-order-list-body');
+      if(!tbody) return;
+
+      tbody.innerHTML = (data||[]).map(o => {
         let statusClass = "bg-amber-100 text-amber-800";
         if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
         else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
@@ -961,6 +983,7 @@
     // --- 관리자 카테고리 ---
     async function loadAdminCategories() {
       const container = document.getElementById('admin-category-tree');
+      if(!container) return;
       const mainCats = categoriesList.filter(c => !c.parent_id);
       if (mainCats.length === 0) return container.innerHTML = '<p class="text-xs text-stone-400">없음</p>';
 
@@ -1004,6 +1027,7 @@
     // --- 스크린샷 캡처 (워터마크 로직) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
+      if(!zone) return;
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
       zone.addEventListener('paste', e => {
         for (const item of (e.clipboardData || window.clipboardData).items) {
@@ -1163,7 +1187,10 @@
         const { data, error } = await query;
         if (error) throw error;
         
-        document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => {
+        const tbody = document.getElementById('admin-product-list-body');
+        if(!tbody) return;
+
+        tbody.innerHTML = (data||[]).map(p => {
           return `
           <tr class="border-b border-stone-100 text-xs hover:bg-stone-50">
             <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
@@ -1210,7 +1237,10 @@
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
-      document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
+      const tbody = document.getElementById('admin-user-list-body');
+      if(!tbody) return;
+
+      tbody.innerHTML = (data||[]).map(u => {
         const fileHtml = u.business_license_url 
           ? `<a href="${u.business_license_url}" target="_blank" title="사업자등록증 원본 보기"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
           : '<span class="text-stone-400">미첨부</span>';
@@ -1240,7 +1270,10 @@
       const { data } = await query;
       aggregatedOrdersList = data||[];
       
-      document.getElementById('admin-orders-body').innerHTML = aggregatedOrdersList.map(o=> {
+      const tbody = document.getElementById('admin-orders-body');
+      if(!tbody) return;
+
+      tbody.innerHTML = aggregatedOrdersList.map(o=> {
         let statusClass = "text-stone-800";
         if(o.status.includes('취소')) statusClass = "text-rose-600";
         else if(o.status === '배송완료') statusClass = "text-emerald-600";
