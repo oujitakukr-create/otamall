@@ -176,8 +176,8 @@
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex justify-between items-center border-b border-stone-100 pb-3">
           <div>
-            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
-            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
+            <h3 class="text-base font-bold text-stone-800">📧 승인 회원 단체 메일 발송 (Resend 연동)</h3>
+            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 가입 승인된 정회원들에게만 단체 메일을 발송합니다.</p>
           </div>
         </div>
         <div class="space-y-3">
@@ -517,7 +517,9 @@
 
     // --- Resend API 단체 메일 발송 ---
     async function getRecipientEmails() {
-      const { data } = await sbClient.from('profiles').select('email').neq('role', 'admin');
+      // 🚨 [보안 보완] 상태가 'approved(승인 완료)'인 진짜 정회원에게만 발송하도록 조건 변경
+      // 이렇게 하면 가짜 이메일이나 오타로 가입한 미승인 계정에는 메일이 발송되지 않아 도메인 스팸 처리를 방지합니다.
+      const { data } = await sbClient.from('profiles').select('email').eq('status', 'approved');
       return (data || []).map(u => u.email).filter(e => e);
     }
 
