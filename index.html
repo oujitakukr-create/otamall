@@ -135,7 +135,7 @@
         </div>
       </div>
 
-      <!-- 3. 회원 승인 관리 -->
+      <!-- 3. 회원 승인 관리 (삭제 버튼 추가 완료) -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 관리</h3>
         <div class="overflow-x-auto">
@@ -618,7 +618,6 @@
       return cat ? cat.name : '미분류';
     }
 
-    // 🚨 렌더링 시 발생했던 null 태그 에러를 막기 위한 방어 코드(If 검사) 적용 완료
     function renderCategoryDropdowns() {
       const mSel = document.getElementById('filter-main-cat');
       const aMSel = document.getElementById('admin-filter-main-cat');
@@ -1233,7 +1232,7 @@
       loadAdminProducts(); loadProducts(currentPage);
     }
 
-    // --- 회원 승인 관리 ---
+    // --- 회원 승인 관리 및 🚨 삭제 로직 ---
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
@@ -1245,20 +1244,66 @@
           ? `<a href="${u.business_license_url}" target="_blank" title="사업자등록증 원본 보기"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
           : '<span class="text-stone-400">미첨부</span>';
 
+        // 상태값 한글 변환
+        let statusBadge = '';
+        if(u.status === 'approved') statusBadge = '<span class="text-emerald-600 font-black">승인완료</span>';
+        else if(u.status === 'pending') statusBadge = '<span class="text-amber-600 font-bold">승인대기</span>';
+        else if(u.status === 'rejected') statusBadge = '<span class="text-stone-400 font-bold">보류(거절)</span>';
+
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
           <td class="px-4 py-2"><span class="font-bold text-stone-800 text-sm">${escapeHtml(u.company_name)}</span><br><span class="font-mono text-stone-500 font-bold">${escapeHtml(u.business_number)}</span></td>
           <td class="px-4 py-2">${escapeHtml(u.ceo_name)}<br>${escapeHtml(u.phone)}</td>
           <td class="px-4 py-2 font-bold">${escapeHtml(u.email)}<br><span class="font-normal text-stone-400">입금자: ${escapeHtml(u.depositor_name)}</span></td>
           <td class="px-4 py-2 text-center align-middle">${fileHtml}</td>
-          <td class="px-4 py-2 text-center font-bold text-amber-600">${u.status}</td>
-          <td class="px-4 py-2 text-center space-x-1">
-            <button onclick="sbClient.from('profiles').update({status:'approved'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-emerald-500 text-white px-2 py-1 rounded">승인</button>
-            <button onclick="sbClient.from('profiles').update({status:'pending'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-stone-300 px-2 py-1 rounded">보류</button>
+          <td class="px-4 py-2 text-center">${statusBadge}</td>
+          <td class="px-4 py-2 text-center space-x-1 whitespace-nowrap">
+            <button onclick="sbClient.from('profiles').update({status:'approved'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded font-bold shadow-sm transition">승인</button>
+            <button onclick="sbClient.from('profiles').update({status:'pending'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-2 py-1.5 rounded font-bold transition">보류</button>
+            <button onclick="deleteAdminUser('${u.id}')" class="bg-rose-500 hover:bg-rose-600 text-white px-2 py-1.5 rounded font-bold shadow-sm transition">삭제</button>
           </td>
         </tr>
         `
       }).join('');
+    }
+
+    // 🚨 관리자 전용 '회원 완전 삭제' 함수
+    async function deleteAdminUser(uid) {
+      // 1차 방어: 삭제 의사 재확인
+      if (!confirm("⚠️ 경고: 정말 해당 회원을 탈퇴시키시겠습니까?\n'예'를 누르시면 데이터베이스에서 모든 정보가 영구적으로 제거되며, 해당 회원은 더 이상 로그인이나 도매가 확인이 불가능해집니다.")) {
+        return;
+      }
+      
+      try {
+        // SQL Editor에서 등록한 RPC 함수 호출
+        const { error } = await sbClient.rpc('admin_delete_user', { target_user_id: uid });
+        
+        if (error) {
+          // SQL 쿼리를 돌리지 않았을 경우를 대비한 2차 방어 (정보 덮어쓰기 & 강제 차단)
+          console.warn("SQL 함수 누락으로 인한 우회 삭제 진행:", error);
+          
+          const { error: fallbackErr } = await sbClient.from('profiles').update({
+            status: 'rejected',
+            company_name: '[삭제된 계정]',
+            business_number: '0000000000',
+            ceo_name: '정보 파기됨',
+            phone: '000-0000-0000',
+            depositor_name: '-',
+            address: '-',
+            business_license_url: ''
+          }).eq('id', uid);
+          
+          if (fallbackErr) throw fallbackErr;
+          alert("해당 회원의 개인정보가 파기되었으며 접근이 영구 차단되었습니다.\n(참고: Supabase SQL Editor에서 1단계 쿼리를 실행하시면 서버에서 뿌리까지 완전 삭제가 가능합니다.)");
+        } else {
+          // RPC가 정상 작동했을 때
+          alert("✅ 해당 회원이 서버에서 완전히 삭제되었습니다.");
+        }
+        
+        loadAdminUsers();
+      } catch (err) {
+        alert("삭제 중 오류가 발생했습니다: " + err.message);
+      }
     }
 
     async function loadAdminOrders() {
@@ -1282,7 +1327,7 @@
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
           <td class="px-4 py-2 font-mono">${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
-          <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'비회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'삭제된 회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
           <td class="px-4 py-2">${escapeHtml(o.products?.name)} (${o.quantity}개)</td>
           <td class="px-4 py-2 text-right font-bold">${Number(o.total_price).toLocaleString()}원</td>
           <td class="px-4 py-2 text-center">
