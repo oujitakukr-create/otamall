@@ -146,7 +146,7 @@
                   <th class="px-4 py-3">이미지</th>
                   <th class="px-4 py-3">상품명 / 카테고리</th>
                   <th class="px-4 py-3 text-right">도매가</th>
-                  <th class="px-4 py-3 text-center">재고 / 입수량(MOQ)</th>
+                  <th class="px-4 py-3 text-center">재고정보</th>
                   <th class="px-4 py-3 text-center">관리</th>
                 </tr>
               </thead>
@@ -190,16 +190,13 @@
             </div>
             
             <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
-              <!-- [개선] 다중 검색 (상호명 + 상품명) -->
               <input type="text" id="admin-order-search" oninput="renderAdminOrders()" placeholder="🔍 상호명 또는 상품명 검색" class="border border-stone-200 px-3 py-1.5 rounded-xl text-xs font-bold w-48 focus:outline-none focus:ring-2 focus:ring-amber-400">
               
-              <!-- [개선] 정렬 옵션 (최신 발주순 vs 마감일 임박순) -->
               <select id="admin-order-sort" onchange="renderAdminOrders()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 focus:outline-none">
                 <option value="order_desc">최신 발주순</option>
                 <option value="deadline_asc">마감일 임박순</option>
               </select>
 
-              <!-- [개선] 마감일 1주 경과 숨기기 필터 -->
               <label class="flex items-center space-x-2 text-xs font-bold text-stone-600 cursor-pointer">
                 <input type="checkbox" id="filter-deadline-1week" onchange="renderAdminOrders()" class="w-4 h-4 text-amber-500 rounded" checked>
                 <span>마감일 1주 경과 제외</span>
@@ -410,7 +407,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 (입수량 필드 복구) -->
+  <!-- 상품 등록 모달 (8개 필드 완벽 분리 적용) -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -421,19 +418,15 @@
         <input type="text" id="p-name" placeholder="상품명 *" class="w-full border px-3 py-2 rounded-xl" required>
         <select id="p-cat" class="w-full border px-3 py-2 rounded-xl bg-stone-50" required><option value="">카테고리 선택 *</option></select>
         
-        <div class="grid grid-cols-4 gap-2">
-          <div class="col-span-2">
-            <input type="number" id="p-price" placeholder="도매가 *" class="w-full border px-3 py-2 rounded-xl" required>
-          </div>
-          <div>
-            <!-- 입수량(MOQ) -->
-            <input type="number" id="p-moq" placeholder="입수량(MOQ) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
-          </div>
-          <div>
-            <input type="number" id="p-stock" placeholder="재고 *" class="w-full border px-3 py-2 rounded-xl" required>
-          </div>
+        <!-- 가격 및 수량 정보 영역 (4등분) -->
+        <div class="grid grid-cols-2 gap-2">
+          <input type="number" id="p-price" placeholder="도매가 *" class="w-full border px-3 py-2 rounded-xl" required>
+          <input type="number" id="p-box-qty" placeholder="입수량(1박스) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
+          <input type="number" id="p-moq" placeholder="최소주문수량(MOQ) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
+          <input type="number" id="p-stock" placeholder="재고수량 *" class="w-full border px-3 py-2 rounded-xl" required>
         </div>
         
+        <!-- 날짜 정보 영역 -->
         <div class="grid grid-cols-2 gap-2 border-t border-stone-100 pt-2">
           <div>
             <label class="block font-bold text-rose-600 mb-1 text-[10px]">⏰ 발주 마감일 (선택)</label>
@@ -445,8 +438,10 @@
           </div>
         </div>
 
+        <!-- 텍스트 영역 -->
         <input type="text" id="p-comment" placeholder="한줄 코멘트 (선택)" class="w-full border px-3 py-2 rounded-xl mt-2">
         
+        <!-- 이미지 영역 -->
         <div id="image-paste-zone" tabindex="0" class="border-2 border-dashed border-amber-300 bg-amber-50/30 rounded-xl p-4 text-center cursor-pointer min-h-[100px] flex flex-col justify-center items-center relative">
           <input type="file" id="p-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
           <input type="hidden" id="p-image-data">
@@ -478,7 +473,7 @@
 
     let categoriesList = []; 
     let aggregatedOrdersList = [];
-    let currentFilteredOrders = []; // 엑셀 추출용 필터링 데이터
+    let currentFilteredOrders = []; 
     let currentAuthMode = 'login';
     let currentUserProfile = null;
     let cart = [];
@@ -505,14 +500,13 @@
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       if (tab === 'admin') { 
         loadAdminCategories(); loadAdminProducts(); loadAdminUsers(); loadAdminOrders(); 
-        switchAdminTab('orders'); // 테스트 편의상 발주 내역을 기본 탭으로 변경
+        switchAdminTab('products');
       }
       if (tab === 'orders') loadMyOrders();
       if (tab === 'notice') loadNotices();
       if (tab === 'catalog') loadProducts(currentPage);
     }
 
-    // --- 관리자 서브탭 전환 로직 ---
     function switchAdminTab(subTab) {
       document.querySelectorAll('.admin-subtab').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.admin-tab-btn').forEach(el => {
@@ -527,7 +521,6 @@
       }
     }
 
-    // --- 인증 ---
     async function checkAuthStatus() {
       const { data: { user } } = await sbClient.auth.getUser();
       if (user) {
@@ -605,7 +598,6 @@
     }
     async function handleLogout() { await sbClient.auth.signOut(); window.location.reload(); }
 
-    // --- Resend API 단체 메일 발송 ---
     async function getRecipientEmails() {
       const { data } = await sbClient.from('profiles').select('email').neq('role', 'admin');
       return (data || []).map(u => u.email).filter(e => e);
@@ -639,7 +631,6 @@
       }
     }
 
-    // --- 공지사항 ---
     async function loadNotices() {
       const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('notice-list-body');
@@ -688,7 +679,6 @@
       closeNoticeReadModal(); loadNotices();
     }
 
-    // --- 카테고리 ---
     async function loadCategories() {
       const { data } = await sbClient.from('categories').select('*');
       categoriesList = data || [];
@@ -749,7 +739,6 @@
       loadAdminProducts();
     }
 
-    // --- 카탈로그 ---
     function isFeeProduct(catId) {
       const cat = categoriesList.find(c => String(c.id) === String(catId));
       const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
@@ -787,6 +776,9 @@
         const safeImg = escapeHtml(p.image_url || '').replace(/'/g, "\\'");
         const deadlineStr = p.deadline || '';
         const safeDelivery = escapeHtml(p.delivery_date || '').replace(/'/g, "\\'");
+        
+        // 박스 수량 폴백 처리
+        const safeBoxQty = p.box_qty || 1;
 
         let priceHtml = `<span class="text-[11px] text-stone-400 font-bold">🔒 가입 후 도매가 확인 가능</span>`;
         let btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">조회 불가</button>`;
@@ -794,11 +786,11 @@
         if (isApproved) {
           priceHtml = `
             <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
-            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `입수량: ${p.moq}개 / 재고: ${p.stock}`}</span>
+            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `입수량: ${safeBoxQty}개 / MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
           `;
           if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
           else if (isOut) btnHtml = `<button disabled class="w-full bg-rose-100 text-rose-500 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">품절</button>`;
-          else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}')" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
+          else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${safeBoxQty},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}')" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
         }
 
         let deadlineBadge = '';
@@ -845,7 +837,7 @@
     // --- 수량 선택 및 2-Way 모달 ---
     let pendingOrderItem = null;
 
-    function openOrderChoiceModal(id, name, price, moq, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr) {
+    function openOrderChoiceModal(id, name, price, moq, boxQty, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr) {
       pendingOrderItem = { id, name, price, moq, stock, category_id: catId, is_fee: isFee };
       
       document.getElementById('oc-name').innerText = name;
@@ -886,7 +878,7 @@
         qtyInput.disabled = true;
         document.getElementById('oc-cart-btn').classList.add('hidden'); 
       } else {
-        document.getElementById('oc-stock-info').innerText = `최소 주문 수량(입수량): ${moq}개 / 최대 재고: ${stock}개`;
+        document.getElementById('oc-stock-info').innerText = `최소 주문: ${moq}개 (입수량: ${boxQty}개) / 최대 재고: ${stock}개`;
         qtyInput.disabled = false;
         qtyInput.max = stock;
         document.getElementById('oc-cart-btn').classList.remove('hidden');
@@ -932,7 +924,6 @@
       openCheckout('direct');
     }
 
-    // --- 결제 모달 ---
     function openCheckout(mode) {
       if (mode === 'cart' && cart.length === 0) return alert("장바구니가 비어있습니다.");
       checkoutMode = mode;
@@ -1008,7 +999,6 @@
       } catch (err) { alert("발주 실패: " + err.message); }
     }
 
-    // --- 나의 발주 내역 로드 ---
     async function loadMyOrders() {
       if (!currentUserProfile?.id) return;
       const hide = document.getElementById('filter-not-completed-user').checked;
@@ -1040,7 +1030,6 @@
       }).join('');
     }
 
-    // --- 관리자 카테고리 ---
     async function loadAdminCategories() {
       const container = document.getElementById('admin-category-tree');
       const mainCats = categoriesList.filter(c => !c.parent_id);
@@ -1083,7 +1072,6 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (워터마크) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
@@ -1161,15 +1149,15 @@
       document.getElementById('paste-placeholder').classList.remove('hidden');
     }
 
-    // --- 상품 등록/수정 모달 ---
     function openProductModal(id=null) {
       document.getElementById('p-id').value = id || '';
       document.getElementById('modal-p-title').innerText = id ? '✏️ 상품 수정' : '📦 신규 등록';
       if(!id) {
         document.getElementById('p-name').value = ''; document.getElementById('p-cat').value = '';
-        document.getElementById('p-price').value = ''; document.getElementById('p-moq').value = '1';
-        document.getElementById('p-stock').value = '100'; document.getElementById('p-deadline').value = '';
-        document.getElementById('p-delivery-date').value = ''; document.getElementById('p-comment').value = ''; 
+        document.getElementById('p-price').value = ''; document.getElementById('p-box-qty').value = '1';
+        document.getElementById('p-moq').value = '1'; document.getElementById('p-stock').value = '100';
+        document.getElementById('p-deadline').value = ''; document.getElementById('p-delivery-date').value = ''; 
+        document.getElementById('p-comment').value = ''; 
         clearImagePreview();
       }
       document.getElementById('product-modal').classList.remove('hidden');
@@ -1194,10 +1182,15 @@
         }
       }
 
+      // 8가지 필드 모두 포함된 payload
       const payload = {
-        name: document.getElementById('p-name').value, category_id: document.getElementById('p-cat').value,
-        wholesale_price: document.getElementById('p-price').value, moq: document.getElementById('p-moq').value,
-        stock: document.getElementById('p-stock').value, comment: document.getElementById('p-comment').value,
+        name: document.getElementById('p-name').value, 
+        category_id: document.getElementById('p-cat').value,
+        wholesale_price: document.getElementById('p-price').value, 
+        box_qty: document.getElementById('p-box-qty').value,
+        moq: document.getElementById('p-moq').value,
+        stock: document.getElementById('p-stock').value, 
+        comment: document.getElementById('p-comment').value,
         deadline: document.getElementById('p-deadline').value ? new Date(document.getElementById('p-deadline').value+'T23:59:59').toISOString() : null,
         delivery_date: document.getElementById('p-delivery-date').value.trim() || null,
         image_url: finalImageUrl || null
@@ -1219,7 +1212,6 @@
       }
     }
 
-    // --- 관리자 상품 리스트 ---
     async function loadAdminProducts() {
       const mainCatId = document.getElementById('admin-filter-main-cat').value;
       const subCatId = document.getElementById('admin-filter-sub-cat').value;
@@ -1242,7 +1234,7 @@
             <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
             <td class="px-4 py-2 font-bold">${escapeHtml(p.name)}<br><span class="text-stone-400 font-normal">[${escapeHtml(getCatName(p.category_id))}]</span></td>
             <td class="px-4 py-2 text-right font-black text-amber-600">${Number(p.wholesale_price).toLocaleString()}원</td>
-            <td class="px-4 py-2 text-center">${p.stock}개<br><span class="text-[10px] text-stone-400">입수량: ${p.moq}</span></td>
+            <td class="px-4 py-2 text-center">${p.stock}개<br><span class="text-[10px] text-stone-400">입수량: ${p.box_qty||1} / MOQ: ${p.moq}</span></td>
             <td class="px-4 py-2 text-center space-x-1">
               <button onclick="editProduct(${p.id})" class="bg-stone-200 px-2 py-1 rounded font-bold">수정</button>
               <button onclick="deleteProduct(${p.id})" class="bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">삭제</button>
@@ -1256,9 +1248,13 @@
 
     async function editProduct(id) {
       const { data: p } = await sbClient.from('products').select('*').eq('id', id).single();
-      document.getElementById('p-id').value = p.id; document.getElementById('p-name').value = p.name;
-      document.getElementById('p-cat').value = p.category_id||''; document.getElementById('p-price').value = p.wholesale_price;
-      document.getElementById('p-moq').value = p.moq; document.getElementById('p-stock').value = p.stock;
+      document.getElementById('p-id').value = p.id; 
+      document.getElementById('p-name').value = p.name;
+      document.getElementById('p-cat').value = p.category_id||''; 
+      document.getElementById('p-price').value = p.wholesale_price;
+      document.getElementById('p-box-qty').value = p.box_qty || 1;
+      document.getElementById('p-moq').value = p.moq; 
+      document.getElementById('p-stock').value = p.stock;
       document.getElementById('p-comment').value = p.comment||'';
       if(p.deadline) document.getElementById('p-deadline').value = p.deadline.split('T')[0];
       document.getElementById('p-delivery-date').value = p.delivery_date || ''; 
@@ -1272,7 +1268,6 @@
       loadAdminProducts(); loadProducts(currentPage);
     }
 
-    // --- 회원 승인 관리 ---
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
@@ -1296,7 +1291,6 @@
       }).join('');
     }
 
-    // --- 관리자 발주 목록 데이터 로드 및 렌더링 (클라이언트 필터링) ---
     async function loadAdminOrders() {
       const hideCompleted = document.getElementById('filter-not-completed-admin').checked;
       
@@ -1320,7 +1314,6 @@
       const hideOldDeadline = document.getElementById('filter-deadline-1week').checked;
       const tbody = document.getElementById('admin-orders-body');
       
-      // 1. 검색 및 마감일 필터링 적용
       let filteredList = aggregatedOrdersList.filter(o => {
         const companyName = (o.profiles?.company_name || '').toLowerCase();
         const productName = (o.product_name || o.products?.name || '').toLowerCase();
@@ -1339,7 +1332,6 @@
         return matchSearch && matchDeadline;
       });
 
-      // 2. 정렬 적용
       filteredList.sort((a, b) => {
         if (sortType === 'order_desc') {
           return new Date(b.created_at) - new Date(a.created_at);
@@ -1351,10 +1343,8 @@
         return 0;
       });
 
-      // 엑셀 추출용으로 현재 필터링된 배열 저장
       currentFilteredOrders = filteredList;
 
-      // 3. UI 렌더링
       if (filteredList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-stone-400 font-bold">조건에 맞는 발주 내역이 없습니다.</td></tr>`;
         return;
@@ -1395,7 +1385,6 @@
       }).join('');
     }
 
-    // [개선] 현재 화면에 필터링된 결과값만 엑셀로 다운로드
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
       const ws = XLSX.utils.json_to_sheet(currentFilteredOrders.map(i => ({
