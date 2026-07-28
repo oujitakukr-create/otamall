@@ -146,7 +146,7 @@
                   <th class="px-4 py-3">이미지</th>
                   <th class="px-4 py-3">상품명 / 카테고리</th>
                   <th class="px-4 py-3 text-right">도매가</th>
-                  <th class="px-4 py-3 text-center">재고정보</th>
+                  <th class="px-4 py-3 text-center">재고 / 입수량(MOQ)</th>
                   <th class="px-4 py-3 text-center">관리</th>
                 </tr>
               </thead>
@@ -186,7 +186,7 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-stone-100 pb-3 gap-4">
             <div class="flex flex-col">
               <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
-              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 메인 목록에서 영구 제외됩니다.</p>
+              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 시스템 혼선 방지를 위해 메인 목록에서 영구 제외됩니다.</p>
             </div>
             
             <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
@@ -418,7 +418,6 @@
         <input type="text" id="p-name" placeholder="상품명 *" class="w-full border px-3 py-2 rounded-xl" required>
         <select id="p-cat" class="w-full border px-3 py-2 rounded-xl bg-stone-50" required><option value="">카테고리 선택 *</option></select>
         
-        <!-- 가격 및 수량 정보 영역 (4등분) -->
         <div class="grid grid-cols-2 gap-2">
           <input type="number" id="p-price" placeholder="도매가 *" class="w-full border px-3 py-2 rounded-xl" required>
           <input type="number" id="p-box-qty" placeholder="입수량(1박스) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
@@ -426,7 +425,6 @@
           <input type="number" id="p-stock" placeholder="재고수량 *" class="w-full border px-3 py-2 rounded-xl" required>
         </div>
         
-        <!-- 날짜 정보 영역 -->
         <div class="grid grid-cols-2 gap-2 border-t border-stone-100 pt-2">
           <div>
             <label class="block font-bold text-rose-600 mb-1 text-[10px]">⏰ 발주 마감일 (선택)</label>
@@ -438,10 +436,8 @@
           </div>
         </div>
 
-        <!-- 텍스트 영역 -->
         <input type="text" id="p-comment" placeholder="한줄 코멘트 (선택)" class="w-full border px-3 py-2 rounded-xl mt-2">
         
-        <!-- 이미지 영역 -->
         <div id="image-paste-zone" tabindex="0" class="border-2 border-dashed border-amber-300 bg-amber-50/30 rounded-xl p-4 text-center cursor-pointer min-h-[100px] flex flex-col justify-center items-center relative">
           <input type="file" id="p-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
           <input type="hidden" id="p-image-data">
@@ -468,7 +464,8 @@
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const PAGE_SIZE = 25;
+    // [개선] 2, 4, 5열 그리드 모두에 완벽히 호환되는 20개 사이즈로 설정
+    const PAGE_SIZE = 20;
     let currentPage = 1;
 
     let categoriesList = []; 
@@ -777,17 +774,27 @@
         const deadlineStr = p.deadline || '';
         const safeDelivery = escapeHtml(p.delivery_date || '').replace(/'/g, "\\'");
         
-        // 박스 수량 폴백 처리
         const safeBoxQty = p.box_qty || 1;
 
         let priceHtml = `<span class="text-[11px] text-stone-400 font-bold">🔒 가입 후 도매가 확인 가능</span>`;
         let btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">조회 불가</button>`;
         
         if (isApproved) {
+          // [개선] 입수량이 2개 이상일 때만 (단가 × 입수량) 텍스트를 직관적으로 추가
+          let unitPriceText = '';
+          if (!isFee && safeBoxQty > 1) {
+            const unitPrice = Math.floor(p.wholesale_price / safeBoxQty);
+            unitPriceText = `<span class="text-[11px] text-stone-500 font-bold ml-1 block sm:inline">(${unitPrice.toLocaleString()}원 × ${safeBoxQty}개)</span>`;
+          }
+
           priceHtml = `
-            <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
-            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `입수량: ${safeBoxQty}개 / MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
+            <div class="flex flex-col sm:flex-row sm:items-center">
+              <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
+              ${unitPriceText}
+            </div>
+            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
           `;
+          
           if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
           else if (isOut) btnHtml = `<button disabled class="w-full bg-rose-100 text-rose-500 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">품절</button>`;
           else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${safeBoxQty},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}')" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
@@ -841,7 +848,16 @@
       pendingOrderItem = { id, name, price, moq, stock, category_id: catId, is_fee: isFee };
       
       document.getElementById('oc-name').innerText = name;
-      document.getElementById('oc-price').innerText = price.toLocaleString() + '원';
+      
+      // [개선] 모달 내부 가격에도 (낱개 단가 × 입수량) 직관적 표시
+      const priceEl = document.getElementById('oc-price');
+      if (!isFee && boxQty > 1) {
+          const unitPrice = Math.floor(price / boxQty);
+          priceEl.innerHTML = `${price.toLocaleString()}원 <span class="text-sm text-stone-500 font-bold ml-1">(${unitPrice.toLocaleString()}원 × ${boxQty}개)</span>`;
+      } else {
+          priceEl.innerText = price.toLocaleString() + '원';
+      }
+
       document.getElementById('oc-image').src = imageUrl || FALLBACK_IMAGE;
 
       const commentEl = document.getElementById('oc-comment');
@@ -1182,7 +1198,6 @@
         }
       }
 
-      // 8가지 필드 모두 포함된 payload
       const payload = {
         name: document.getElementById('p-name').value, 
         category_id: document.getElementById('p-cat').value,
