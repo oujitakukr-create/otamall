@@ -89,13 +89,41 @@
         </label>
       </div>
       <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-        <table class="w-full text-sm text-left"><tbody id="my-order-list-body"></tbody></table>
+        <table class="w-full text-sm text-left">
+          <thead class="bg-stone-50 text-xs text-stone-500 border-b border-stone-200">
+            <tr>
+              <th class="px-5 py-3">발주일자</th>
+              <th class="px-5 py-3">상품명</th>
+              <th class="px-5 py-3 text-center">수량</th>
+              <th class="px-5 py-3 text-right">총 결제금액</th>
+              <th class="px-5 py-3 text-center">진행상태</th>
+            </tr>
+          </thead>
+          <tbody id="my-order-list-body"></tbody>
+        </table>
       </div>
     </section>
 
     <!-- 탭 4: 관리자 -->
     <section id="tab-admin" class="space-y-8 hidden">
-      <!-- 1. 카테고리 관리 -->
+      <!-- 단체 메일 발송 -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+        <div class="flex justify-between items-center border-b border-stone-100 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
+            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400">
+          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
+          <div class="flex justify-end gap-2">
+            <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">서버를 통해 메일 발송하기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 카테고리 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">🏷️ 카테고리 관리</h3>
         <p class="text-xs text-rose-500 font-bold mb-2">💡 '회비'라는 이름으로 대분류를 만들면 자동으로 재고 무제한 및 단독 발주(배송비/부가세 면제) 혜택이 적용됩니다.</p>
@@ -107,7 +135,7 @@
         <div id="admin-category-tree" class="space-y-3 pt-2"></div>
       </div>
 
-      <!-- 2. 상품 관리 -->
+      <!-- 상품 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-100 pb-3 gap-3">
           <div>
@@ -125,7 +153,7 @@
               <tr>
                 <th class="px-4 py-3">이미지</th>
                 <th class="px-4 py-3">상품명 / 카테고리</th>
-                <th class="px-4 py-3 text-right">도매가 (입수량)</th>
+                <th class="px-4 py-3 text-right">도매가</th>
                 <th class="px-4 py-3 text-center">재고 / MOQ</th>
                 <th class="px-4 py-3 text-center">관리</th>
               </tr>
@@ -135,7 +163,7 @@
         </div>
       </div>
 
-      <!-- 3. 회원 승인 관리 (삭제 버튼 추가 완료) -->
+      <!-- 회원 승인 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 관리</h3>
         <div class="overflow-x-auto">
@@ -157,7 +185,7 @@
         </div>
       </div>
 
-      <!-- 4. 발주 내역 관리 -->
+      <!-- 전체 발주 내역 관리 -->
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
         <div class="flex justify-between items-center border-b border-stone-100 pb-3">
           <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
@@ -169,23 +197,20 @@
             <button onclick="exportOrdersToExcel()" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">엑셀 다운로드</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-sm text-left"><tbody id="admin-orders-body"></tbody></table></div>
-      </div>
-
-      <!-- 5. 단체 메일 발송 UI -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
-        <div class="flex justify-between items-center border-b border-stone-100 pb-3">
-          <div>
-            <h3 class="text-base font-bold text-stone-800">📧 승인 회원 단체 메일 발송 (Resend 연동)</h3>
-            <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 가입 승인된 정회원들에게만 단체 메일을 발송합니다.</p>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400">
-          <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (HTML 적용 및 줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-28 resize-none focus:ring-2 focus:ring-blue-400"></textarea>
-          <div class="flex justify-end gap-2">
-            <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">서버를 통해 메일 발송하기</button>
-          </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-stone-600">
+            <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+              <tr>
+                <th class="px-4 py-3">주문번호 / 일시</th>
+                <th class="px-4 py-3">신청 파트너스</th>
+                <th class="px-4 py-3">주문 상품</th>
+                <th class="px-4 py-3 text-right">총 결제금액</th>
+                <th class="px-4 py-3 text-center">세금계산서</th>
+                <th class="px-4 py-3 text-center">상태 변경 및 관리</th>
+              </tr>
+            </thead>
+            <tbody id="admin-orders-body"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -197,19 +222,14 @@
       <button onclick="closeOrderChoiceModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
-      <!-- 상품 상세 정보 영역 -->
       <div class="flex gap-4 items-start pt-1">
         <img id="oc-image" src="" class="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-sm shrink-0">
         <div class="space-y-1.5 flex-1">
           <span id="oc-deadline" class="hidden text-[10px] font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md inline-block"></span>
           <span id="oc-delivery" class="hidden text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md inline-block mt-1"></span>
           <p id="oc-name" class="font-bold text-stone-800 text-sm leading-snug line-clamp-2"></p>
-          <p id="oc-comment" class="hidden text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block mt-0.5"></p>
-          
-          <!-- 개당 단가 노출 영역 -->
-          <p id="oc-unit-price" class="hidden text-xs font-bold text-stone-500 mt-0.5"></p>
-          
-          <p id="oc-price" class="text-amber-600 font-black text-base pt-0.5"></p>
+          <p id="oc-comment" class="hidden text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block"></p>
+          <p id="oc-price" class="text-amber-600 font-black text-base pt-1"></p>
         </div>
       </div>
 
@@ -308,7 +328,7 @@
             6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
 
             <p class="font-bold text-stone-800 mb-1">계약 기간 및 해지</p>
-            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 단다.<br>
+            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 한다.<br>
             2. 각 당사자는 상대방에게 각 호의 사유 중 하나가 발생한 경우, 서면 통지하여 본 계약을 해제 또는 해지할 수 있다.<br>
             - 상대방이 본 계약의 각 조항을 위반하거나 본 계약 상의 의무를 이행하지 아니한 때<br>
             - 정부의 인∙허가 또는 등록∙신고 등이 필요한 것으로 법률 또는 규정이 제정 또는 개정되는 경우<br>
@@ -337,7 +357,6 @@
         <input type="password" id="auth-password" required placeholder="비밀번호 *" class="w-full border rounded-xl px-3 py-2 text-sm">
         
         <div id="auth-biz-group" class="hidden space-y-2 border-t pt-2 mt-2">
-          <!-- 컬럼명 불일치 해소를 위한 id 값 확인 -->
           <input type="text" id="auth-company-name" placeholder="상호명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
           <input type="text" id="auth-biz-number" placeholder="사업자등록번호 (숫자만 10자리) *" class="w-full border rounded-xl px-3 py-2 text-sm">
           <input type="text" id="auth-ceo-name" placeholder="대표자 성명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
@@ -354,8 +373,57 @@
     </div>
   </div>
 
+  <!-- 상품 등록 모달 -->
+  <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
+      <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
+      <h3 id="modal-p-title" class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-2">📦 상품 관리</h3>
+      
+      <form onsubmit="saveProduct(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="p-id">
+        <input type="text" id="p-name" placeholder="상품명 *" class="w-full border px-3 py-2 rounded-xl" required>
+        <select id="p-cat" class="w-full border px-3 py-2 rounded-xl bg-stone-50" required><option value="">카테고리 선택 *</option></select>
+        <div class="grid grid-cols-3 gap-2">
+          <input type="number" id="p-price" placeholder="도매가 *" class="w-full border px-3 py-2 rounded-xl" required>
+          <input type="number" id="p-moq" placeholder="MOQ *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
+          <input type="number" id="p-stock" placeholder="재고 *" class="w-full border px-3 py-2 rounded-xl" required>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 border-t border-stone-100 pt-2">
+          <div>
+            <label class="block font-bold text-rose-600 mb-1 text-[10px]">⏰ 발주 마감일 (선택)</label>
+            <input type="date" id="p-deadline" class="w-full border px-3 py-2 rounded-xl text-rose-500 font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-blue-600 mb-1 text-[10px]">🚚 예상 배송 시기 (선택)</label>
+            <input type="text" id="p-delivery-date" placeholder="예: 10월 중순" class="w-full border px-3 py-2 rounded-xl text-blue-600 font-bold">
+          </div>
+        </div>
+
+        <input type="text" id="p-comment" placeholder="한줄 코멘트 (선택)" class="w-full border px-3 py-2 rounded-xl mt-2">
+        
+        <div id="image-paste-zone" tabindex="0" class="border-2 border-dashed border-amber-300 bg-amber-50/30 rounded-xl p-4 text-center cursor-pointer min-h-[100px] flex flex-col justify-center items-center relative">
+          <input type="file" id="p-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
+          <input type="hidden" id="p-image-data">
+          <div id="paste-placeholder">
+            <p class="font-bold text-stone-700">📋 클릭 후 <span class="text-amber-600 bg-amber-100 px-1 rounded">Ctrl + V</span> 붙여넣기</p>
+          </div>
+          <div id="image-preview-container" class="hidden relative">
+            <img id="image-preview" src="" class="max-h-24 rounded object-contain border border-stone-200">
+            <button type="button" onclick="clearImagePreview(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-5 h-5 font-bold">✕</button>
+          </div>
+        </div>
+        <input type="text" id="p-image-url-direct" oninput="handleImageUrlInput(this.value)" placeholder="이미지 Direct URL (선택)" class="w-full border px-3 py-2 rounded-xl">
+        
+        <div class="flex justify-end gap-2 pt-2 border-t border-stone-100">
+          <button type="button" onclick="closeProductModal()" class="bg-stone-100 px-4 py-2 rounded-xl font-bold">취소</button>
+          <button type="submit" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold" id="btn-save-product">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    // Supabase 연동값
     const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -387,20 +455,15 @@
     });
 
     function switchTab(tab) {
-      ['catalog', 'notice', 'orders', 'admin'].forEach(t => {
-        const el = document.getElementById(`tab-${t}`);
-        if(el) el.classList.add('hidden');
-      });
-      const targetEl = document.getElementById(`tab-${tab}`);
-      if(targetEl) targetEl.classList.remove('hidden');
-      
+      ['catalog', 'notice', 'orders', 'admin'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
       if (tab === 'admin') { loadAdminCategories(); loadAdminProducts(); loadAdminUsers(); loadAdminOrders(); }
       if (tab === 'orders') loadMyOrders();
       if (tab === 'notice') loadNotices();
       if (tab === 'catalog') loadProducts(currentPage);
     }
 
-    // --- 인증 로직 ---
+    // --- 인증 ---
     async function checkAuthStatus() {
       const { data: { user } } = await sbClient.auth.getUser();
       if (user) {
@@ -439,54 +502,29 @@
 
     async function handleAuthSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('auth-email').value.trim();
+      const email = document.getElementById('auth-email').value;
       const password = document.getElementById('auth-password').value;
-      const btn = document.getElementById('auth-submit-btn');
-      const originalText = btn.innerText;
-      
-      btn.innerText = '처리 중...'; 
-      btn.disabled = true;
 
       try {
         if (currentAuthMode === 'login') {
           const { error } = await sbClient.auth.signInWithPassword({ email, password });
-          if (error) throw new Error("로그인에 실패했습니다. 이메일과 비밀번호, 또는 인증 여부를 확인해주세요.");
-          window.location.reload();
+          if (error) throw error;
         } else {
-          // 회원가입
           const { data, error } = await sbClient.auth.signUp({ email, password });
-          if (error) {
-            if (error.status === 500) {
-               throw new Error("서버 내부 오류(500)입니다. Supabase 대시보드에서 이메일 인증 기능(Confirm email)을 끄고 다시 시도해주세요.");
-            }
-            throw new Error(error.message);
-          }
+          if (error) throw error;
           
-          if (!data || !data.user) {
-            throw new Error("가입을 처리할 수 없습니다. 이미 가입된 이메일이거나 올바르지 않은 형식입니다.");
-          }
-
           let fileUrl = '';
           const fileInput = document.getElementById('auth-biz-file');
           if (fileInput.files[0]) {
             const file = fileInput.files[0];
             const fileExt = file.name.split('.').pop();
             const fileName = `${data.user.id}_${Date.now()}.${fileExt}`;
-            
             const { error: upErr } = await sbClient.storage.from('business-licenses').upload(fileName, file);
-            if (upErr) {
-              console.error("Storage Error:", upErr);
-              throw new Error("사업자등록증 업로드에 실패했습니다. (SQL 보안 정책을 확인해주세요)");
-            }
-            
-            fileUrl = sbClient.storage.from('business-licenses').getPublicUrl(fileName).data.publicUrl;
+            if (!upErr) fileUrl = fileName;
           }
 
-          const { error: profileErr } = await sbClient.from('profiles').insert([{
-            id: data.user.id, 
-            email: email, 
-            role: 'user', 
-            status: 'pending',
+          await sbClient.from('profiles').insert([{
+            id: data.user.id, email, role: 'user', status: 'pending',
             company_name: document.getElementById('auth-company-name').value,
             business_number: document.getElementById('auth-biz-number').value,
             ceo_name: document.getElementById('auth-ceo-name').value,
@@ -495,33 +533,17 @@
             address: document.getElementById('auth-address').value,
             business_license_url: fileUrl
           }]);
-          
-          if (profileErr) {
-            console.error("Profile Insert Error:", profileErr);
-            throw new Error("회원 정보 저장에 실패했습니다. (SQL 편집기에서 ALTER TABLE 쿼리를 실행해 컬럼을 추가해주세요.)");
-          }
-
-          alert("🎉 회원가입 신청이 완료되었습니다!\n관리자가 사업자등록증 검수 후 승인 처리를 진행할 예정입니다. 승인 완료 후 로그인하시면 도매가를 확인하실 수 있습니다.");
-          closeAuthModal();
-          
-          await sbClient.auth.signOut();
-          window.location.reload();
+          alert("가입신청이 접수되었습니다! 회비 입금이 확인된 후 관리자가 승인 처리를 진행합니다.");
         }
-      } catch (err) { 
-        console.error("Auth Error:", err);
-        const errorMessage = err.message || JSON.stringify(err);
-        alert(errorMessage === '{}' ? '알 수 없는 시스템 오류가 발생했습니다. 개발자 도구의 콘솔 창을 확인하세요.' : errorMessage); 
-      } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-      }
+        closeAuthModal();
+        window.location.reload();
+      } catch (err) { alert(err.message); }
     }
-    
     async function handleLogout() { await sbClient.auth.signOut(); window.location.reload(); }
 
     // --- Resend API 단체 메일 발송 ---
     async function getRecipientEmails() {
-      const { data } = await sbClient.from('profiles').select('email').eq('status', 'approved');
+      const { data } = await sbClient.from('profiles').select('email').neq('role', 'admin');
       return (data || []).map(u => u.email).filter(e => e);
     }
 
@@ -532,7 +554,7 @@
       if (!subject || !body) return alert("제목과 내용을 모두 입력하세요.");
 
       const emails = await getRecipientEmails();
-      if (emails.length === 0) return alert("발송할 승인된 회원 이메일이 없습니다.");
+      if (emails.length === 0) return alert("발송할 회원 이메일이 없습니다.");
 
       const btn = document.getElementById('btn-send-mail');
       btn.innerText = '발송 중...'; btn.disabled = true;
@@ -557,8 +579,6 @@
     async function loadNotices() {
       const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('notice-list-body');
-      if(!tbody) return;
-      
       if (!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-stone-400">등록된 공지사항이 없습니다.</td></tr>';
       tbody.innerHTML = data.map((n, i) => `
         <tr class="border-b border-stone-100 hover:bg-stone-50/50 cursor-pointer" onclick="openNoticeReadModal(${n.id}, '${escapeHtml(n.title)}', '${escapeHtml(n.content).replace(/\n/g, '\\n')}', '${n.created_at}')">
@@ -575,12 +595,10 @@
       document.getElementById('rn-content').innerText = content.replace(/\\n/g, '\n');
       const adminActions = document.getElementById('rn-admin-actions');
       if (currentUserProfile?.role === 'admin') {
-        if(adminActions) adminActions.classList.remove('hidden');
+        adminActions.classList.remove('hidden');
         document.getElementById('rn-edit-btn').onclick = () => { closeNoticeReadModal(); openNoticeWriteModal(id, title, content); };
         document.getElementById('rn-del-btn').onclick = () => deleteNotice(id);
-      } else {
-        if(adminActions) adminActions.classList.add('hidden');
-      }
+      } else adminActions.classList.add('hidden');
       document.getElementById('notice-read-modal').classList.remove('hidden');
     }
     function closeNoticeReadModal() { document.getElementById('notice-read-modal').classList.add('hidden'); }
@@ -625,20 +643,18 @@
       const aSel = document.getElementById('admin-cat-parent');
 
       const mainCats = categoriesList.filter(c => !c.parent_id);
-      
-      if(mSel) mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
-      if(aMSel) aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
-      if(aSel) aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
-      if(pSel) pSel.innerHTML = '<option value="">카테고리 선택</option>';
+      mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
+      pSel.innerHTML = '<option value="">카테고리 선택</option>';
 
       mainCats.forEach(cat => {
-        if(mSel) mSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        if(aMSel) aMSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        if(aSel) aSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        if(pSel) pSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)} (대분류)</option>`;
-        
+        mSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        aMSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        aSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        pSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)} (대분류)</option>`;
         categoriesList.filter(s => String(s.parent_id) === String(cat.id)).forEach(sub => {
-          if(pSel) pSel.innerHTML += `<option value="${sub.id}"> └ ${escapeHtml(sub.name)}</option>`;
+          pSel.innerHTML += `<option value="${sub.id}"> └ ${escapeHtml(sub.name)}</option>`;
         });
       });
     }
@@ -646,7 +662,6 @@
     function onMainCategoryChange() {
       const mainId = document.getElementById('filter-main-cat').value;
       const sSel = document.getElementById('filter-sub-cat');
-      if(!sSel) return;
       sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
       sSel.disabled = mainId === 'all';
       if(mainId !== 'all') {
@@ -660,7 +675,6 @@
     function onAdminProductMainCatChange() {
       const mainId = document.getElementById('admin-filter-main-cat').value;
       const sSel = document.getElementById('admin-filter-sub-cat');
-      if(!sSel) return;
       sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
       sSel.disabled = mainId === 'all';
       if(mainId !== 'all') {
@@ -680,16 +694,11 @@
 
     async function loadProducts(page = 1) {
       currentPage = page; 
-      const sortEl = document.getElementById('catalog-sort');
-      const sort = sortEl ? sortEl.value : 'id_desc';
-      
+      const sort = document.getElementById('catalog-sort').value;
       let query = sbClient.from('products').select('*', { count: 'exact' }).eq('is_archived', false);
       
-      const mCatEl = document.getElementById('filter-main-cat');
-      const sCatEl = document.getElementById('filter-sub-cat');
-      const mCat = mCatEl ? mCatEl.value : 'all';
-      const sCat = sCatEl ? sCatEl.value : 'all';
-      
+      const mCat = document.getElementById('filter-main-cat').value;
+      const sCat = document.getElementById('filter-sub-cat').value;
       if (sCat !== 'all') query = query.eq('category_id', sCat);
       else if (mCat !== 'all') query = query.in('category_id', [mCat, ...categoriesList.filter(c=>String(c.parent_id)===String(mCat)).map(c=>c.id)]);
 
@@ -702,15 +711,12 @@
       const { data, count } = await query;
 
       const grid = document.getElementById('product-grid');
-      if(!grid) return;
-      
       const isApproved = currentUserProfile?.status === 'approved' || currentUserProfile?.role === 'admin';
 
       grid.innerHTML = (data || []).map(p => {
         const isExpired = p.deadline && new Date(p.deadline) < new Date();
         const isFee = isFeeProduct(p.category_id);
         const isOut = !isFee && p.stock < 1;
-        const qtyBox = p.quantity_per_box || 1; 
         
         const safeName = escapeHtml(p.name).replace(/'/g, "\\'");
         const safeComment = escapeHtml(p.comment || '').replace(/'/g, "\\'");
@@ -723,16 +729,12 @@
         
         if (isApproved) {
           priceHtml = `
-            <div class="flex items-baseline gap-1">
-              <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
-              ${!isFee ? `<span class="text-[10px] text-stone-500 font-bold">(${qtyBox}입)</span>` : ''}
-            </div>
+            <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
             <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
           `;
-          
           if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
           else if (isOut) btnHtml = `<button disabled class="w-full bg-rose-100 text-rose-500 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">품절</button>`;
-          else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}', ${qtyBox})" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
+          else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}')" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
         }
 
         let deadlineBadge = '';
@@ -765,7 +767,6 @@
 
     function renderPagination(totalCount, page) {
       const container = document.getElementById('pagination-container');
-      if(!container) return;
       const totalPages = Math.ceil(totalCount / PAGE_SIZE);
       if (totalPages <= 1) return container.innerHTML = '';
 
@@ -777,10 +778,10 @@
       container.innerHTML = html;
     }
 
-    // --- 수량 선택 모달 ---
+    // --- 수량 선택 및 2-Way 모달 ---
     let pendingOrderItem = null;
 
-    function openOrderChoiceModal(id, name, price, moq, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr, qtyBox) {
+    function openOrderChoiceModal(id, name, price, moq, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr) {
       pendingOrderItem = { id, name, price, moq, stock, category_id: catId, is_fee: isFee };
       
       document.getElementById('oc-name').innerText = name;
@@ -793,15 +794,6 @@
         commentEl.classList.remove('hidden'); 
       } else { 
         commentEl.classList.add('hidden'); 
-      }
-
-      const unitPriceEl = document.getElementById('oc-unit-price');
-      if (!isFee && qtyBox > 1) {
-        const unitPrice = Math.floor(price / qtyBox);
-        unitPriceEl.innerText = `￦${unitPrice.toLocaleString()} × ${qtyBox}입`;
-        unitPriceEl.classList.remove('hidden');
-      } else {
-        unitPriceEl.classList.add('hidden');
       }
 
       const deadlineEl = document.getElementById('oc-deadline');
@@ -948,21 +940,26 @@
         if (checkoutMode === 'cart') { cart = []; document.getElementById('cart-count').innerText = 0; }
         closeCheckoutModal();
         loadProducts(currentPage);
+        loadMyOrders(); // 구매자 발주 내역 즉시 새로고침
       } catch (err) { alert("발주 실패: " + err.message); }
     }
 
+    // --- 나의 발주 내역 로드 (수정 완료) ---
     async function loadMyOrders() {
+      if (!currentUserProfile?.id) return;
       const hide = document.getElementById('filter-not-completed-user').checked;
-      let query = sbClient.from('orders').select('*, products(name)').eq('user_id', currentUser.id).order('created_at', {ascending: false});
+      let query = sbClient.from('orders').select('*, products(name)').eq('user_id', currentUserProfile.id).order('created_at', {ascending: false});
       if (hide) {
         query = query.neq('status', '배송완료').neq('status', '취소').neq('status', '자동취소(미입금)');
       }
       const { data } = await query;
-      
       const tbody = document.getElementById('my-order-list-body');
-      if(!tbody) return;
+      
+      if (!data || data.length === 0) {
+        return tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-stone-400">발주 신청 내역이 없습니다.</td></tr>';
+      }
 
-      tbody.innerHTML = (data||[]).map(o => {
+      tbody.innerHTML = data.map(o => {
         let statusClass = "bg-amber-100 text-amber-800";
         if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
         else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
@@ -971,9 +968,9 @@
         return `
         <tr class="border-b border-stone-100 hover:bg-stone-50">
           <td class="px-5 py-3 text-xs text-stone-500 font-mono">${new Date(o.created_at).toLocaleDateString()}</td>
-          <td class="px-5 py-3 font-bold">${escapeHtml(o.products?.name)}</td>
+          <td class="px-5 py-3 font-bold">${escapeHtml(o.products?.name || '상품 정보 없음')}</td>
           <td class="px-5 py-3 text-center text-xs font-bold">${o.quantity}개</td>
-          <td class="px-5 py-3 text-right font-black text-amber-600">${o.total_price.toLocaleString()}원</td>
+          <td class="px-5 py-3 text-right font-black text-amber-600">${Number(o.total_price).toLocaleString()}원</td>
           <td class="px-5 py-3 text-center"><span class="${statusClass} px-2.5 py-0.5 rounded-full text-[10px] font-bold">${o.status}</span></td>
         </tr>`
       }).join('');
@@ -982,7 +979,6 @@
     // --- 관리자 카테고리 ---
     async function loadAdminCategories() {
       const container = document.getElementById('admin-category-tree');
-      if(!container) return;
       const mainCats = categoriesList.filter(c => !c.parent_id);
       if (mainCats.length === 0) return container.innerHTML = '<p class="text-xs text-stone-400">없음</p>';
 
@@ -1023,10 +1019,9 @@
       await loadCategories(); loadAdminCategories();
     }
 
-    // --- 스크린샷 캡처 (워터마크 로직) ---
+    // --- 스크린샷 캡처 (워터마크) ---
     function setupImagePasteHandlers() {
       const zone = document.getElementById('image-paste-zone');
-      if(!zone) return;
       zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
       zone.addEventListener('paste', e => {
         for (const item of (e.clipboardData || window.clipboardData).items) {
@@ -1107,15 +1102,10 @@
       document.getElementById('p-id').value = id || '';
       document.getElementById('modal-p-title').innerText = id ? '✏️ 상품 수정' : '📦 신규 등록';
       if(!id) {
-        document.getElementById('p-name').value = ''; 
-        document.getElementById('p-cat').value = '';
-        document.getElementById('p-price').value = ''; 
-        document.getElementById('p-qty-per-box').value = '1'; 
-        document.getElementById('p-moq').value = '1';
-        document.getElementById('p-stock').value = '100'; 
-        document.getElementById('p-deadline').value = '';
-        document.getElementById('p-delivery-date').value = ''; 
-        document.getElementById('p-comment').value = ''; 
+        document.getElementById('p-name').value = ''; document.getElementById('p-cat').value = '';
+        document.getElementById('p-price').value = ''; document.getElementById('p-moq').value = '1';
+        document.getElementById('p-stock').value = '100'; document.getElementById('p-deadline').value = '';
+        document.getElementById('p-delivery-date').value = ''; document.getElementById('p-comment').value = ''; 
         clearImagePreview();
       }
       document.getElementById('product-modal').classList.remove('hidden');
@@ -1141,13 +1131,9 @@
       }
 
       const payload = {
-        name: document.getElementById('p-name').value, 
-        category_id: document.getElementById('p-cat').value,
-        wholesale_price: document.getElementById('p-price').value, 
-        quantity_per_box: document.getElementById('p-qty-per-box').value || 1, 
-        moq: document.getElementById('p-moq').value,
-        stock: document.getElementById('p-stock').value, 
-        comment: document.getElementById('p-comment').value,
+        name: document.getElementById('p-name').value, category_id: document.getElementById('p-cat').value,
+        wholesale_price: document.getElementById('p-price').value, moq: document.getElementById('p-moq').value,
+        stock: document.getElementById('p-stock').value, comment: document.getElementById('p-comment').value,
         deadline: document.getElementById('p-deadline').value ? new Date(document.getElementById('p-deadline').value+'T23:59:59').toISOString() : null,
         delivery_date: document.getElementById('p-delivery-date').value.trim() || null,
         image_url: finalImageUrl || null
@@ -1186,18 +1172,12 @@
         const { data, error } = await query;
         if (error) throw error;
         
-        const tbody = document.getElementById('admin-product-list-body');
-        if(!tbody) return;
-
-        tbody.innerHTML = (data||[]).map(p => {
+        document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => {
           return `
           <tr class="border-b border-stone-100 text-xs hover:bg-stone-50">
             <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
             <td class="px-4 py-2 font-bold">${escapeHtml(p.name)}<br><span class="text-stone-400 font-normal">[${escapeHtml(getCatName(p.category_id))}]</span></td>
-            <td class="px-4 py-2 text-right font-black text-amber-600">
-              ${Number(p.wholesale_price).toLocaleString()}원<br>
-              <span class="text-[10px] text-stone-400 font-normal">(${p.quantity_per_box || 1}입)</span>
-            </td>
+            <td class="px-4 py-2 text-right font-black text-amber-600">${Number(p.wholesale_price).toLocaleString()}원</td>
             <td class="px-4 py-2 text-center">${p.stock}개<br><span class="text-[10px] text-stone-400">MOQ ${p.moq}</span></td>
             <td class="px-4 py-2 text-center space-x-1">
               <button onclick="editProduct(${p.id})" class="bg-stone-200 px-2 py-1 rounded font-bold">수정</button>
@@ -1212,13 +1192,9 @@
 
     async function editProduct(id) {
       const { data: p } = await sbClient.from('products').select('*').eq('id', id).single();
-      document.getElementById('p-id').value = p.id; 
-      document.getElementById('p-name').value = p.name;
-      document.getElementById('p-cat').value = p.category_id||''; 
-      document.getElementById('p-price').value = p.wholesale_price;
-      document.getElementById('p-qty-per-box').value = p.quantity_per_box || 1; 
-      document.getElementById('p-moq').value = p.moq; 
-      document.getElementById('p-stock').value = p.stock;
+      document.getElementById('p-id').value = p.id; document.getElementById('p-name').value = p.name;
+      document.getElementById('p-cat').value = p.category_id||''; document.getElementById('p-price').value = p.wholesale_price;
+      document.getElementById('p-moq').value = p.moq; document.getElementById('p-stock').value = p.stock;
       document.getElementById('p-comment').value = p.comment||'';
       if(p.deadline) document.getElementById('p-deadline').value = p.deadline.split('T')[0];
       document.getElementById('p-delivery-date').value = p.delivery_date || ''; 
@@ -1232,23 +1208,14 @@
       loadAdminProducts(); loadProducts(currentPage);
     }
 
-    // --- 회원 승인 관리 및 🚨 삭제 로직 ---
+    // --- 회원 승인 관리 ---
     async function loadAdminUsers() {
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
-      const tbody = document.getElementById('admin-user-list-body');
-      if(!tbody) return;
-
-      tbody.innerHTML = (data||[]).map(u => {
+      document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
         const fileHtml = u.business_license_url 
           ? `<a href="${u.business_license_url}" target="_blank" title="사업자등록증 원본 보기"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
           : '<span class="text-stone-400">미첨부</span>';
-
-        // 상태값 한글 변환
-        let statusBadge = '';
-        if(u.status === 'approved') statusBadge = '<span class="text-emerald-600 font-black">승인완료</span>';
-        else if(u.status === 'pending') statusBadge = '<span class="text-amber-600 font-bold">승인대기</span>';
-        else if(u.status === 'rejected') statusBadge = '<span class="text-stone-400 font-bold">보류(거절)</span>';
 
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
@@ -1256,56 +1223,16 @@
           <td class="px-4 py-2">${escapeHtml(u.ceo_name)}<br>${escapeHtml(u.phone)}</td>
           <td class="px-4 py-2 font-bold">${escapeHtml(u.email)}<br><span class="font-normal text-stone-400">입금자: ${escapeHtml(u.depositor_name)}</span></td>
           <td class="px-4 py-2 text-center align-middle">${fileHtml}</td>
-          <td class="px-4 py-2 text-center">${statusBadge}</td>
-          <td class="px-4 py-2 text-center space-x-1 whitespace-nowrap">
-            <button onclick="sbClient.from('profiles').update({status:'approved'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1.5 rounded font-bold shadow-sm transition">승인</button>
-            <button onclick="sbClient.from('profiles').update({status:'pending'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-stone-200 hover:bg-stone-300 text-stone-700 px-2 py-1.5 rounded font-bold transition">보류</button>
-            <button onclick="deleteAdminUser('${u.id}')" class="bg-rose-500 hover:bg-rose-600 text-white px-2 py-1.5 rounded font-bold shadow-sm transition">삭제</button>
+          <td class="px-4 py-2 text-center font-bold text-amber-600">${u.status}</td>
+          <td class="px-4 py-2 text-center space-x-1">
+            <button onclick="sbClient.from('profiles').update({status:'approved'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-emerald-500 text-white px-2 py-1 rounded">승인</button>
+            <button onclick="sbClient.from('profiles').update({status:'pending'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-stone-300 px-2 py-1 rounded">보류</button>
           </td>
-        </tr>
-        `
+        </tr>`
       }).join('');
     }
 
-    // 🚨 관리자 전용 '회원 완전 삭제' 함수
-    async function deleteAdminUser(uid) {
-      // 1차 방어: 삭제 의사 재확인
-      if (!confirm("⚠️ 경고: 정말 해당 회원을 탈퇴시키시겠습니까?\n'예'를 누르시면 데이터베이스에서 모든 정보가 영구적으로 제거되며, 해당 회원은 더 이상 로그인이나 도매가 확인이 불가능해집니다.")) {
-        return;
-      }
-      
-      try {
-        // SQL Editor에서 등록한 RPC 함수 호출
-        const { error } = await sbClient.rpc('admin_delete_user', { target_user_id: uid });
-        
-        if (error) {
-          // SQL 쿼리를 돌리지 않았을 경우를 대비한 2차 방어 (정보 덮어쓰기 & 강제 차단)
-          console.warn("SQL 함수 누락으로 인한 우회 삭제 진행:", error);
-          
-          const { error: fallbackErr } = await sbClient.from('profiles').update({
-            status: 'rejected',
-            company_name: '[삭제된 계정]',
-            business_number: '0000000000',
-            ceo_name: '정보 파기됨',
-            phone: '000-0000-0000',
-            depositor_name: '-',
-            address: '-',
-            business_license_url: ''
-          }).eq('id', uid);
-          
-          if (fallbackErr) throw fallbackErr;
-          alert("해당 회원의 개인정보가 파기되었으며 접근이 영구 차단되었습니다.\n(참고: Supabase SQL Editor에서 1단계 쿼리를 실행하시면 서버에서 뿌리까지 완전 삭제가 가능합니다.)");
-        } else {
-          // RPC가 정상 작동했을 때
-          alert("✅ 해당 회원이 서버에서 완전히 삭제되었습니다.");
-        }
-        
-        loadAdminUsers();
-      } catch (err) {
-        alert("삭제 중 오류가 발생했습니다: " + err.message);
-      }
-    }
-
+    // --- 관리자 발주 목록 로드 ---
     async function loadAdminOrders() {
       const hide = document.getElementById('filter-not-completed-admin').checked;
       let query = sbClient.from('orders').select('*, profiles(company_name, depositor_name), products(name)').order('id',{ascending:false});
@@ -1315,10 +1242,7 @@
       const { data } = await query;
       aggregatedOrdersList = data||[];
       
-      const tbody = document.getElementById('admin-orders-body');
-      if(!tbody) return;
-
-      tbody.innerHTML = aggregatedOrdersList.map(o=> {
+      document.getElementById('admin-orders-body').innerHTML = aggregatedOrdersList.map(o=> {
         let statusClass = "text-stone-800";
         if(o.status.includes('취소')) statusClass = "text-rose-600";
         else if(o.status === '배송완료') statusClass = "text-emerald-600";
@@ -1326,12 +1250,12 @@
 
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
-          <td class="px-4 py-2 font-mono">${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
-          <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'삭제된 회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
-          <td class="px-4 py-2">${escapeHtml(o.products?.name)} (${o.quantity}개)</td>
-          <td class="px-4 py-2 text-right font-bold">${Number(o.total_price).toLocaleString()}원</td>
+          <td class="px-4 py-2 font-mono">#${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'비회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(o.products?.name)} <span class="text-amber-600">(${o.quantity}개)</span></td>
+          <td class="px-4 py-2 text-right font-black text-stone-900">${Number(o.total_price).toLocaleString()}원</td>
           <td class="px-4 py-2 text-center">
-            <button onclick="sbClient.from('orders').update({tax_invoice_issued:${!o.tax_invoice_issued}}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="px-2 py-1 rounded ${o.tax_invoice_issued ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+            <button onclick="sbClient.from('orders').update({tax_invoice_issued:${!o.tax_invoice_issued}}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="px-2 py-1 rounded font-bold ${o.tax_invoice_issued ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
               ${o.is_tax_invoice ? (o.tax_invoice_issued ? '발급완료' : '미발급(신청)') : '신청안함'}
             </button>
           </td>
