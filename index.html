@@ -50,7 +50,6 @@
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
           <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none"><option value="all">대분류 (전체)</option></select>
           <select id="filter-sub-cat" onchange="loadProducts(1)" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none" disabled><option value="all">소분류 (전체)</option></select>
-          <!-- [개선] 구매자 상품 검색 필드 -->
           <input type="text" id="catalog-search" oninput="loadProducts(1)" placeholder="🔍 상품명 검색" class="w-full md:w-48 border border-stone-200 px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 mt-2 md:mt-0">
         </div>
         <select id="catalog-sort" onchange="loadProducts(1)" class="w-full md:w-auto border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700">
@@ -188,7 +187,7 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-stone-100 pb-3 gap-4">
             <div class="flex flex-col">
               <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
-              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 메인 목록에서 영구 제외됩니다.</p>
+              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 시스템 혼선 방지를 위해 메인 목록에서 영구 제외됩니다.</p>
             </div>
             
             <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
@@ -409,7 +408,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 (8개 필드 완벽 분리 적용) -->
+  <!-- 상품 등록 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -466,7 +465,6 @@
     const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // [개선] 2, 4, 5열 그리드 모두에 완벽히 호환되는 20개 사이즈로 설정
     const PAGE_SIZE = 20;
     let currentPage = 1;
 
@@ -576,7 +574,10 @@
             const fileExt = file.name.split('.').pop();
             const fileName = `${data.user.id}_${Date.now()}.${fileExt}`;
             const { error: upErr } = await sbClient.storage.from('business-licenses').upload(fileName, file);
-            if (!upErr) fileUrl = fileName;
+            // [개선] 엑스박스 404 해결: 파일명 대신 무조건 public URL 전체를 가져와서 DB에 저장
+            if (!upErr) {
+              fileUrl = sbClient.storage.from('business-licenses').getPublicUrl(fileName).data.publicUrl;
+            }
           }
 
           await sbClient.from('profiles').insert([{
@@ -756,7 +757,6 @@
       if (sCat !== 'all') query = query.eq('category_id', sCat);
       else if (mCat !== 'all') query = query.in('category_id', [mCat, ...categoriesList.filter(c=>String(c.parent_id)===String(mCat)).map(c=>c.id)]);
 
-      // [개선] 상품명 실시간 검색(ilike) 적용
       if (searchTerm) {
         query = query.ilike('name', `%${searchTerm}%`);
       }
@@ -1041,7 +1041,6 @@
         if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
         else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
         else if(o.status === '입고대기') statusClass = "bg-blue-100 text-blue-800";
-        // [개선] 발주대기 상태 (보라색 계열 적용)
         else if(o.status === '발주대기') statusClass = "bg-purple-100 text-purple-800";
 
         return `
@@ -1296,8 +1295,14 @@
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
       document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
-        const fileHtml = u.business_license_url 
-          ? `<a href="${u.business_license_url}" target="_blank" title="사업자등록증 원본 보기"><img src="${u.business_license_url}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition"></a>` 
+        // [개선] DB에 파일명만 저장되어 있던 과거 회원 복구용 예외 처리
+        let finalLicenseUrl = u.business_license_url;
+        if (finalLicenseUrl && !finalLicenseUrl.startsWith('http')) {
+            finalLicenseUrl = sbClient.storage.from('business-licenses').getPublicUrl(finalLicenseUrl).data.publicUrl;
+        }
+
+        const fileHtml = finalLicenseUrl 
+          ? `<a href="${finalLicenseUrl}" target="_blank" title="사업자등록증 원본 보기"><img src="${finalLicenseUrl}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}';this.parentElement.href='#';"></a>` 
           : '<span class="text-stone-400">미첨부</span>';
 
         return `
@@ -1378,7 +1383,6 @@
         let statusClass = "text-stone-800";
         if(o.status === '배송완료') statusClass = "text-emerald-600";
         else if(o.status === '입고대기') statusClass = "text-blue-600";
-        // [개선] 발주대기 상태 (보라색 계열 적용)
         else if(o.status === '발주대기') statusClass = "text-purple-600";
 
         let deadlineBadge = '';
