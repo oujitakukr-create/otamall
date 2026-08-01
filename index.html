@@ -46,12 +46,14 @@
     
     <!-- 탭 1: 카탈로그 -->
     <section id="tab-catalog" class="space-y-6">
-      <div class="flex flex-wrap gap-3 bg-white p-4 rounded-2xl shadow-sm border border-stone-200 items-center justify-between">
-        <div class="flex gap-2">
-          <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700"><option value="all">대분류 (전체)</option></select>
-          <select id="filter-sub-cat" onchange="loadProducts(1)" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700" disabled><option value="all">소분류 (전체)</option></select>
+      <div class="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-2xl shadow-sm border border-stone-200 items-start md:items-center justify-between">
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none"><option value="all">대분류 (전체)</option></select>
+          <select id="filter-sub-cat" onchange="loadProducts(1)" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none" disabled><option value="all">소분류 (전체)</option></select>
+          <!-- [개선] 구매자 상품 검색 필드 -->
+          <input type="text" id="catalog-search" oninput="loadProducts(1)" placeholder="🔍 상품명 검색" class="w-full md:w-48 border border-stone-200 px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 mt-2 md:mt-0">
         </div>
-        <select id="catalog-sort" onchange="loadProducts(1)" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700">
+        <select id="catalog-sort" onchange="loadProducts(1)" class="w-full md:w-auto border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700">
           <option value="id_desc">최신순</option><option value="name_asc">가나다순</option><option value="price_desc">가격높은순</option><option value="price_asc">가격낮은순</option>
         </select>
       </div>
@@ -186,7 +188,7 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-stone-100 pb-3 gap-4">
             <div class="flex flex-col">
               <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
-              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 시스템 혼선 방지를 위해 메인 목록에서 영구 제외됩니다.</p>
+              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 메인 목록에서 영구 제외됩니다.</p>
             </div>
             
             <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
@@ -263,7 +265,7 @@
           <span id="oc-delivery" class="hidden text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md inline-block mt-1"></span>
           <p id="oc-name" class="font-bold text-stone-800 text-sm leading-snug line-clamp-2"></p>
           <p id="oc-comment" class="hidden text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block"></p>
-          <p id="oc-price" class="text-amber-600 font-black text-base pt-1"></p>
+          <p id="oc-price" class="text-amber-600 font-black text-base pt-1 flex flex-col"></p>
         </div>
       </div>
 
@@ -749,8 +751,15 @@
       
       const mCat = document.getElementById('filter-main-cat').value;
       const sCat = document.getElementById('filter-sub-cat').value;
+      const searchTerm = document.getElementById('catalog-search')?.value.trim();
+
       if (sCat !== 'all') query = query.eq('category_id', sCat);
       else if (mCat !== 'all') query = query.in('category_id', [mCat, ...categoriesList.filter(c=>String(c.parent_id)===String(mCat)).map(c=>c.id)]);
+
+      // [개선] 상품명 실시간 검색(ilike) 적용
+      if (searchTerm) {
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
 
       if (sort === 'id_desc') query = query.order('id', {ascending: false});
       if (sort === 'name_asc') query = query.order('name', {ascending: true});
@@ -780,7 +789,6 @@
         let btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">조회 불가</button>`;
         
         if (isApproved) {
-          // [개선] 입수량이 2개 이상일 때만 (단가 × 입수량) 텍스트를 직관적으로 추가
           let unitPriceText = '';
           if (!isFee && safeBoxQty > 1) {
             const unitPrice = Math.floor(p.wholesale_price / safeBoxQty);
@@ -792,7 +800,7 @@
               <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
               ${unitPriceText}
             </div>
-            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
+            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `입수량: ${safeBoxQty}개 / MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
           `;
           
           if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
@@ -849,7 +857,6 @@
       
       document.getElementById('oc-name').innerText = name;
       
-      // [개선] 모달 내부 가격에도 (낱개 단가 × 입수량) 직관적 표시
       const priceEl = document.getElementById('oc-price');
       if (!isFee && boxQty > 1) {
           const unitPrice = Math.floor(price / boxQty);
@@ -1034,6 +1041,8 @@
         if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
         else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
         else if(o.status === '입고대기') statusClass = "bg-blue-100 text-blue-800";
+        // [개선] 발주대기 상태 (보라색 계열 적용)
+        else if(o.status === '발주대기') statusClass = "bg-purple-100 text-purple-800";
 
         return `
         <tr class="border-b border-stone-100 hover:bg-stone-50">
@@ -1369,6 +1378,8 @@
         let statusClass = "text-stone-800";
         if(o.status === '배송완료') statusClass = "text-emerald-600";
         else if(o.status === '입고대기') statusClass = "text-blue-600";
+        // [개선] 발주대기 상태 (보라색 계열 적용)
+        else if(o.status === '발주대기') statusClass = "text-purple-600";
 
         let deadlineBadge = '';
         if (o.products?.deadline) {
@@ -1391,6 +1402,7 @@
             <span class="font-bold ${statusClass}">${o.status}</span>
             <div class="flex flex-wrap justify-center gap-1 mt-1">
               <button onclick="sbClient.from('orders').update({status:'입금대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-amber-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-amber-200 transition">입금대기</button>
+              <button onclick="sbClient.from('orders').update({status:'발주대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-purple-100 px-2 py-0.5 rounded text-[10px] text-purple-800 font-bold hover:bg-purple-200 transition">발주대기</button>
               <button onclick="sbClient.from('orders').update({status:'입고대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-blue-200 transition">입고대기</button>
               <button onclick="sbClient.from('orders').update({status:'배송완료'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-emerald-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-emerald-200 transition">배송완료</button>
               <button onclick="if(confirm('이 발주를 취소 처리하시겠습니까? (재고는 롤백되지 않으며 리스트에서 즉시 사라집니다)')) sbClient.from('orders').update({status:'취소'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-[10px] font-bold hover:bg-rose-200 transition">취소</button>
