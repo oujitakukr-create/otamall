@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>B2B 도매 플랫폼</title>
+  <title>B2B 도매 플랫폼 - 올랑몰</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -19,8 +19,12 @@
   <header class="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-6">
-        <h1 class="font-extrabold text-lg text-amber-600 cursor-pointer" onclick="switchTab('catalog')">📦 OTAMALL B2B</h1>
-        <nav class="hidden md:flex items-center gap-4 text-sm font-bold">
+        <!-- [개선] 2단 로고 디자인 -->
+        <div class="cursor-pointer flex flex-col justify-center" onclick="switchTab('catalog')">
+          <span class="text-[10px] font-bold text-stone-400 tracking-tight pl-1">오타쿠를 위한 도매몰</span>
+          <h1 class="font-extrabold text-lg text-amber-600 leading-none mt-0.5">📦 올랑몰 B2B</h1>
+        </div>
+        <nav class="hidden md:flex items-center gap-4 text-sm font-bold ml-2">
           <button onclick="switchTab('catalog')" class="text-stone-600 hover:text-amber-600 transition">상품 카탈로그</button>
           <button id="nav-notice" onclick="switchTab('notice')" class="text-stone-600 hover:text-amber-600 hidden transition">공지사항</button>
           <button id="nav-orders" onclick="switchTab('orders')" class="text-stone-600 hover:text-amber-600 hidden transition">발주 내역</button>
@@ -107,10 +111,9 @@
       </div>
     </section>
 
-    <!-- 탭 4: 관리자 대시보드 (서브탭 구조 적용) -->
+    <!-- 탭 4: 관리자 대시보드 -->
     <section id="tab-admin" class="hidden h-full flex flex-col space-y-6">
       
-      <!-- 관리자 서브 네비게이션 (LNB) -->
       <div class="bg-white border border-stone-200 rounded-2xl shadow-sm px-4 py-3 flex gap-2 overflow-x-auto">
         <button onclick="switchAdminTab('products')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl bg-stone-800 text-white transition">📦 상품/카테고리 관리</button>
         <button onclick="switchAdminTab('users')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl text-stone-500 hover:bg-stone-100 transition">👤 B2B 회원 관리</button>
@@ -308,7 +311,7 @@
     </div>
   </div>
 
-  <!-- 공지사항 모달 -->
+  <!-- 공지사항/인증 모달 등 기존 요소 -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -333,7 +336,7 @@
     </div>
   </div>
 
-  <!-- 인증 모달 -->
+  <!-- 인증 모달 (올랑몰 및 회비 정책 변경 적용) -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -346,20 +349,20 @@
           <label class="block text-[11px] font-bold text-stone-600 mb-1">📜 이용 약관 및 제휴 계약서 (스크롤하여 확인)</label>
           <div class="contract-box mb-2 text-stone-600">
             <p class="font-bold text-stone-800 mb-1">제휴 계약서</p>
-            "오타몰"은 "파트너스"에게 소매가보다 저렴하게 상품을 구입할 수 있는 "서비스"를 제공한다.<br>
-            "파트너스"는 "오타몰"에 상품 구매에 필요한 금액을 제공하고, "오타몰"은 상품을 대리 구매하여 "파트너스"가 원하는 주소지로 상품을 발송한다.<br>
-            상품 구매에 필요한 금액은 "오타몰"이 사전에 정한 방식으로 지불되어야 하며, "파트너스"는 "오타몰"이 제공한 정보를 통해 상품을 자유롭게 주문할 수 있다.<br>
-            “파트너스”는 “오타몰”로부터 제공 받는 모든 상품에 대한 정보 및 이미지를 외부로 유출하지 않을 비밀 유지 의무를 가진다.<br>
-            "파트너스"는 "회사"로부터 "서비스"를 제공받는 대가로 매월 1일 한화 30,000원정을 "회사"에 지불한다. (국민은행 123-21-0270-724 정상범)<br>
-            "파트너스"가 "오타몰"에 "서비스"에 대한 금액을 지불하지 않을 경우, "회사"는 "파트너스"가 지불하지 않은 "서비스"를 파기할 수 있다.<br>
-            "오타몰"에서 부득이한 사유로 상품의 제공이 불가능할 경우, "파트너스"에게 이를 고지하며 제공받은 상품 구매에 필요한 금액을 즉시 환불 처리한다.<br><br>
+            "올랑몰"은 "파트너스"에게 소매가보다 저렴하게 상품을 구입할 수 있는 "서비스"를 제공한다.<br>
+            "파트너스"는 "올랑몰"에 상품 구매에 필요한 금액을 제공하고, "올랑몰"은 상품을 대리 구매하여 "파트너스"가 원하는 주소지로 상품을 발송한다.<br>
+            상품 구매에 필요한 금액은 "올랑몰"이 사전에 정한 방식으로 지불되어야 하며, "파트너스"는 "올랑몰"이 제공한 정보를 통해 상품을 자유롭게 주문할 수 있다.<br>
+            “파트너스”는 “올랑몰”로부터 제공 받는 모든 상품에 대한 정보 및 이미지를 외부로 유출하지 않을 비밀 유지 의무를 가진다.<br>
+            "파트너스"는 "회사"로부터 "서비스"를 제공받는 대가로 가입 최초 10개월 동안 월 100,000원의 회비를 "회사"에 납부한다. 10개월 이후 회원 유지 시에는 더 이상 비용이 부과되지 아니한다. (국민은행 123-21-0270-724 정상범)<br>
+            "파트너스"가 "올랑몰"에 "서비스"에 대한 금액을 지불하지 않을 경우, "회사"는 "파트너스"가 지불하지 않은 "서비스"를 파기할 수 있다.<br>
+            "올랑몰"에서 부득이한 사유로 상품의 제공이 불가능할 경우, "파트너스"에게 이를 고지하며 제공받은 상품 구매에 필요한 금액을 환불 처리한다.<br><br>
 
             <p class="font-bold text-stone-800 mb-1">비밀유지의무</p>
-            1. “파트너스”는 본 계약에 따라 제공받은 “오타몰”의 서비스와 관련된 정보와 “오타몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “오타몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
-            2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “오타몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
-            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “오타몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
-            4. “오타몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
-            5. “오타몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
+            1. “파트너스”는 본 계약에 따라 제공받은 “올랑몰”의 서비스와 관련된 정보와 “올랑몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “올랑몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
+            2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “올랑몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
+            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
+            4. “올랑몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
+            5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
             6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
 
             <p class="font-bold text-stone-800 mb-1">계약 기간 및 해지</p>
@@ -374,7 +377,7 @@
 
             <p class="font-bold text-stone-800 mb-1">분쟁해결 및 기타</p>
             1. 본 계약의 해석이나 적용에 관한 분쟁은 상호협력에 의하여 우호적으로 해결하며, 제3자의 개입을 허용하지 않는다. 분쟁 발생 시 부산지방법원을 제1심에 대한 전속적 관할로 한다.<br>
-            2. “오타몰”과 “파트너스”는 사전 서면 동의 없이 제3자에게 양도할 수 없으며, 담보의 목적으로 제공할 수 없다.<br>
+            2. “올랑몰”과 “파트너스”는 사전 서면 동의 없이 제3자에게 양도할 수 없으며, 담보의 목적으로 제공할 수 없다.<br>
             3. 본 계약은 독립된 당사자 간에 체결하는 계약으로 대리관계나 고용관계 등이 발생하지 아니하며 전자서명의 형태로 체결되어 법률적인 효력을 가진다.<br><br>
 
             <p class="font-bold text-stone-800 mb-1">개인정보 제공 동의 및 제3자 제공 및 동의서 안내</p>
@@ -408,7 +411,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 -->
+  <!-- 상품 등록 모달 (8개 필드 완벽 분리 적용) -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -574,7 +577,6 @@
             const fileExt = file.name.split('.').pop();
             const fileName = `${data.user.id}_${Date.now()}.${fileExt}`;
             const { error: upErr } = await sbClient.storage.from('business-licenses').upload(fileName, file);
-            // [개선] 엑스박스 404 해결: 파일명 대신 무조건 public URL 전체를 가져와서 DB에 저장
             if (!upErr) {
               fileUrl = sbClient.storage.from('business-licenses').getPublicUrl(fileName).data.publicUrl;
             }
@@ -1041,7 +1043,7 @@
         if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
         else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
         else if(o.status === '입고대기') statusClass = "bg-blue-100 text-blue-800";
-        else if(o.status === '발주준비') statusClass = "bg-purple-100 text-purple-800";
+        else if(o.status === '발주대기') statusClass = "bg-purple-100 text-purple-800";
 
         return `
         <tr class="border-b border-stone-100 hover:bg-stone-50">
@@ -1140,10 +1142,11 @@
           
           ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
           ctx.lineWidth = Math.max(w / 200, 2); 
-          ctx.strokeText('OTAMALL B2B', 0, 0);
+          // [수정] 올랑몰 로고 텍스트
+          ctx.strokeText('올랑몰 B2B', 0, 0);
           
           ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-          ctx.fillText('OTAMALL B2B', 0, 0);
+          ctx.fillText('올랑몰 B2B', 0, 0);
           ctx.restore(); 
 
           const b64 = canvas.toDataURL('image/jpeg', 0.85);
@@ -1295,7 +1298,6 @@
       const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
       
       document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
-        // [개선] DB에 파일명만 저장되어 있던 과거 회원 복구용 예외 처리
         let finalLicenseUrl = u.business_license_url;
         if (finalLicenseUrl && !finalLicenseUrl.startsWith('http')) {
             finalLicenseUrl = sbClient.storage.from('business-licenses').getPublicUrl(finalLicenseUrl).data.publicUrl;
@@ -1383,7 +1385,7 @@
         let statusClass = "text-stone-800";
         if(o.status === '배송완료') statusClass = "text-emerald-600";
         else if(o.status === '입고대기') statusClass = "text-blue-600";
-        else if(o.status === '발주준비') statusClass = "text-purple-600";
+        else if(o.status === '발주대기') statusClass = "text-purple-600";
 
         let deadlineBadge = '';
         if (o.products?.deadline) {
@@ -1406,7 +1408,7 @@
             <span class="font-bold ${statusClass}">${o.status}</span>
             <div class="flex flex-wrap justify-center gap-1 mt-1">
               <button onclick="sbClient.from('orders').update({status:'입금대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-amber-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-amber-200 transition">입금대기</button>
-              <button onclick="sbClient.from('orders').update({status:'발주준비'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-purple-100 px-2 py-0.5 rounded text-[10px] text-purple-800 font-bold hover:bg-purple-200 transition">발주준비</button>
+              <button onclick="sbClient.from('orders').update({status:'발주대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-purple-100 px-2 py-0.5 rounded text-[10px] text-purple-800 font-bold hover:bg-purple-200 transition">발주대기</button>
               <button onclick="sbClient.from('orders').update({status:'입고대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-blue-200 transition">입고대기</button>
               <button onclick="sbClient.from('orders').update({status:'배송완료'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-emerald-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-emerald-200 transition">배송완료</button>
               <button onclick="if(confirm('이 발주를 취소 처리하시겠습니까? (재고는 롤백되지 않으며 리스트에서 즉시 사라집니다)')) sbClient.from('orders').update({status:'취소'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-[10px] font-bold hover:bg-rose-200 transition">취소</button>
@@ -1416,6 +1418,7 @@
       }).join('');
     }
 
+    // [개선] 엑셀 다운로드 파일명 '올랑몰'로 변경
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
       const ws = XLSX.utils.json_to_sheet(currentFilteredOrders.map(i => ({
@@ -1424,7 +1427,7 @@
       })));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "발주리스트");
-      XLSX.writeFile(wb, `OTAMALL_발주리스트_${new Date().toISOString().slice(0,10)}.xlsx`);
+      XLSX.writeFile(wb, `올랑몰_발주리스트_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
   </script>
 </body>
