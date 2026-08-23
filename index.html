@@ -15,17 +15,13 @@
 </head>
 <body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col font-sans">
 
-  <!-- [개선] 프리미엄 다크 테마 헤더 적용 -->
+  <!-- 프리미엄 다크 테마 헤더 적용 -->
   <header class="bg-[#1e1e1e] flex flex-col items-center pt-8 shadow-lg sticky top-0 z-40">
-    <!-- 로고 영역 -->
+    
+    <!-- [개선] 텍스트를 제거하고 전달받은 통짜 로고 이미지로 완벽 교체 -->
     <div class="flex flex-col items-center justify-center cursor-pointer mb-6" onclick="switchTab('catalog')">
-      <span class="text-[11px] font-medium text-stone-300 tracking-[0.1em] mb-1">오타쿠를 위한 도매몰 / OLLANG MALL B2B</span>
-      <div class="flex items-center gap-2">
-        <!-- 추후 로고 이미지 저장 후 아래 img 태그 src에 경로를 넣으세요 -->
-        <!-- <img src="내로고이미지경로.png" alt="올랑몰" class="h-10"> -->
-        <span class="text-3xl">🥷</span>
-        <h1 class="font-extrabold text-4xl text-amber-500 tracking-tight">올랑몰 <span class="text-white">B2B</span></h1>
-      </div>
+      <!-- src 속성에 전달해주신 파일명(image_4701e5.png)을 그대로 적용했습니다. -->
+      <img src="image_4701e5.png" alt="올랑몰 B2B 로고" class="h-20 md:h-24 object-contain transition-transform hover:scale-105 duration-300">
     </div>
 
     <!-- 네비게이션 & 유저 컨트롤 영역 -->
@@ -507,12 +503,9 @@
       setupImagePasteHandlers();
     });
 
-    // [개선] 다크테마 네비게이션 탭 스위칭 
     function switchTab(tab) {
       ['catalog', 'notice', 'orders', 'admin'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
-        
-        // 동적 버튼 디자인 (활성/비활성 색상 반전)
         const btn = document.getElementById(`nav-btn-${t}`);
         if(btn) {
           if(t === tab) {
