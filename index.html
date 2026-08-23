@@ -1,230 +1,1532 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>올랑몰 B2B - 오타쿠를 위한 도매몰</title>
-    <style>
-        /* CSS 스타일링 */
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #121212; /* 더 어두운 배경 */
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* 공통 색상 */
-        .color-primary { color: #F5A623; } /* 주황색 */
-        .color-text { color: #ffffff; } /* 흰색 */
-        .bg-dark { background-color: #1a1a1a; } /* 어두운 회색 */
-
-        /* 헤더 */
-        header {
-            background-color: #1a1a1a;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #F5A623;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .header-left { display: flex; align-items: center; }
-        .header-logo {
-            width: 300px; /* 로고 크기 조정 */
-            height: auto;
-        }
-
-        .header-nav { display: flex; gap: 30px; margin-left: 40px; }
-        .header-nav a { text-decoration: none; color: #ffffff; font-weight: 500; font-size: 16px; }
-        .header-nav a:hover { color: #F5A623; }
-
-        .header-right { display: flex; gap: 20px; align-items: center; }
-        .header-user-menu a { text-decoration: none; color: #ffffff; font-size: 14px; }
-        .header-user-menu a:hover { color: #F5A623; }
-
-        /* 히어로 섹션 */
-        .hero {
-            background: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://placeholder.com/images/hero-bg.jpg') no-repeat center/cover;
-            padding: 100px 40px;
-            text-align: center;
-            border-bottom: 2px solid #333;
-        }
-        .hero-logo-large {
-            width: 500px; /* 더 큰 로고 */
-            height: auto;
-            margin-bottom: 40px;
-        }
-        .hero-slogan { font-size: 28px; font-weight: 700; color: #F5A623; margin-bottom: 20px; }
-        .hero-text { font-size: 18px; line-height: 1.6; margin-bottom: 50px; }
-        .btn-primary {
-            background-color: #F5A623;
-            color: #121212;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background-color 0.3s;
-        }
-        .btn-primary:hover { background-color: #ffffff; color: #121212; }
-
-        /* 상품 섹션 */
-        .products { padding: 80px 40px; }
-        .section-title { font-size: 32px; font-weight: 700; color: #F5A623; margin-bottom: 50px; text-align: center; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
-        .product-card {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.3s, border-color 0.3s;
-        }
-        .product-card:hover { transform: translateY(-5px); border-color: #F5A623; }
-        .product-image {
-            width: 100%;
-            height: 200px;
-            object-fit: contain;
-            margin-bottom: 15px;
-        }
-        .product-name { font-size: 16px; font-weight: 500; margin-bottom: 10px; }
-        .product-price { font-size: 18px; font-weight: 700; color: #F5A623; margin-bottom: 5px; }
-        .product-moq { font-size: 14px; color: #aaa; margin-bottom: 15px; }
-        .btn-cart {
-            background-color: transparent;
-            color: #F5A623;
-            border: 1px solid #F5A623;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .btn-cart:hover { background-color: #F5A623; color: #121212; }
-
-        /* 푸터 */
-        footer {
-            background-color: #1a1a1a;
-            padding: 60px 40px;
-            border-top: 2px solid #F5A623;
-            text-align: center;
-        }
-        .footer-logo {
-            width: 200px;
-            height: auto;
-            margin-bottom: 30px;
-        }
-        .footer-links { display: flex; gap: 30px; justify-content: center; margin-bottom: 30px; }
-        .footer-links a { text-decoration: none; color: #ffffff; font-size: 14px; }
-        .footer-links a:hover { color: #F5A623; }
-        .footer-info { font-size: 12px; color: #888; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B2B 도매 플랫폼 - 올랑몰</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .contract-box { max-height: 180px; overflow-y: auto; font-size: 11px; background: #f5f5f4; padding: 12px; border-radius: 8px; border: 1px solid #e5e5e5; line-height: 1.6; }
+    .admin-subtab { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
 </head>
-<body>
-    <header>
-        <div class="header-left">
-            <!-- 생성된 새 로고 이미지로 교체됨 -->
-            <img src="https://image.google.com/search?q=image_34.png&ictx=1&fir=v_j_g&usg=AI4_-kRjG7V&sa=X&ved=2ahUKEwj06O&biw=1920&bih=937&dpr=1#imgrc=NEW_LOGO_IMAGE_URL" alt="올랑몰 B2B 로고" class="header-logo">
-            <nav class="header-nav">
-                <a href="#hero">도매 회원 신청</a>
-                <a href="#products">상품 카탈로그</a>
-                <a href="#news">공지사항</a>
-                <a href="#support">고객 센터</a>
-            </nav>
+<body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col font-sans">
+
+  <!-- [개선] 프리미엄 다크 테마 헤더 적용 -->
+  <header class="bg-[#1e1e1e] flex flex-col items-center pt-8 shadow-lg sticky top-0 z-40">
+    <!-- 로고 영역 -->
+    <div class="flex flex-col items-center justify-center cursor-pointer mb-6" onclick="switchTab('catalog')">
+      <span class="text-[11px] font-medium text-stone-300 tracking-[0.1em] mb-1">오타쿠를 위한 도매몰 / OLLANG MALL B2B</span>
+      <div class="flex items-center gap-2">
+        <!-- 추후 로고 이미지 저장 후 아래 img 태그 src에 경로를 넣으세요 -->
+        <!-- <img src="내로고이미지경로.png" alt="올랑몰" class="h-10"> -->
+        <span class="text-3xl">🥷</span>
+        <h1 class="font-extrabold text-4xl text-amber-500 tracking-tight">올랑몰 <span class="text-white">B2B</span></h1>
+      </div>
+    </div>
+
+    <!-- 네비게이션 & 유저 컨트롤 영역 -->
+    <div class="w-full bg-[#141414] border-t border-stone-800 border-b border-amber-500 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 h-12 flex justify-between items-center">
+        <nav class="flex items-center gap-2 h-full">
+          <button id="nav-btn-catalog" onclick="switchTab('catalog')" class="h-full px-4 text-sm font-bold text-amber-500 border-b-2 border-amber-500 transition">상품 카탈로그</button>
+          <button id="nav-btn-notice" onclick="switchTab('notice')" class="hidden h-full px-4 text-sm font-bold text-stone-400 hover:text-stone-200 border-b-2 border-transparent transition">공지사항</button>
+          <button id="nav-btn-orders" onclick="switchTab('orders')" class="hidden h-full px-4 text-sm font-bold text-stone-400 hover:text-stone-200 border-b-2 border-transparent transition">발주 내역</button>
+          <button id="nav-btn-admin" onclick="switchTab('admin')" class="hidden h-full px-4 text-sm font-bold text-stone-400 hover:text-stone-200 border-b-2 border-transparent transition">관리자 대시보드</button>
+        </nav>
+        
+        <div class="flex items-center gap-3">
+          <button id="cart-btn" onclick="openCheckout('cart')" class="relative hidden bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold px-3 py-1.5 rounded-lg transition border border-stone-700">
+            🛒 장바구니 <span id="cart-count" class="absolute -top-2 -right-2 bg-amber-500 text-stone-900 text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm font-black">0</span>
+          </button>
+          <div id="auth-buttons">
+            <button onclick="showAuthModal('login')" class="bg-amber-500 hover:bg-amber-400 text-stone-900 text-xs font-bold px-4 py-1.5 rounded-lg transition shadow-md">로그인/가입</button>
+          </div>
+          <div id="user-info" class="hidden flex items-center gap-3">
+            <span id="user-display" class="text-xs font-medium text-stone-400"></span>
+            <button onclick="handleLogout()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-bold px-3 py-1.5 rounded-lg transition border border-stone-700">로그아웃</button>
+          </div>
         </div>
-        <div class="header-right">
-            <div class="header-user-menu">
-                <a href="#login">로그인</a> | <a href="#register">회원가입</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+    
+    <!-- 탭 1: 카탈로그 -->
+    <section id="tab-catalog" class="space-y-6">
+      <div class="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-2xl shadow-sm border border-stone-200 items-start md:items-center justify-between">
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <select id="filter-main-cat" onchange="onMainCategoryChange()" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none"><option value="all">대분류 (전체)</option></select>
+          <select id="filter-sub-cat" onchange="loadProducts(1)" class="border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700 flex-1 md:flex-none" disabled><option value="all">소분류 (전체)</option></select>
+          <input type="text" id="catalog-search" oninput="loadProducts(1)" placeholder="🔍 상품명 검색" class="w-full md:w-48 border border-stone-200 px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 mt-2 md:mt-0">
+        </div>
+        <select id="catalog-sort" onchange="loadProducts(1)" class="w-full md:w-auto border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-700">
+          <option value="id_desc">최신순</option><option value="name_asc">가나다순</option><option value="price_desc">가격높은순</option><option value="price_asc">가격낮은순</option>
+        </select>
+      </div>
+      <div id="product-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
+      <div id="pagination-container" class="flex justify-center space-x-2 pt-4"></div>
+    </section>
+
+    <!-- 탭 2: 공지사항 -->
+    <section id="tab-notice" class="space-y-6 hidden">
+      <div class="flex justify-between items-center border-b border-stone-200 pb-3">
+        <h2 class="text-xl font-extrabold text-stone-800">📢 공지사항</h2>
+        <button id="admin-notice-btn" onclick="openNoticeWriteModal()" class="hidden bg-stone-800 hover:bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition">글쓰기</button>
+      </div>
+      <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-stone-50 text-xs text-stone-500 border-b border-stone-200">
+            <tr>
+              <th class="px-5 py-3 w-16 text-center">번호</th>
+              <th class="px-5 py-3">제목</th>
+              <th class="px-5 py-3 w-32 text-center">작성일</th>
+            </tr>
+          </thead>
+          <tbody id="notice-list-body">
+            <tr><td colspan="3" class="text-center py-8 text-stone-400">등록된 공지사항이 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 탭 3: 내 주문내역 -->
+    <section id="tab-orders" class="space-y-4 hidden">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-extrabold text-stone-800">나의 발주 내역</h2>
+        <label class="flex items-center space-x-2 text-xs font-bold text-stone-600 cursor-pointer">
+          <input type="checkbox" id="filter-not-completed-user" onchange="loadMyOrders()" class="w-4 h-4 text-amber-500 rounded focus:ring-amber-400">
+          <span>진행중인 상품만 보기 (배송완료/취소 제외)</span>
+        </label>
+      </div>
+      <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-stone-50 text-xs text-stone-500 border-b border-stone-200">
+            <tr>
+              <th class="px-5 py-3">발주일자</th>
+              <th class="px-5 py-3">상품명</th>
+              <th class="px-5 py-3 text-center">수량</th>
+              <th class="px-5 py-3 text-right">총 결제금액</th>
+              <th class="px-5 py-3 text-center">진행상태</th>
+            </tr>
+          </thead>
+          <tbody id="my-order-list-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 탭 4: 관리자 대시보드 -->
+    <section id="tab-admin" class="hidden h-full flex flex-col space-y-6">
+      <div class="bg-white border border-stone-200 rounded-2xl shadow-sm px-4 py-3 flex gap-2 overflow-x-auto">
+        <button onclick="switchAdminTab('products')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl bg-stone-800 text-white transition">📦 상품/카테고리 관리</button>
+        <button onclick="switchAdminTab('users')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl text-stone-500 hover:bg-stone-100 transition">👤 B2B 회원 관리</button>
+        <button onclick="switchAdminTab('orders')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl text-stone-500 hover:bg-stone-100 transition">📋 발주 내역 관리</button>
+        <button onclick="switchAdminTab('mail')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl text-stone-500 hover:bg-stone-100 transition">📧 단체 메일 발송</button>
+      </div>
+
+      <!-- [서브탭 1] 상품/카테고리 관리 -->
+      <div id="admin-subtab-products" class="admin-subtab space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <h3 class="text-base font-bold text-stone-800 border-b border-stone-100 pb-3">🏷️ 카테고리 관리</h3>
+          <p class="text-xs text-rose-500 font-bold mb-2">💡 '회비'라는 이름으로 대분류를 만들면 자동으로 재고 무제한 및 단독 발주(배송비/부가세 면제) 혜택이 적용됩니다.</p>
+          <div class="flex gap-3 items-center">
+            <select id="admin-cat-parent" class="border border-stone-200 text-xs px-3 py-2 rounded-xl font-bold bg-stone-50"><option value="">1차 대분류로 생성</option></select>
+            <input type="text" id="admin-cat-name" placeholder="카테고리명" class="border border-stone-200 text-xs px-3 py-2 rounded-xl">
+            <button onclick="handleCreateCategory()" class="bg-stone-800 text-white text-xs px-4 py-2.5 rounded-xl font-bold">추가</button>
+          </div>
+          <div id="admin-category-tree" class="space-y-3 pt-2"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center border-b border-stone-100 pb-3 gap-3">
+            <div><h3 class="font-bold text-stone-800">📦 등록 상품 수정 및 삭제 관리</h3></div>
+            <div class="flex flex-wrap gap-2 items-center">
+              <select id="admin-filter-main-cat" onchange="onAdminProductMainCatChange()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50"><option value="all">대분류 전체</option></select>
+              <select id="admin-filter-sub-cat" onchange="loadAdminProducts()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50" disabled><option value="all">소분류 전체</option></select>
+              <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm ml-2">⬇️ 엑셀 양식</button>
+              <label class="bg-blue-600 hover:bg-blue-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer">
+                ⬆️ 엑셀 대량 등록
+                <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
+              </label>
+              <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm">+ 신규 단건 등록</button>
             </div>
-            <a href="#cart" class="btn-primary" style="padding: 10px 20px; font-size: 14px;">장바구니 (0)</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-stone-600">
+              <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+                <tr>
+                  <th class="px-4 py-3">이미지</th>
+                  <th class="px-4 py-3">상품명 / 카테고리</th>
+                  <th class="px-4 py-3 text-right">도매가</th>
+                  <th class="px-4 py-3 text-center">재고 / 입수량(MOQ)</th>
+                  <th class="px-4 py-3 text-center">관리</th>
+                </tr>
+              </thead>
+              <tbody id="admin-product-list-body"></tbody>
+            </table>
+          </div>
         </div>
-    </header>
+      </div>
 
-    <main>
-        <section class="hero" id="hero">
-            <!-- 새 로고 이미지의 큰 버전 -->
-            <img src="https://image.google.com/search?q=image_34.png&ictx=1&fir=v_j_g&usg=AI4_-kRjG7V&sa=X&ved=2ahUKEwj06O&biw=1920&bih=937&dpr=1#imgrc=NEW_LOGO_IMAGE_URL" alt="올랑몰 B2B 대형 로고" class="hero-logo-large">
-            <h1 class="hero-slogan">대한민국 No.1 오타쿠 굿즈 도매 플랫폼</h1>
-            <p class="hero-text">
-                피규어, 프라모델, 아크릴 굿즈 등<br>
-                전 세계의 인기 오타쿠 상품을 가장 빠르고 저렴하게 만나보세요.<br>
-                국내 유일의 도매 전용 파트너십을 제공합니다.
-            </p>
-            <a href="#hero" class="btn-primary">도매 회원 신청하기</a>
-        </section>
+      <!-- [서브탭 2] 회원 승인 관리 -->
+      <div id="admin-subtab-users" class="admin-subtab hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <h3 class="font-bold text-stone-800 border-b border-stone-100 pb-3">👤 B2B 사업자 승인 및 회원 관리</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-stone-600">
+              <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+                <tr>
+                  <th class="px-4 py-3 w-64">사업자정보 (상호 / 번호)</th>
+                  <th class="px-4 py-3">대표자 / 연락처</th>
+                  <th class="px-4 py-3">이메일 / 입금자</th>
+                  <th class="px-4 py-3 text-center">사업자등록증</th>
+                  <th class="px-4 py-3 text-center">상태</th>
+                  <th class="px-4 py-3 text-center">승인 제어</th>
+                </tr>
+              </thead>
+              <tbody id="admin-user-list-body">
+                <tr><td colspan="6" class="text-center py-8 text-stone-400">회원 데이터를 불러오는 중입니다...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-        <section class="products" id="products">
-            <h2 class="section-title">최신 도매 상품</h2>
-            <div class="product-grid">
-                <!-- 상품 예시 카디 -->
-                <div class="product-card">
-                    <img src="https://placeholder.com/images/prod1.jpg" alt="상품 이미지" class="product-image">
-                    <div>
-                        <div class="product-name">원피스 루피 기어5 피규어</div>
-                        <div class="product-price">15,000원</div>
-                        <div class="product-moq">MOQ: 10개</div>
-                    </div>
-                    <button class="btn-cart">장바구니 담기</button>
-                </div>
-                <!-- 상품 예시 카디 -->
-                <div class="product-card">
-                    <img src="https://placeholder.com/images/prod2.jpg" alt="상품 이미지" class="product-image">
-                    <div>
-                        <div class="product-name">스파이 패밀리 아냐 아크릴 스탠드</div>
-                        <div class="product-price">4,500원</div>
-                        <div class="product-moq">MOQ: 50개</div>
-                    </div>
-                    <button class="btn-cart">장바구니 담기</button>
-                </div>
-                <!-- 상품 예시 카디 -->
-                <div class="product-card">
-                    <img src="https://placeholder.com/images/prod3.jpg" alt="상품 이미지" class="product-image">
-                    <div>
-                        <div class="product-name">귀멸의 칼날 탄지로 프라모델</div>
-                        <div class="product-price">22,000원</div>
-                        <div class="product-moq">MOQ: 15개</div>
-                    </div>
-                    <button class="btn-cart">장바구니 담기</button>
-                </div>
-                <!-- 상품 예시 카디 -->
-                <div class="product-card">
-                    <img src="https://placeholder.com/images/prod4.jpg" alt="상품 이미지" class="product-image">
-                    <div>
-                        <div class="product-name">포켓몬스터 뮤츠 피규어</div>
-                        <div class="product-price">18,000원</div>
-                        <div class="product-moq">MOQ: 12개</div>
-                    </div>
-                    <button class="btn-cart">장바구니 담기</button>
-                </div>
+      <!-- [서브탭 3] 전체 발주 내역 관리 -->
+      <div id="admin-subtab-orders" class="admin-subtab hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-stone-100 pb-3 gap-4">
+            <div class="flex flex-col">
+              <h3 class="font-bold text-stone-800">📋 전체 발주 내역 관리</h3>
+              <p class="text-[10px] text-stone-400 mt-1">※ 취소 처리된 내역은 시스템 혼선 방지를 위해 메인 목록에서 영구 제외됩니다.</p>
             </div>
-        </section>
-    </main>
+            
+            <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
+              <input type="text" id="admin-order-search" oninput="renderAdminOrders()" placeholder="🔍 상호명 또는 상품명 검색" class="border border-stone-200 px-3 py-1.5 rounded-xl text-xs font-bold w-48 focus:outline-none focus:ring-2 focus:ring-amber-400">
+              
+              <select id="admin-order-sort" onchange="renderAdminOrders()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 focus:outline-none">
+                <option value="order_desc">최신 발주순</option>
+                <option value="deadline_asc">마감일 임박순</option>
+              </select>
 
-    <footer>
-        <!-- 새 로고 이미지의 푸터 버전 -->
-        <img src="https://image.google.com/search?q=image_34.png&ictx=1&fir=v_j_g&usg=AI4_-kRjG7V&sa=X&ved=2ahUKEwj06O&biw=1920&bih=937&dpr=1#imgrc=NEW_LOGO_IMAGE_URL" alt="올랑몰 B2B 푸터 로고" class="footer-logo">
-        <div class="footer-links">
-            <a href="#about">회사 소개</a>
-            <a href="#terms">이용 약관</a>
-            <a href="#privacy">개인정보처리방침</a>
-            <a href="#partnership">제휴 제안</a>
+              <label class="flex items-center space-x-2 text-xs font-bold text-stone-600 cursor-pointer">
+                <input type="checkbox" id="filter-deadline-1week" onchange="renderAdminOrders()" class="w-4 h-4 text-amber-500 rounded" checked>
+                <span>마감일 1주 경과 제외</span>
+              </label>
+              
+              <label class="flex items-center space-x-2 text-xs font-bold text-stone-600 cursor-pointer">
+                <input type="checkbox" id="filter-not-completed-admin" onchange="loadAdminOrders()" class="w-4 h-4 text-amber-500 rounded">
+                <span>배송완료 제외</span>
+              </label>
+              
+              <button onclick="exportOrdersToExcel()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-1.5 rounded-lg font-bold">엑셀 다운로드</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-stone-600">
+              <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
+                <tr>
+                  <th class="px-4 py-3">주문번호 / 일시</th>
+                  <th class="px-4 py-3">신청 파트너스</th>
+                  <th class="px-4 py-3">주문 상품 / ⏰ 마감일</th>
+                  <th class="px-4 py-3 text-right">총 결제금액</th>
+                  <th class="px-4 py-3 text-center">세금계산서</th>
+                  <th class="px-4 py-3 text-center">상태 변경 및 관리</th>
+                </tr>
+              </thead>
+              <tbody id="admin-orders-body"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="footer-info">
-            © 2024 주식회사 올랑. All rights reserved.<br>
-            대표자: [대표자명] | 사업자등록번호: [번호]<br>
-            통신판매업신고번호: [번호] | 주소: [회사 주소]<br>
-            이메일: [이메일] | 고객 센터: [전화번호]
+      </div>
+
+      <!-- [서브탭 4] 단체 메일 발송 -->
+      <div id="admin-subtab-mail" class="admin-subtab hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
+          <div class="flex justify-between items-center border-b border-stone-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-stone-800">📧 전체 회원 단체 메일 발송 (Resend 연동)</h3>
+              <p class="text-xs text-blue-500 font-bold">인증된 비즈니스 이메일 도메인으로 파트너스 회원들에게 단체 메일을 발송합니다.</p>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <input type="text" id="admin-mail-subject" placeholder="메일 제목을 입력하세요" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <textarea id="admin-mail-body" placeholder="메일 내용을 작성하세요. (줄바꿈 지원)" class="w-full border border-stone-200 px-3.5 py-2 rounded-xl text-sm h-40 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+            <div class="flex justify-end gap-2">
+              <button id="btn-send-mail" onclick="sendBulkEmailApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-extrabold shadow-sm transition">서버를 통해 메일 발송하기</button>
+            </div>
+          </div>
         </div>
-    </footer>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- 모달 1: 수량 선택 및 발주 2-WAY 분기 모달 -->
+  <div id="order-choice-modal" onclick="if(event.target===this) closeOrderChoiceModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 relative shadow-2xl border border-stone-100">
+      <button onclick="closeOrderChoiceModal()" class="absolute top-5 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
+      <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
+      
+      <div class="flex gap-4 items-start pt-1">
+        <img id="oc-image" src="" class="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-sm shrink-0">
+        <div class="space-y-1.5 flex-1">
+          <span id="oc-deadline" class="hidden text-[10px] font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md inline-block"></span>
+          <span id="oc-delivery" class="hidden text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md inline-block mt-1"></span>
+          <p id="oc-name" class="font-bold text-stone-800 text-sm leading-snug line-clamp-2"></p>
+          <p id="oc-comment" class="hidden text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block"></p>
+          <p id="oc-price" class="text-amber-600 font-black text-base pt-1 flex flex-col"></p>
+        </div>
+      </div>
+
+      <div class="bg-stone-50 p-4 rounded-2xl border border-stone-100 mt-2">
+        <label class="block text-xs font-bold text-stone-600 mb-1">발주 수량</label>
+        <input type="number" id="oc-qty" value="1" min="1" class="w-full border border-stone-200 rounded-xl px-3.5 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+        <p id="oc-stock-info" class="text-[10px] text-stone-400 mt-1.5 text-center"></p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="oc-cart-btn" onclick="executeAddToCart()" class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-800 font-extrabold py-3 rounded-xl text-sm transition">장바구니 담기</button>
+        <button id="oc-direct-btn" onclick="executeDirectOrder()" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-stone-900 font-extrabold py-3 rounded-xl text-sm transition shadow-md shadow-amber-500/20">바로 발주하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 2: 결제 모달 -->
+  <div id="checkout-modal" onclick="if(event.target===this) closeCheckoutModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 relative shadow-2xl border border-stone-100">
+      <button onclick="closeCheckoutModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
+      <h3 id="checkout-title" class="text-lg font-extrabold text-stone-800">🛒 결제 진행</h3>
+      <p id="checkout-warning" class="text-[10px] text-rose-500 font-bold">* 같은 대분류 카테고리 상품만 함께 결제 가능합니다.</p>
+      
+      <div id="checkout-items-container" class="space-y-3 max-h-52 overflow-y-auto border-y border-stone-100 py-3"></div>
+      
+      <div class="space-y-2 text-sm font-bold text-stone-700 bg-stone-50 p-4 rounded-xl border border-stone-100">
+        <div class="flex justify-between"><span>상품 금액</span><span id="checkout-subtotal">0원</span></div>
+        <div class="flex justify-between text-rose-500"><span id="checkout-shipping-label">배송비 (20만원 이상 무료)</span><span id="checkout-shipping">0원</span></div>
+        <div class="flex items-center space-x-2 pt-2 border-t border-stone-200">
+          <input type="checkbox" id="checkout-tax-invoice" onchange="renderCheckout()" class="w-4 h-4 text-amber-500 rounded border-stone-300 cursor-pointer">
+          <label for="checkout-tax-invoice" class="text-xs cursor-pointer select-none">세금계산서 신청 (VAT 10% 별도 부과)</label>
+        </div>
+        <div class="flex justify-between text-lg text-amber-600 pt-2 border-t border-stone-200">
+          <span>최종 결제금액</span><span id="checkout-total" class="font-black">0원</span>
+        </div>
+      </div>
+      <div>
+        <input type="text" id="checkout-comment" placeholder="배송 요청사항" class="w-full border border-stone-200 text-xs px-3.5 py-3 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400">
+        <button onclick="checkoutProcess()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-stone-900 font-extrabold py-3.5 rounded-xl transition shadow-md hover:from-amber-600 hover:to-orange-600">발주 확정 (입금대기 단계로 이동)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공지사항 모달 -->
+  <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
+      <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
+      <h3 id="rn-title" class="text-lg font-extrabold text-stone-800 pr-6"></h3>
+      <p id="rn-date" class="text-xs text-stone-400 mt-1 pb-3 border-b border-stone-100"></p>
+      <div id="rn-content" class="mt-4 whitespace-pre-wrap text-sm text-stone-700 min-h-[100px] max-h-60 overflow-y-auto leading-relaxed"></div>
+      <div id="rn-admin-actions" class="hidden mt-4 pt-3 border-t border-stone-100 flex justify-end gap-2">
+        <button id="rn-edit-btn" class="bg-stone-200 px-4 py-2 rounded-xl text-xs font-bold text-stone-700">수정</button>
+        <button id="rn-del-btn" class="bg-rose-100 px-4 py-2 rounded-xl text-xs font-bold text-rose-600">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="notice-write-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative shadow-xl">
+      <button onclick="document.getElementById('notice-write-modal').classList.add('hidden')" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
+      <h3 id="wn-modal-title" class="text-lg font-extrabold text-stone-800">공지사항 작성</h3>
+      <input type="hidden" id="wn-id">
+      <input type="text" id="wn-title" placeholder="제목을 입력하세요" class="w-full border px-3 py-2 rounded-xl text-sm font-bold">
+      <textarea id="wn-content" placeholder="공지사항 내용" class="w-full border px-3 py-2 rounded-xl text-sm h-40 resize-none"></textarea>
+      <button onclick="saveNotice()" class="w-full bg-stone-800 text-white font-bold py-2.5 rounded-xl">저장하기</button>
+    </div>
+  </div>
+
+  <!-- 인증 모달 -->
+  <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
+      <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
+      <div class="flex border-b border-stone-200">
+        <button id="auth-tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 font-extrabold border-b-2 border-amber-500 text-amber-600">로그인</button>
+        <button id="auth-tab-signup" onclick="toggleAuthMode('signup')" class="flex-1 py-2 font-extrabold text-stone-400 border-transparent">회원가입</button>
+      </div>
+      <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div id="auth-contract-group" class="hidden">
+          <label class="block text-[11px] font-bold text-stone-600 mb-1">📜 이용 약관 및 제휴 계약서 (스크롤하여 확인)</label>
+          <div class="contract-box mb-2 text-stone-600">
+            <p class="font-bold text-stone-800 mb-1">제휴 계약서</p>
+            "올랑몰"은 "파트너스"에게 소매가보다 저렴하게 상품을 구입할 수 있는 "서비스"를 제공한다.<br>
+            "파트너스"는 "올랑몰"에 상품 구매에 필요한 금액을 제공하고, "올랑몰"은 상품을 대리 구매하여 "파트너스"가 원하는 주소지로 상품을 발송한다.<br>
+            상품 구매에 필요한 금액은 "올랑몰"이 사전에 정한 방식으로 지불되어야 하며, "파트너스"는 "올랑몰"이 제공한 정보를 통해 상품을 자유롭게 주문할 수 있다.<br>
+            “파트너스”는 “올랑몰”로부터 제공 받는 모든 상품에 대한 정보 및 이미지를 외부로 유출하지 않을 비밀 유지 의무를 가진다.<br>
+            "파트너스"는 "회사"로부터 "서비스"를 제공받는 대가로 가입 최초 10개월 동안 월 100,000원의 회비를 "회사"에 납부한다. 10개월 이후 회원 유지 시에는 더 이상 비용이 부과되지 아니한다. (국민은행 123-21-0270-724 정상범)<br>
+            "파트너스"가 "올랑몰"에 "서비스"에 대한 금액을 지불하지 않을 경우, "회사"는 "파트너스"가 지불하지 않은 "서비스"를 파기할 수 있다.<br>
+            "올랑몰"에서 부득이한 사유로 상품의 제공이 불가능할 경우, "파트너스"에게 이를 고지하며 제공받은 상품 구매에 필요한 금액을 환불 처리한다.<br><br>
+
+            <p class="font-bold text-stone-800 mb-1">비밀유지의무</p>
+            1. “파트너스”는 본 계약에 따라 제공받은 “올랑몰”의 서비스와 관련된 정보와 “올랑몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “올랑몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
+            2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “올랑몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
+            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
+            4. “올랑몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
+            5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
+            6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
+
+            <p class="font-bold text-stone-800 mb-1">계약 기간 및 해지</p>
+            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 한다.<br>
+            2. 각 당사자는 상대방에게 각 호의 사유 중 하나가 발생한 경우, 서면 통지하여 본 계약을 해제 또는 해지할 수 있다.<br>
+            - 상대방이 본 계약의 각 조항을 위반하거나 본 계약 상의 의무를 이행하지 아니한 때<br>
+            - 정부의 인∙허가 또는 등록∙신고 등이 필요한 것으로 법률 또는 규정이 제정 또는 개정되는 경우<br>
+            - 상대방의 중요 자산에 대한 가압류∙가처분이 있었거나 상대방이 회생 또는 파산을 신청하는 경우<br>
+            - 기타 상대방이 본 계약의 이행이 불가능하다고 판단할 합리적인 사유가 있는 경우<br>
+            3. 계약의 해제 또는 해지는 사유를 명확하게 기재한 서면에 의해 통지하여, 그 통지가 상대방에게 도달한 뒤에 효력이 발생한다.<br>
+            4. 본 계약의 해제 또는 해지는 손해배상청구에 영향을 미치지 아니한다.<br><br>
+
+            <p class="font-bold text-stone-800 mb-1">분쟁해결 및 기타</p>
+            1. 본 계약의 해석이나 적용에 관한 분쟁은 상호협력에 의하여 우호적으로 해결하며, 제3자의 개입을 허용하지 않는다. 분쟁 발생 시 부산지방법원을 제1심에 대한 전속적 관할로 한다.<br>
+            2. “올랑몰”과 “파트너스”는 사전 서면 동의 없이 제3자에게 양도할 수 없으며, 담보의 목적으로 제공할 수 없다.<br>
+            3. 본 계약은 독립된 당사자 간에 체결하는 계약으로 대리관계나 고용관계 등이 발생하지 아니하며 전자서명의 형태로 체결되어 법률적인 효력을 가진다.<br><br>
+
+            <p class="font-bold text-stone-800 mb-1">개인정보 제공 동의 및 제3자 제공 및 동의서 안내</p>
+            「개인정보보호법」 제 15조, 제 17조에 의거, '오지는 오타쿠'는 회원님의 개인정보 수집 및 이용에 대해 개인정보 수집, 이용 및 제 3자 제공 동의서를 받고 있습니다.<br>
+            '오지는 오타쿠'는 회원님의 개인정보를 제공 시 동의한 내용 외의 다른 목적으로 활용하지 않으며, 동의 및 제공 이후에도 개인정보 관리책임자를 통해 그 열람, 정정 혹은 삭제를 요구할 수 있습니다.<br>
+            개인정보 제공자는 원치 않는 경우 개인 정보 수집 및 활용을 거부할 권리가 있습니다.
+          </div>
+          <label class="flex items-center space-x-2 text-xs font-bold text-amber-600">
+            <input type="checkbox" id="auth-agree" class="rounded text-amber-500" required>
+            <span>위 계약 내용에 동의합니다. *</span>
+          </label>
+        </div>
+
+        <input type="email" id="auth-email" required placeholder="이메일 주소 *" class="w-full border rounded-xl px-3 py-2 text-sm">
+        <input type="password" id="auth-password" required placeholder="비밀번호 *" class="w-full border rounded-xl px-3 py-2 text-sm">
+        
+        <div id="auth-biz-group" class="hidden space-y-2 border-t pt-2 mt-2">
+          <input type="text" id="auth-company-name" placeholder="상호명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <input type="text" id="auth-biz-number" placeholder="사업자등록번호 (숫자만 10자리) *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <input type="text" id="auth-ceo-name" placeholder="대표자 성명 *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <input type="text" id="auth-phone" placeholder="연락처 (010-0000-0000) *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <input type="text" id="auth-depositor" placeholder="예금주명 (입금 시 확인할 이름) *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <input type="text" id="auth-address" placeholder="사업장 / 배송지 주소 *" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <div>
+            <label class="block text-[10px] font-bold text-stone-500">사업자등록증 사본 첨부 *</label>
+            <input type="file" id="auth-biz-file" accept="image/*,application/pdf" class="w-full text-xs">
+          </div>
+        </div>
+        <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 text-white font-bold py-3 rounded-xl text-sm">로그인하기</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 상품 등록 모달 -->
+  <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
+      <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
+      <h3 id="modal-p-title" class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-2">📦 상품 관리</h3>
+      
+      <form onsubmit="saveProduct(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="p-id">
+        <input type="text" id="p-name" placeholder="상품명 *" class="w-full border px-3 py-2 rounded-xl" required>
+        <select id="p-cat" class="w-full border px-3 py-2 rounded-xl bg-stone-50" required><option value="">카테고리 선택 *</option></select>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <input type="number" id="p-price" placeholder="도매가 *" class="w-full border px-3 py-2 rounded-xl" required>
+          <input type="number" id="p-box-qty" placeholder="입수량(1박스) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
+          <input type="number" id="p-moq" placeholder="최소주문수량(MOQ) *" class="w-full border px-3 py-2 rounded-xl" value="1" required>
+          <input type="number" id="p-stock" placeholder="재고수량 *" class="w-full border px-3 py-2 rounded-xl" required>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 border-t border-stone-100 pt-2">
+          <div>
+            <label class="block font-bold text-rose-600 mb-1 text-[10px]">⏰ 발주 마감일 (선택)</label>
+            <input type="date" id="p-deadline" class="w-full border px-3 py-2 rounded-xl text-rose-500 font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-blue-600 mb-1 text-[10px]">🚚 예상 배송 시기 (선택)</label>
+            <input type="text" id="p-delivery-date" placeholder="예: 10월 중순" class="w-full border px-3 py-2 rounded-xl text-blue-600 font-bold">
+          </div>
+        </div>
+
+        <input type="text" id="p-comment" placeholder="한줄 코멘트 (선택)" class="w-full border px-3 py-2 rounded-xl mt-2">
+        
+        <div id="image-paste-zone" tabindex="0" class="border-2 border-dashed border-amber-300 bg-amber-50/30 rounded-xl p-4 text-center cursor-pointer min-h-[100px] flex flex-col justify-center items-center relative">
+          <input type="file" id="p-image-file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
+          <input type="hidden" id="p-image-data">
+          <div id="paste-placeholder">
+            <p class="font-bold text-stone-700">📋 클릭 후 <span class="text-amber-600 bg-amber-100 px-1 rounded">Ctrl + V</span> 붙여넣기</p>
+          </div>
+          <div id="image-preview-container" class="hidden relative">
+            <img id="image-preview" src="" class="max-h-24 rounded object-contain border border-stone-200">
+            <button type="button" onclick="clearImagePreview(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-5 h-5 font-bold">✕</button>
+          </div>
+        </div>
+        <input type="text" id="p-image-url-direct" oninput="handleImageUrlInput(this.value)" placeholder="이미지 Direct URL (선택)" class="w-full border px-3 py-2 rounded-xl">
+        
+        <div class="flex justify-end gap-2 pt-2 border-t border-stone-100">
+          <button type="button" onclick="closeProductModal()" class="bg-stone-100 px-4 py-2 rounded-xl font-bold">취소</button>
+          <button type="submit" class="bg-stone-800 text-white px-5 py-2 rounded-xl font-bold" id="btn-save-product">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jjgyzlcegsckiobjwybb.supabase.co"; 
+    const SUPABASE_ANON_KEY = "sb_publishable_4KNUSIVCUUveVbtaCQ-uhg_R2RvBZmF";
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+
+    let categoriesList = []; 
+    let aggregatedOrdersList = [];
+    let currentFilteredOrders = []; 
+    let currentAuthMode = 'login';
+    let currentUserProfile = null;
+    let cart = [];
+    
+    let checkoutMode = 'cart'; 
+    let directCheckoutItem = null;
+
+    const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23fdfbf7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d6d3d1' font-size='14'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      await checkAuthStatus();
+      await loadCategories();
+      loadProducts(currentPage);
+      setupImagePasteHandlers();
+    });
+
+    // [개선] 다크테마 네비게이션 탭 스위칭 
+    function switchTab(tab) {
+      ['catalog', 'notice', 'orders', 'admin'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        
+        // 동적 버튼 디자인 (활성/비활성 색상 반전)
+        const btn = document.getElementById(`nav-btn-${t}`);
+        if(btn) {
+          if(t === tab) {
+            btn.classList.add('text-amber-500', 'border-amber-500');
+            btn.classList.remove('text-stone-400', 'border-transparent', 'hover:text-stone-200');
+          } else {
+            btn.classList.remove('text-amber-500', 'border-amber-500');
+            btn.classList.add('text-stone-400', 'border-transparent', 'hover:text-stone-200');
+          }
+        }
+      });
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      if (tab === 'admin') { 
+        loadAdminCategories(); loadAdminProducts(); loadAdminUsers(); loadAdminOrders(); 
+        switchAdminTab('products');
+      }
+      if (tab === 'orders') loadMyOrders();
+      if (tab === 'notice') loadNotices();
+      if (tab === 'catalog') loadProducts(currentPage);
+    }
+
+    function switchAdminTab(subTab) {
+      document.querySelectorAll('.admin-subtab').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.admin-tab-btn').forEach(el => {
+        el.classList.remove('bg-stone-800', 'text-white');
+        el.classList.add('text-stone-500', 'hover:bg-stone-100');
+      });
+      document.getElementById(`admin-subtab-${subTab}`).classList.remove('hidden');
+      const activeBtn = document.querySelector(`button[onclick="switchAdminTab('${subTab}')"]`);
+      if(activeBtn) {
+        activeBtn.classList.remove('text-stone-500', 'hover:bg-stone-100');
+        activeBtn.classList.add('bg-stone-800', 'text-white');
+      }
+    }
+
+    async function checkAuthStatus() {
+      const { data: { user } } = await sbClient.auth.getUser();
+      if (user) {
+        document.getElementById('auth-buttons').classList.add('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('nav-btn-notice').classList.remove('hidden');
+        
+        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
+        currentUserProfile = profile;
+        
+        if (profile?.status === 'approved' || profile?.role === 'admin') {
+          document.getElementById('nav-btn-orders').classList.remove('hidden');
+          document.getElementById('cart-btn').classList.remove('hidden');
+        }
+        if (profile?.role === 'admin') {
+          document.getElementById('nav-btn-admin').classList.remove('hidden');
+          document.getElementById('admin-notice-btn').classList.remove('hidden');
+        }
+        
+        document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
+          (profile?.status === 'approved' ? `${user.email} (정회원)` : `${user.email} (승인대기)`);
+      } else {
+        currentUserProfile = null;
+      }
+    }
+
+    function showAuthModal(mode) { toggleAuthMode(mode); document.getElementById('auth-modal').classList.remove('hidden'); }
+    function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+    function toggleAuthMode(mode) {
+      currentAuthMode = mode;
+      document.getElementById('auth-contract-group').classList.toggle('hidden', mode === 'login');
+      document.getElementById('auth-biz-group').classList.toggle('hidden', mode === 'login');
+      document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '로그인하기' : '회원가입 신청 (회비 입금 후 신청 부탁드립니다.)';
+      document.getElementById('auth-agree').required = mode === 'signup';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+
+      try {
+        if (currentAuthMode === 'login') {
+          const { error } = await sbClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        } else {
+          const { data, error } = await sbClient.auth.signUp({ email, password });
+          if (error) throw error;
+          
+          let fileUrl = '';
+          const fileInput = document.getElementById('auth-biz-file');
+          if (fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${data.user.id}_${Date.now()}.${fileExt}`;
+            const { error: upErr } = await sbClient.storage.from('business-licenses').upload(fileName, file);
+            if (!upErr) {
+              fileUrl = sbClient.storage.from('business-licenses').getPublicUrl(fileName).data.publicUrl;
+            }
+          }
+
+          await sbClient.from('profiles').insert([{
+            id: data.user.id, email, role: 'user', status: 'pending',
+            company_name: document.getElementById('auth-company-name').value,
+            business_number: document.getElementById('auth-biz-number').value,
+            ceo_name: document.getElementById('auth-ceo-name').value,
+            phone: document.getElementById('auth-phone').value,
+            depositor_name: document.getElementById('auth-depositor').value,
+            address: document.getElementById('auth-address').value,
+            business_license_url: fileUrl
+          }]);
+          alert("가입신청이 접수되었습니다! 회비 입금이 확인된 후 관리자가 승인 처리를 진행합니다.");
+        }
+        closeAuthModal();
+        window.location.reload();
+      } catch (err) { alert(err.message); }
+    }
+    async function handleLogout() { await sbClient.auth.signOut(); window.location.reload(); }
+
+    async function getRecipientEmails() {
+      const { data } = await sbClient.from('profiles').select('email').neq('role', 'admin');
+      return (data || []).map(u => u.email).filter(e => e);
+    }
+
+    async function sendBulkEmailApi() {
+      const subject = document.getElementById('admin-mail-subject').value.trim();
+      const body = document.getElementById('admin-mail-body').value.trim();
+      
+      if (!subject || !body) return alert("제목과 내용을 모두 입력하세요.");
+
+      const emails = await getRecipientEmails();
+      if (emails.length === 0) return alert("발송할 회원 이메일이 없습니다.");
+
+      const btn = document.getElementById('btn-send-mail');
+      btn.innerText = '발송 중...'; btn.disabled = true;
+
+      try {
+        const { data, error } = await sbClient.functions.invoke('send-bulk-email', {
+          body: { subject: subject, html: body, bcc: emails }
+        });
+
+        if (error) throw error;
+        alert("성공적으로 단체 메일이 발송되었습니다!");
+        document.getElementById('admin-mail-subject').value = '';
+        document.getElementById('admin-mail-body').value = '';
+      } catch (err) {
+        alert("메일 발송 실패: " + err.message);
+      } finally {
+        btn.innerText = '서버를 통해 메일 발송하기'; btn.disabled = false;
+      }
+    }
+
+    function downloadExcelTemplate() {
+      const catGuide = categoriesList.map(c => `[${c.id}] ${c.name}`).join(' / ');
+      const wsData = [
+        ["카테고리ID", "상품명", "도매가", "입수량", "최소주문수량(MOQ)", "재고수량", "발주마감일(YYYY-MM-DD)", "예상배송시기", "코멘트"],
+        ["입력예시 👉", "테스트 피규어", "15000", "1", "10", "100", "2026-12-31", "11월 초순", "인기상품"],
+        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요. (아래 참고)", "", "", "", "", "", "", ""],
+        ["💡참고", catGuide, "", "", "", "", "", "", ""]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      ws['!cols'] = [{wch:15}, {wch:30}, {wch:10}, {wch:10}, {wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:20}];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "상품대량등록양식");
+      XLSX.writeFile(wb, "올랑몰_상품대량등록양식.xlsx");
+    }
+
+    async function handleExcelUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!confirm("엑셀 파일의 데이터를 대량 등록하시겠습니까? (이미지는 등록 후 [수정]을 통해 개별 캡처해야 합니다)")) {
+        e.target.value = ''; 
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length <= 4) throw new Error("데이터가 없습니다. 5번째 줄부터 데이터를 입력해주세요.");
+
+          let payloads = [];
+          for (let i = 4; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0 || !row[0] || !row[1]) continue; 
+
+            const catId = parseInt(row[0]);
+            if (isNaN(catId)) throw new Error(`${i+1}번째 줄 오류: 카테고리ID는 숫자여야 합니다.`);
+
+            let deadline = null;
+            if (row[6]) {
+                if (typeof row[6] === 'number') {
+                    const excelDate = new Date((row[6] - (25567 + 2)) * 86400 * 1000);
+                    deadline = excelDate.toISOString();
+                } else if (typeof row[6] === 'string') {
+                    deadline = new Date(row[6] + 'T23:59:59').toISOString();
+                }
+            }
+
+            payloads.push({
+              category_id: catId, name: String(row[1]), wholesale_price: parseInt(row[2]) || 0,
+              box_qty: parseInt(row[3]) || 1, moq: parseInt(row[4]) || 1, stock: parseInt(row[5]) || 0,
+              deadline: deadline, delivery_date: row[7] ? String(row[7]) : null, comment: row[8] ? String(row[8]) : null,
+              image_url: null, is_archived: false
+            });
+          }
+          if (payloads.length === 0) throw new Error("유효한 데이터가 없습니다.");
+
+          const { error } = await sbClient.from('products').insert(payloads);
+          if (error) throw error;
+
+          alert(`🎉 총 ${payloads.length}개의 상품이 대량 등록되었습니다!`);
+          loadAdminProducts(); loadProducts(currentPage); 
+        } catch (err) {
+          alert("업로드 실패: " + err.message);
+        } finally {
+          e.target.value = ''; 
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function loadNotices() {
+      const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
+      const tbody = document.getElementById('notice-list-body');
+      if (!data || data.length === 0) return tbody.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-stone-400">등록된 공지사항이 없습니다.</td></tr>';
+      tbody.innerHTML = data.map((n, i) => `
+        <tr class="border-b border-stone-100 hover:bg-stone-50/50 cursor-pointer" onclick="openNoticeReadModal(${n.id}, '${escapeHtml(n.title)}', '${escapeHtml(n.content).replace(/\n/g, '\\n')}', '${n.created_at}')">
+          <td class="px-5 py-3 text-center text-xs text-stone-400 font-mono">${data.length - i}</td>
+          <td class="px-5 py-3 font-bold text-stone-800">${escapeHtml(n.title)}</td>
+          <td class="px-5 py-3 text-center text-xs text-stone-500 font-mono">${new Date(n.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function openNoticeReadModal(id, title, content, dateStr) {
+      document.getElementById('rn-title').innerText = title;
+      document.getElementById('rn-date').innerText = new Date(dateStr).toLocaleString();
+      document.getElementById('rn-content').innerText = content.replace(/\\n/g, '\n');
+      const adminActions = document.getElementById('rn-admin-actions');
+      if (currentUserProfile?.role === 'admin') {
+        adminActions.classList.remove('hidden');
+        document.getElementById('rn-edit-btn').onclick = () => { closeNoticeReadModal(); openNoticeWriteModal(id, title, content); };
+        document.getElementById('rn-del-btn').onclick = () => deleteNotice(id);
+      } else adminActions.classList.add('hidden');
+      document.getElementById('notice-read-modal').classList.remove('hidden');
+    }
+    function closeNoticeReadModal() { document.getElementById('notice-read-modal').classList.add('hidden'); }
+    function openNoticeWriteModal(id = null, title = '', content = '') {
+      document.getElementById('wn-modal-title').innerText = id ? '공지사항 수정' : '공지사항 작성';
+      document.getElementById('wn-id').value = id || '';
+      document.getElementById('wn-title').value = title;
+      document.getElementById('wn-content').value = content.replace(/\\n/g, '\n');
+      document.getElementById('notice-write-modal').classList.remove('hidden');
+    }
+    async function saveNotice() {
+      const id = document.getElementById('wn-id').value;
+      const payload = { title: document.getElementById('wn-title').value.trim(), content: document.getElementById('wn-content').value.trim() };
+      if (!payload.title || !payload.content) return alert("제목과 내용을 입력하세요.");
+      if (id) await sbClient.from('notices').update(payload).eq('id', id);
+      else await sbClient.from('notices').insert([payload]);
+      document.getElementById('notice-write-modal').classList.add('hidden');
+      loadNotices();
+    }
+    async function deleteNotice(id) {
+      if (!confirm("공지사항을 삭제하시겠습니까?")) return;
+      await sbClient.from('notices').delete().eq('id', id);
+      closeNoticeReadModal(); loadNotices();
+    }
+
+    async function loadCategories() {
+      const { data } = await sbClient.from('categories').select('*');
+      categoriesList = data || [];
+      renderCategoryDropdowns();
+    }
+
+    function getCatName(id) {
+      const cat = categoriesList.find(c => String(c.id) === String(id));
+      return cat ? cat.name : '미분류';
+    }
+
+    function renderCategoryDropdowns() {
+      const mSel = document.getElementById('filter-main-cat');
+      const aMSel = document.getElementById('admin-filter-main-cat');
+      const pSel = document.getElementById('p-cat');
+      const aSel = document.getElementById('admin-cat-parent');
+
+      const mainCats = categoriesList.filter(c => !c.parent_id);
+      mSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      aMSel.innerHTML = '<option value="all">대분류 (전체)</option>';
+      aSel.innerHTML = '<option value="">1차 대분류로 생성</option>';
+      pSel.innerHTML = '<option value="">카테고리 선택</option>';
+
+      mainCats.forEach(cat => {
+        mSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        aMSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        aSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        pSel.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)} (대분류)</option>`;
+        categoriesList.filter(s => String(s.parent_id) === String(cat.id)).forEach(sub => {
+          pSel.innerHTML += `<option value="${sub.id}"> └ ${escapeHtml(sub.name)}</option>`;
+        });
+      });
+    }
+
+    function onMainCategoryChange() {
+      const mainId = document.getElementById('filter-main-cat').value;
+      const sSel = document.getElementById('filter-sub-cat');
+      sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
+      sSel.disabled = mainId === 'all';
+      if(mainId !== 'all') {
+        categoriesList.filter(c => String(c.parent_id) === String(mainId)).forEach(c => {
+          sSel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+        });
+      }
+      loadProducts(1);
+    }
+
+    function onAdminProductMainCatChange() {
+      const mainId = document.getElementById('admin-filter-main-cat').value;
+      const sSel = document.getElementById('admin-filter-sub-cat');
+      sSel.innerHTML = '<option value="all">소분류 (전체)</option>';
+      sSel.disabled = mainId === 'all';
+      if(mainId !== 'all') {
+        categoriesList.filter(c => String(c.parent_id) === String(mainId)).forEach(c => {
+          sSel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+        });
+      }
+      loadAdminProducts();
+    }
+
+    function isFeeProduct(catId) {
+      const cat = categoriesList.find(c => String(c.id) === String(catId));
+      const mainCat = categoriesList.find(c => String(c.id) === String(cat?.parent_id || catId));
+      return (cat?.name.includes('회비') || mainCat?.name.includes('회비'));
+    }
+
+    async function loadProducts(page = 1) {
+      currentPage = page; 
+      const sort = document.getElementById('catalog-sort').value;
+      let query = sbClient.from('products').select('*', { count: 'exact' }).eq('is_archived', false);
+      
+      const mCat = document.getElementById('filter-main-cat').value;
+      const sCat = document.getElementById('filter-sub-cat').value;
+      const searchTerm = document.getElementById('catalog-search')?.value.trim();
+
+      if (sCat !== 'all') query = query.eq('category_id', sCat);
+      else if (mCat !== 'all') query = query.in('category_id', [mCat, ...categoriesList.filter(c=>String(c.parent_id)===String(mCat)).map(c=>c.id)]);
+
+      if (searchTerm) {
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
+
+      if (sort === 'id_desc') query = query.order('id', {ascending: false});
+      if (sort === 'name_asc') query = query.order('name', {ascending: true});
+      if (sort === 'price_desc') query = query.order('wholesale_price', {ascending: false});
+      if (sort === 'price_asc') query = query.order('wholesale_price', {ascending: true});
+
+      query = query.range((page-1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      const { data, count } = await query;
+
+      const grid = document.getElementById('product-grid');
+      const isApproved = currentUserProfile?.status === 'approved' || currentUserProfile?.role === 'admin';
+
+      grid.innerHTML = (data || []).map(p => {
+        const isExpired = p.deadline && new Date(p.deadline) < new Date();
+        const isFee = isFeeProduct(p.category_id);
+        const isOut = !isFee && p.stock < 1;
+        
+        const safeName = escapeHtml(p.name).replace(/'/g, "\\'");
+        const safeComment = escapeHtml(p.comment || '').replace(/'/g, "\\'");
+        const safeImg = escapeHtml(p.image_url || '').replace(/'/g, "\\'");
+        const deadlineStr = p.deadline || '';
+        const safeDelivery = escapeHtml(p.delivery_date || '').replace(/'/g, "\\'");
+        const safeBoxQty = p.box_qty || 1;
+
+        let priceHtml = `<span class="text-[11px] text-stone-400 font-bold">🔒 가입 후 도매가 확인 가능</span>`;
+        let btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">조회 불가</button>`;
+        
+        if (isApproved) {
+          let unitPriceText = '';
+          if (!isFee && safeBoxQty > 1) {
+            const unitPrice = Math.floor(p.wholesale_price / safeBoxQty);
+            unitPriceText = `<span class="text-[11px] text-stone-500 font-bold ml-1 block sm:inline">(${unitPrice.toLocaleString()}원 × ${safeBoxQty}개)</span>`;
+          }
+
+          priceHtml = `
+            <div class="flex flex-col sm:flex-row sm:items-center">
+              <span class="text-amber-600 font-black text-sm">${p.wholesale_price.toLocaleString()}원</span>
+              ${unitPriceText}
+            </div>
+            <span class="text-[10px] text-stone-400 block font-medium mt-0.5">${isFee ? '재고: 무제한' : `입수량: ${safeBoxQty}개 / MOQ: ${p.moq}개 / 재고: ${p.stock}`}</span>
+          `;
+          
+          if (isExpired) btnHtml = `<button disabled class="w-full bg-stone-200 text-stone-400 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">발주 마감됨</button>`;
+          else if (isOut) btnHtml = `<button disabled class="w-full bg-rose-100 text-rose-500 text-xs py-2 rounded-xl mt-2 font-bold cursor-not-allowed">품절</button>`;
+          else btnHtml = `<button onclick="openOrderChoiceModal('${p.id}','${safeName}',${p.wholesale_price},${p.moq},${safeBoxQty},${p.stock},${p.category_id},${isFee},'${safeImg}','${safeComment}','${deadlineStr}','${safeDelivery}')" class="w-full bg-stone-900 text-white text-xs py-2 rounded-xl mt-2 hover:bg-amber-500 transition font-bold shadow-xs">발주 신청</button>`;
+        }
+
+        let deadlineBadge = '';
+        if (p.deadline) {
+          const d = new Date(p.deadline);
+          deadlineBadge = `<span class="absolute top-1 left-1 bg-stone-800/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm shadow-sm">⏰ ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} 마감</span>`;
+        }
+
+        const deliveryHtml = p.delivery_date ? `<p class="text-[10px] font-bold text-blue-600 mt-1">🚚 예상배송: ${escapeHtml(p.delivery_date)}</p>` : '';
+
+        return `
+          <div class="bg-white border border-stone-200/70 shadow-sm rounded-xl p-3 flex flex-col justify-between hover:shadow-md transition ${isExpired?'opacity-70':''}">
+            <div>
+              <div class="h-32 bg-stone-100 rounded-lg mb-2 relative overflow-hidden">
+                <img src="${p.image_url || FALLBACK_IMAGE}" onerror="this.src='${FALLBACK_IMAGE}'" class="w-full h-full object-cover">
+                ${deadlineBadge}
+                ${isExpired ? `<span class="absolute top-1 right-1 text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-bold shadow-sm">마감됨</span>` : ''}
+              </div>
+              <h4 class="font-bold text-xs text-stone-800 line-clamp-2">${escapeHtml(p.name)}</h4>
+              <p class="text-[10px] text-amber-700 font-bold mb-1 mt-0.5">${escapeHtml(p.comment || '')}</p>
+              ${deliveryHtml}
+            </div>
+            <div class="border-t border-stone-100 pt-2">${priceHtml}${btnHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      renderPagination(count, page);
+    }
+
+    function renderPagination(totalCount, page) {
+      const container = document.getElementById('pagination-container');
+      const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+      if (totalPages <= 1) return container.innerHTML = '';
+
+      let html = `<button onclick="loadProducts(${page - 1})" ${page === 1 ? 'disabled class="px-3 py-1 bg-stone-100 text-stone-300 text-xs rounded-lg"' : 'class="px-3 py-1 bg-white border text-xs font-bold text-stone-700 rounded-lg"'}>이전</button>`;
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button onclick="loadProducts(${i})" class="px-3 py-1 ${i === page ? 'bg-amber-500 text-stone-900' : 'bg-white border text-stone-600'} text-xs font-extrabold rounded-lg">${i}</button>`;
+      }
+      html += `<button onclick="loadProducts(${page + 1})" ${page === totalPages ? 'disabled class="px-3 py-1 bg-stone-100 text-stone-300 text-xs rounded-lg"' : 'class="px-3 py-1 bg-white border text-xs font-bold text-stone-700 rounded-lg"'}>다음</button>`;
+      container.innerHTML = html;
+    }
+
+    let pendingOrderItem = null;
+
+    function openOrderChoiceModal(id, name, price, moq, boxQty, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr) {
+      pendingOrderItem = { id, name, price, moq, stock, category_id: catId, is_fee: isFee };
+      
+      document.getElementById('oc-name').innerText = name;
+      
+      const priceEl = document.getElementById('oc-price');
+      if (!isFee && boxQty > 1) {
+          const unitPrice = Math.floor(price / boxQty);
+          priceEl.innerHTML = `${price.toLocaleString()}원 <span class="text-sm text-stone-500 font-bold ml-1">(${unitPrice.toLocaleString()}원 × ${boxQty}개)</span>`;
+      } else {
+          priceEl.innerText = price.toLocaleString() + '원';
+      }
+
+      document.getElementById('oc-image').src = imageUrl || FALLBACK_IMAGE;
+
+      const commentEl = document.getElementById('oc-comment');
+      if (comment) { 
+        commentEl.innerText = '💬 ' + comment; 
+        commentEl.classList.remove('hidden'); 
+      } else { 
+        commentEl.classList.add('hidden'); 
+      }
+
+      const deadlineEl = document.getElementById('oc-deadline');
+      if (deadlineStr) {
+        const d = new Date(deadlineStr);
+        deadlineEl.innerText = `⏰ 마감일: ${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+        deadlineEl.classList.remove('hidden');
+      } else {
+        deadlineEl.classList.add('hidden');
+      }
+
+      const deliveryEl = document.getElementById('oc-delivery');
+      if (deliveryStr) {
+        deliveryEl.innerText = `🚚 예상배송: ${deliveryStr}`;
+        deliveryEl.classList.remove('hidden');
+      } else {
+        deliveryEl.classList.add('hidden');
+      }
+
+      const qtyInput = document.getElementById('oc-qty');
+      qtyInput.value = isFee ? 1 : moq;
+      qtyInput.min = isFee ? 1 : moq;
+      
+      if (isFee) {
+        document.getElementById('oc-stock-info').innerHTML = "<span class='text-rose-500 font-bold'>회비 결제는 수량 변경이 불가능합니다.</span>";
+        qtyInput.disabled = true;
+        document.getElementById('oc-cart-btn').classList.add('hidden'); 
+      } else {
+        document.getElementById('oc-stock-info').innerText = `최소 주문: ${moq}개 (입수량: ${boxQty}개) / 최대 재고: ${stock}개`;
+        qtyInput.disabled = false;
+        qtyInput.max = stock;
+        document.getElementById('oc-cart-btn').classList.remove('hidden');
+      }
+
+      document.getElementById('order-choice-modal').classList.remove('hidden');
+    }
+
+    function closeOrderChoiceModal() { document.getElementById('order-choice-modal').classList.add('hidden'); }
+
+    function executeAddToCart() {
+      let qty = parseInt(document.getElementById('oc-qty').value);
+      if (qty < pendingOrderItem.moq || qty > pendingOrderItem.stock) return alert("수량을 다시 확인해주세요.");
+      
+      const mainCatId = categoriesList.find(c => String(c.id) === String(pendingOrderItem.category_id))?.parent_id || pendingOrderItem.category_id;
+      
+      if (cart.length > 0) {
+        const cartMainCatId = categoriesList.find(c => String(c.id) === String(cart[0].category_id))?.parent_id || cart[0].category_id;
+        if (String(mainCatId) !== String(cartMainCatId)) {
+          return alert("배송비 정책상 같은 대분류 상품끼리만 장바구니에 담을 수 있습니다.");
+        }
+      }
+
+      const existing = cart.find(i => i.id === pendingOrderItem.id);
+      if (existing) existing.qty += qty;
+      else cart.push({ id: pendingOrderItem.id, name: pendingOrderItem.name, price: pendingOrderItem.price, qty: qty, category_id: pendingOrderItem.category_id, is_fee: false });
+      
+      document.getElementById('cart-count').innerText = cart.reduce((s,i)=>s+i.qty, 0);
+      closeOrderChoiceModal();
+      alert("장바구니에 상품이 담겼습니다.");
+    }
+
+    function executeDirectOrder() {
+      let qty = parseInt(document.getElementById('oc-qty').value);
+      if (!pendingOrderItem.is_fee && (qty < pendingOrderItem.moq || qty > pendingOrderItem.stock)) return alert("수량을 확인해주세요.");
+      
+      directCheckoutItem = { 
+        id: pendingOrderItem.id, name: pendingOrderItem.name, price: pendingOrderItem.price, 
+        qty: qty, category_id: pendingOrderItem.category_id, is_fee: pendingOrderItem.is_fee 
+      };
+      
+      closeOrderChoiceModal();
+      openCheckout('direct');
+    }
+
+    function openCheckout(mode) {
+      if (mode === 'cart' && cart.length === 0) return alert("장바구니가 비어있습니다.");
+      checkoutMode = mode;
+      document.getElementById('checkout-modal').classList.remove('hidden');
+      renderCheckout();
+    }
+    function toggleCart() {
+      if (document.getElementById('checkout-modal').classList.contains('hidden')) openCheckout('cart');
+      else closeCheckoutModal();
+    }
+    function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); }
+
+    function renderCheckout() {
+      const container = document.getElementById('checkout-items-container');
+      const items = checkoutMode === 'cart' ? cart : [directCheckoutItem];
+      
+      let normalSubtotal = 0;
+      let feeSubtotal = 0;
+
+      container.innerHTML = items.map((i, idx) => {
+        if (i.is_fee) feeSubtotal += i.price;
+        else normalSubtotal += i.price * i.qty;
+
+        return `
+          <div class="flex justify-between items-center text-xs bg-stone-50 p-2.5 rounded-xl border border-stone-200">
+            <span class="font-bold text-stone-800 w-1/2 truncate">${escapeHtml(i.name)}</span>
+            <div class="flex items-center space-x-2">
+              <input type="number" value="${i.qty}" min="1" ${i.is_fee ? 'disabled' : ''} onchange="updateCheckoutQty(${idx}, this.value)" class="w-12 border rounded-lg px-1.5 py-0.5 text-center font-bold ${i.is_fee ? 'bg-stone-200' : ''}">
+              <span class="font-black text-stone-900">${(i.price * i.qty).toLocaleString()}원</span>
+              ${checkoutMode === 'cart' ? `<button onclick="cart.splice(${idx},1); if(cart.length===0) closeCheckoutModal(); else renderCheckout()" class="text-rose-500 font-bold px-1">✕</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const shipping = (normalSubtotal >= 200000 || normalSubtotal === 0) ? 0 : 4000;
+      const isTax = document.getElementById('checkout-tax-invoice')?.checked || false;
+      const taxAmount = isTax ? Math.floor(normalSubtotal * 0.1) : 0; 
+      
+      document.getElementById('checkout-subtotal').innerText = (normalSubtotal + feeSubtotal).toLocaleString() + '원';
+      document.getElementById('checkout-shipping').innerText = shipping > 0 ? '4,000원' : '무료';
+      document.getElementById('checkout-shipping-label').innerText = normalSubtotal === 0 ? '배송비 (회비 단독 결제 무료)' : '배송비 (20만원 이상 무료)';
+      document.getElementById('checkout-total').innerText = (normalSubtotal + feeSubtotal + shipping + taxAmount).toLocaleString() + '원';
+    }
+
+    function updateCheckoutQty(idx, val) {
+      if (checkoutMode === 'cart') cart[idx].qty = Math.max(1, Number(val));
+      else directCheckoutItem.qty = Math.max(1, Number(val));
+      renderCheckout();
+    }
+
+    async function checkoutProcess() {
+      const items = checkoutMode === 'cart' ? cart : [directCheckoutItem];
+      if (items.length === 0) return;
+
+      const isTax = document.getElementById('checkout-tax-invoice').checked;
+      let normalSubtotal = 0;
+      items.forEach(i => { if (!i.is_fee) normalSubtotal += i.price * i.qty; });
+      const shipping = (normalSubtotal >= 200000 || normalSubtotal === 0) ? 0 : 4000;
+      const comment = document.getElementById('checkout-comment').value.trim();
+
+      try {
+        const { error } = await sbClient.rpc('checkout_cart_safe', {
+          p_cart_items: items, p_is_tax_invoice: isTax, p_shipping_fee: shipping, p_order_comment: comment
+        });
+        if (error) throw error;
+
+        alert("🎉 발주 신청이 완료되었습니다! (현재 상태: 입금대기)\n국민은행 123-21-0270-724 (정상범) 계좌로 입금해 주시면 입고 진행을 도와드립니다.");
+        if (checkoutMode === 'cart') { cart = []; document.getElementById('cart-count').innerText = 0; }
+        closeCheckoutModal();
+        loadProducts(currentPage);
+        loadMyOrders(); 
+      } catch (err) { alert("발주 실패: " + err.message); }
+    }
+
+    async function loadMyOrders() {
+      if (!currentUserProfile?.id) return;
+      const hide = document.getElementById('filter-not-completed-user').checked;
+      let query = sbClient.from('orders').select('*, products(name)').eq('user_id', currentUserProfile.id).order('created_at', {ascending: false});
+      if (hide) {
+        query = query.neq('status', '배송완료').neq('status', '취소').neq('status', '자동취소(미입금)');
+      }
+      const { data } = await query;
+      const tbody = document.getElementById('my-order-list-body');
+      
+      if (!data || data.length === 0) {
+        return tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-stone-400">발주 신청 내역이 없습니다.</td></tr>';
+      }
+
+      tbody.innerHTML = data.map(o => {
+        let statusClass = "bg-amber-100 text-amber-800";
+        if(o.status.includes('취소')) statusClass = "bg-rose-100 text-rose-800";
+        else if(o.status === '배송완료') statusClass = "bg-emerald-100 text-emerald-800";
+        else if(o.status === '입고대기') statusClass = "bg-blue-100 text-blue-800";
+        else if(o.status === '발주대기') statusClass = "bg-purple-100 text-purple-800";
+
+        return `
+        <tr class="border-b border-stone-100 hover:bg-stone-50">
+          <td class="px-5 py-3 text-xs text-stone-500 font-mono">${new Date(o.created_at).toLocaleDateString()}</td>
+          <td class="px-5 py-3 font-bold">${escapeHtml(o.product_name || o.products?.name || '상품 정보 없음')}</td>
+          <td class="px-5 py-3 text-center text-xs font-bold">${o.quantity}개</td>
+          <td class="px-5 py-3 text-right font-black text-amber-600">${Number(o.total_price).toLocaleString()}원</td>
+          <td class="px-5 py-3 text-center"><span class="${statusClass} px-2.5 py-0.5 rounded-full text-[10px] font-bold">${o.status}</span></td>
+        </tr>`
+      }).join('');
+    }
+
+    async function loadAdminCategories() {
+      const container = document.getElementById('admin-category-tree');
+      const mainCats = categoriesList.filter(c => !c.parent_id);
+      if (mainCats.length === 0) return container.innerHTML = '<p class="text-xs text-stone-400">없음</p>';
+
+      container.innerHTML = mainCats.map(main => {
+        const subCats = categoriesList.filter(sub => String(sub.parent_id) === String(main.id));
+        return `
+          <div class="bg-stone-50 p-3 rounded-xl border border-stone-200">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-sm">📂 ${escapeHtml(main.name)}</span>
+              <button onclick="deleteCategory(${main.id})" class="text-rose-500 text-[10px] font-bold underline">대분류 삭제</button>
+            </div>
+            <div class="flex flex-wrap gap-2 pl-2 text-xs">
+              <span class="text-stone-400 font-bold text-[11px]">ㄴ</span>
+              ${subCats.map(sub => `
+                <span class="bg-white border px-2 py-0.5 rounded shadow-sm font-bold flex items-center gap-1">
+                  ${escapeHtml(sub.name)}
+                  <button onclick="deleteCategory(${sub.id})" class="text-stone-300 hover:text-rose-600 font-black">✕</button>
+                </span>
+              `).join('') || '<span class="text-stone-400 text-[11px]">소분류 없음</span>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleCreateCategory() {
+      const name = document.getElementById('admin-cat-name').value.trim();
+      const parent_id = document.getElementById('admin-cat-parent').value || null;
+      if (!name) return;
+      await sbClient.from('categories').insert([{name, parent_id}]);
+      document.getElementById('admin-cat-name').value = '';
+      await loadCategories(); loadAdminCategories();
+    }
+
+    async function deleteCategory(id) {
+      if(!confirm("삭제하시겠습니까?")) return;
+      await sbClient.from('categories').delete().eq('id', id);
+      await loadCategories(); loadAdminCategories();
+    }
+
+    function setupImagePasteHandlers() {
+      const zone = document.getElementById('image-paste-zone');
+      zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('p-image-file').click(); });
+      zone.addEventListener('paste', e => {
+        for (const item of (e.clipboardData || window.clipboardData).items) {
+          if (item.type.indexOf('image') === 0) { processAndPreviewImage(item.getAsFile()); break; }
+        }
+      });
+    }
+
+    function dataURLtoFile(dataurl, filename) {
+      let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+      return new File([u8arr], filename, {type:mime});
+    }
+
+    function handleFileSelect(e) { if(e.target.files[0]) processAndPreviewImage(e.target.files[0]); }
+    
+    function processAndPreviewImage(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let [w, h] = [img.width, img.height];
+          
+          if(w > 800) { h = Math.round(h*(800/w)); w = 800; }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          ctx.save(); 
+          ctx.translate(w / 2, h / 2); 
+          ctx.rotate(-Math.PI / 6);    
+          
+          const fontSize = Math.max(w / 8, 30); 
+          ctx.font = `900 ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.lineWidth = Math.max(w / 200, 2); 
+          ctx.strokeText('올랑몰 B2B', 0, 0);
+          
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillText('올랑몰 B2B', 0, 0);
+          ctx.restore(); 
+
+          const b64 = canvas.toDataURL('image/jpeg', 0.85);
+          document.getElementById('p-image-data').value = b64;
+          document.getElementById('image-preview').src = b64;
+          document.getElementById('image-preview-container').classList.remove('hidden');
+          document.getElementById('paste-placeholder').classList.add('hidden');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function handleImageUrlInput(url) {
+      if(url.trim()){
+        document.getElementById('p-image-data').value = url.trim();
+        document.getElementById('image-preview').src = url.trim();
+        document.getElementById('image-preview-container').classList.remove('hidden');
+        document.getElementById('paste-placeholder').classList.add('hidden');
+      }
+    }
+    function clearImagePreview(e) {
+      if(e) e.stopPropagation();
+      document.getElementById('p-image-data').value = '';
+      document.getElementById('p-image-url-direct').value = '';
+      document.getElementById('image-preview-container').classList.add('hidden');
+      document.getElementById('paste-placeholder').classList.remove('hidden');
+    }
+
+    function openProductModal(id=null) {
+      document.getElementById('p-id').value = id || '';
+      document.getElementById('modal-p-title').innerText = id ? '✏️ 상품 수정' : '📦 신규 등록';
+      if(!id) {
+        document.getElementById('p-name').value = ''; document.getElementById('p-cat').value = '';
+        document.getElementById('p-price').value = ''; document.getElementById('p-box-qty').value = '1';
+        document.getElementById('p-moq').value = '1'; document.getElementById('p-stock').value = '100';
+        document.getElementById('p-deadline').value = ''; document.getElementById('p-delivery-date').value = ''; 
+        document.getElementById('p-comment').value = ''; 
+        clearImagePreview();
+      }
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+    function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+    async function saveProduct(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-product');
+      btn.innerText = '저장 중...'; btn.disabled = true;
+
+      const id = document.getElementById('p-id').value;
+      let finalImageUrl = document.getElementById('p-image-data').value;
+
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        const file = dataURLtoFile(finalImageUrl, `prod_${Date.now()}.jpg`);
+        const { error: upErr } = await sbClient.storage.from('product-images').upload(file.name, file);
+        if (!upErr) {
+          finalImageUrl = sbClient.storage.from('product-images').getPublicUrl(file.name).data.publicUrl;
+        } else {
+          console.error("이미지 업로드 실패:", upErr);
+        }
+      }
+
+      const payload = {
+        name: document.getElementById('p-name').value, 
+        category_id: document.getElementById('p-cat').value,
+        wholesale_price: document.getElementById('p-price').value, 
+        box_qty: document.getElementById('p-box-qty').value,
+        moq: document.getElementById('p-moq').value,
+        stock: document.getElementById('p-stock').value, 
+        comment: document.getElementById('p-comment').value,
+        deadline: document.getElementById('p-deadline').value ? new Date(document.getElementById('p-deadline').value+'T23:59:59').toISOString() : null,
+        delivery_date: document.getElementById('p-delivery-date').value.trim() || null,
+        image_url: finalImageUrl || null
+      };
+
+      try {
+        if(id) await sbClient.from('products').update(payload).eq('id', id);
+        else await sbClient.from('products').insert([payload]);
+        
+        alert("✅ 상품이 성공적으로 등록(수정)되었습니다.");
+        closeProductModal(); 
+        loadAdminProducts(); 
+        loadProducts(currentPage); 
+      } catch(err) { 
+        alert("저장 실패: " + err.message); 
+      } finally { 
+        btn.innerText = '저장'; 
+        btn.disabled = false; 
+      }
+    }
+
+    async function loadAdminProducts() {
+      const mainCatId = document.getElementById('admin-filter-main-cat').value;
+      const subCatId = document.getElementById('admin-filter-sub-cat').value;
+
+      let query = sbClient.from('products').select('*').eq('is_archived', false).order('id', {ascending: false});
+      
+      if (subCatId !== 'all') query = query.eq('category_id', subCatId);
+      else if (mainCatId !== 'all') {
+        const childCatIds = categoriesList.filter(c => String(c.parent_id) === String(mainCatId)).map(c => c.id);
+        query = query.in('category_id', [parseInt(mainCatId), ...childCatIds]);
+      }
+
+      try {
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => {
+          return `
+          <tr class="border-b border-stone-100 text-xs hover:bg-stone-50">
+            <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
+            <td class="px-4 py-2 font-bold">${escapeHtml(p.name)}<br><span class="text-stone-400 font-normal">[${escapeHtml(getCatName(p.category_id))}]</span></td>
+            <td class="px-4 py-2 text-right font-black text-amber-600">${Number(p.wholesale_price).toLocaleString()}원</td>
+            <td class="px-4 py-2 text-center">${p.stock}개<br><span class="text-[10px] text-stone-400">입수량: ${p.box_qty||1} / MOQ: ${p.moq}</span></td>
+            <td class="px-4 py-2 text-center space-x-1">
+              <button onclick="editProduct(${p.id})" class="bg-stone-200 px-2 py-1 rounded font-bold">수정</button>
+              <button onclick="deleteProduct(${p.id})" class="bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">삭제</button>
+            </td>
+          </tr>`
+        }).join('');
+      } catch (err) {
+        document.getElementById('admin-product-list-body').innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">상품 로드 중 오류가 발생했습니다.</td></tr>`;
+      }
+    }
+
+    async function editProduct(id) {
+      const { data: p } = await sbClient.from('products').select('*').eq('id', id).single();
+      document.getElementById('p-id').value = p.id; 
+      document.getElementById('p-name').value = p.name;
+      document.getElementById('p-cat').value = p.category_id||''; 
+      document.getElementById('p-price').value = p.wholesale_price;
+      document.getElementById('p-box-qty').value = p.box_qty || 1;
+      document.getElementById('p-moq').value = p.moq; 
+      document.getElementById('p-stock').value = p.stock;
+      document.getElementById('p-comment').value = p.comment||'';
+      if(p.deadline) document.getElementById('p-deadline').value = p.deadline.split('T')[0];
+      document.getElementById('p-delivery-date').value = p.delivery_date || ''; 
+      if(p.image_url) handleImageUrlInput(p.image_url); else clearImagePreview();
+      openProductModal(id);
+    }
+    
+    async function deleteProduct(id) {
+      if(!confirm("삭제하시겠습니까?")) return;
+      await sbClient.from('products').update({is_archived:true}).eq('id',id);
+      loadAdminProducts(); loadProducts(currentPage);
+    }
+
+    async function loadAdminUsers() {
+      const { data } = await sbClient.from('profiles').select('*').neq('role','admin').order('created_at',{ascending:false});
+      
+      document.getElementById('admin-user-list-body').innerHTML = (data||[]).map(u => {
+        let finalLicenseUrl = u.business_license_url;
+        if (finalLicenseUrl && !finalLicenseUrl.startsWith('http')) {
+            finalLicenseUrl = sbClient.storage.from('business-licenses').getPublicUrl(finalLicenseUrl).data.publicUrl;
+        }
+
+        const fileHtml = finalLicenseUrl 
+          ? `<a href="${finalLicenseUrl}" target="_blank" title="사업자등록증 원본 보기"><img src="${finalLicenseUrl}" class="w-12 h-12 object-cover rounded border border-stone-200 mx-auto hover:opacity-75 transition" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}';this.parentElement.href='#';"></a>` 
+          : '<span class="text-stone-400">미첨부</span>';
+
+        return `
+        <tr class="border-b text-xs hover:bg-stone-50">
+          <td class="px-4 py-2"><span class="font-bold text-stone-800 text-sm">${escapeHtml(u.company_name)}</span><br><span class="font-mono text-stone-500 font-bold">${escapeHtml(u.business_number)}</span></td>
+          <td class="px-4 py-2">${escapeHtml(u.ceo_name)}<br>${escapeHtml(u.phone)}</td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(u.email)}<br><span class="font-normal text-stone-400">입금자: ${escapeHtml(u.depositor_name)}</span></td>
+          <td class="px-4 py-2 text-center align-middle">${fileHtml}</td>
+          <td class="px-4 py-2 text-center font-bold text-amber-600">${u.status}</td>
+          <td class="px-4 py-2 text-center space-x-1">
+            <button onclick="sbClient.from('profiles').update({status:'approved'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-emerald-500 text-white px-2 py-1 rounded">승인</button>
+            <button onclick="sbClient.from('profiles').update({status:'pending'}).eq('id','${u.id}').then(()=>loadAdminUsers())" class="bg-stone-300 px-2 py-1 rounded">보류</button>
+          </td>
+        </tr>`
+      }).join('');
+    }
+
+    async function loadAdminOrders() {
+      const hideCompleted = document.getElementById('filter-not-completed-admin').checked;
+      
+      let query = sbClient.from('orders')
+        .select('*, profiles(company_name, depositor_name), products(name, deadline)')
+        .neq('status', '취소')
+        .neq('status', '자동취소(미입금)');
+        
+      if(hideCompleted) {
+        query = query.neq('status','배송완료');
+      }
+      
+      const { data } = await query;
+      aggregatedOrdersList = data || [];
+      renderAdminOrders(); 
+    }
+
+    function renderAdminOrders() {
+      const searchTerm = document.getElementById('admin-order-search').value.toLowerCase().trim();
+      const sortType = document.getElementById('admin-order-sort').value;
+      const hideOldDeadline = document.getElementById('filter-deadline-1week').checked;
+      const tbody = document.getElementById('admin-orders-body');
+      
+      let filteredList = aggregatedOrdersList.filter(o => {
+        const companyName = (o.profiles?.company_name || '').toLowerCase();
+        const productName = (o.product_name || o.products?.name || '').toLowerCase();
+        const matchSearch = companyName.includes(searchTerm) || productName.includes(searchTerm);
+
+        let matchDeadline = true;
+        if (hideOldDeadline && o.products?.deadline) {
+          const deadlineDate = new Date(o.products.deadline);
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          if (deadlineDate < oneWeekAgo) {
+            matchDeadline = false;
+          }
+        }
+
+        return matchSearch && matchDeadline;
+      });
+
+      filteredList.sort((a, b) => {
+        if (sortType === 'order_desc') {
+          return new Date(b.created_at) - new Date(a.created_at);
+        } else if (sortType === 'deadline_asc') {
+          const d1 = a.products?.deadline ? new Date(a.products.deadline).getTime() : Infinity;
+          const d2 = b.products?.deadline ? new Date(b.products.deadline).getTime() : Infinity;
+          return d1 - d2;
+        }
+        return 0;
+      });
+
+      currentFilteredOrders = filteredList;
+
+      if (filteredList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-stone-400 font-bold">조건에 맞는 발주 내역이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredList.map(o => {
+        let statusClass = "text-stone-800";
+        if(o.status === '배송완료') statusClass = "text-emerald-600";
+        else if(o.status === '입고대기') statusClass = "text-blue-600";
+        else if(o.status === '발주대기') statusClass = "text-purple-600";
+
+        let deadlineBadge = '';
+        if (o.products?.deadline) {
+            const d = new Date(o.products.deadline);
+            deadlineBadge = `<br><span class="inline-block mt-1 text-[10px] bg-rose-50 text-rose-500 border border-rose-100 px-1.5 py-0.5 rounded font-bold">⏰ 마감: ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}</span>`;
+        }
+
+        return `
+        <tr class="border-b text-xs hover:bg-stone-50">
+          <td class="px-4 py-2 font-mono">#${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'비회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
+          <td class="px-4 py-2 font-bold">${escapeHtml(o.product_name || o.products?.name)} <span class="text-amber-600">(${o.quantity}개)</span>${deadlineBadge}</td>
+          <td class="px-4 py-2 text-right font-black text-stone-900">${Number(o.total_price).toLocaleString()}원</td>
+          <td class="px-4 py-2 text-center">
+            <button onclick="sbClient.from('orders').update({tax_invoice_issued:${!o.tax_invoice_issued}}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="px-2 py-1 rounded font-bold ${o.tax_invoice_issued ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${o.is_tax_invoice ? (o.tax_invoice_issued ? '발급완료' : '미발급(신청)') : '신청안함'}
+            </button>
+          </td>
+          <td class="px-4 py-2 text-center flex flex-col gap-1">
+            <span class="font-bold ${statusClass}">${o.status}</span>
+            <div class="flex flex-wrap justify-center gap-1 mt-1">
+              <button onclick="sbClient.from('orders').update({status:'입금대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-amber-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-amber-200 transition">입금대기</button>
+              <button onclick="sbClient.from('orders').update({status:'발주대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-purple-100 px-2 py-0.5 rounded text-[10px] text-purple-800 font-bold hover:bg-purple-200 transition">발주대기</button>
+              <button onclick="sbClient.from('orders').update({status:'입고대기'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-blue-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-blue-200 transition">입고대기</button>
+              <button onclick="sbClient.from('orders').update({status:'배송완료'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-emerald-100 px-2 py-0.5 rounded text-[10px] text-stone-700 font-bold hover:bg-emerald-200 transition">배송완료</button>
+              <button onclick="if(confirm('이 발주를 취소 처리하시겠습니까? (재고는 롤백되지 않으며 리스트에서 즉시 사라집니다)')) sbClient.from('orders').update({status:'취소'}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-[10px] font-bold hover:bg-rose-200 transition">취소</button>
+            </div>
+          </td>
+        </tr>`
+      }).join('');
+    }
+
+    function exportOrdersToExcel() {
+      if (!currentFilteredOrders.length) return alert("데이터 없음");
+      const ws = XLSX.utils.json_to_sheet(currentFilteredOrders.map(i => ({
+        "주문번호": i.id, "상호명": i.profiles?.company_name||'-', "상품명": i.product_name||i.products?.name||'-', 
+        "수량": i.quantity, "총 결제금액": i.total_price, "상태": i.status, "계산서": i.tax_invoice_issued ? '발급' : '미발급'
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "발주리스트");
+      XLSX.writeFile(wb, `올랑몰_발주리스트_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+  </script>
 </body>
 </html>
