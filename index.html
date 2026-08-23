@@ -19,7 +19,7 @@
   <header class="bg-white border-b border-stone-200 sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-6">
-        <!-- [개선] 2단 로고 디자인 -->
+        <!-- 2단 로고 디자인 -->
         <div class="cursor-pointer flex flex-col justify-center" onclick="switchTab('catalog')">
           <span class="text-[10px] font-bold text-stone-400 tracking-tight pl-1">오타쿠를 위한 도매몰</span>
           <h1 class="font-extrabold text-lg text-amber-600 leading-none mt-0.5">📦 올랑몰 B2B</h1>
@@ -114,6 +114,7 @@
     <!-- 탭 4: 관리자 대시보드 -->
     <section id="tab-admin" class="hidden h-full flex flex-col space-y-6">
       
+      <!-- 관리자 서브 네비게이션 (LNB) -->
       <div class="bg-white border border-stone-200 rounded-2xl shadow-sm px-4 py-3 flex gap-2 overflow-x-auto">
         <button onclick="switchAdminTab('products')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl bg-stone-800 text-white transition">📦 상품/카테고리 관리</button>
         <button onclick="switchAdminTab('users')" class="admin-tab-btn px-4 py-2 text-xs font-bold rounded-xl text-stone-500 hover:bg-stone-100 transition">👤 B2B 회원 관리</button>
@@ -135,12 +136,20 @@
         </div>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 space-y-4">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-100 pb-3 gap-3">
+          <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center border-b border-stone-100 pb-3 gap-3">
             <div><h3 class="font-bold text-stone-800">📦 등록 상품 수정 및 삭제 관리</h3></div>
-            <div class="flex gap-2 items-center">
+            <div class="flex flex-wrap gap-2 items-center">
               <select id="admin-filter-main-cat" onchange="onAdminProductMainCatChange()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50"><option value="all">대분류 전체</option></select>
               <select id="admin-filter-sub-cat" onchange="loadAdminProducts()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50" disabled><option value="all">소분류 전체</option></select>
-              <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm ml-2">+ 신규 도매 상품 등록</button>
+              
+              <!-- 엑셀 양식 및 업로드 버튼 -->
+              <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm ml-2">⬇️ 엑셀 양식</button>
+              <label class="bg-blue-600 hover:bg-blue-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer">
+                ⬆️ 엑셀 대량 등록
+                <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
+              </label>
+
+              <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm">+ 신규 단건 등록</button>
             </div>
           </div>
           <div class="overflow-x-auto">
@@ -311,7 +320,7 @@
     </div>
   </div>
 
-  <!-- 공지사항/인증 모달 등 기존 요소 -->
+  <!-- 공지사항 모달 -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -336,7 +345,7 @@
     </div>
   </div>
 
-  <!-- 인증 모달 (올랑몰 및 회비 정책 변경 적용) -->
+  <!-- 인증 모달 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-stone-400 font-bold">✕</button>
@@ -411,7 +420,7 @@
     </div>
   </div>
 
-  <!-- 상품 등록 모달 (8개 필드 완벽 분리 적용) -->
+  <!-- 상품 등록 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-5 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -633,6 +642,104 @@
       }
     }
 
+    // --- 엑셀 양식 다운로드 ---
+    function downloadExcelTemplate() {
+      const catGuide = categoriesList.map(c => `[${c.id}] ${c.name}`).join(' / ');
+      const wsData = [
+        ["카테고리ID", "상품명", "도매가", "입수량", "최소주문수량(MOQ)", "재고수량", "발주마감일(YYYY-MM-DD)", "예상배송시기", "코멘트"],
+        ["입력예시 👉", "테스트 피규어", "15000", "1", "10", "100", "2026-12-31", "11월 초순", "인기상품"],
+        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요. (아래 참고)", "", "", "", "", "", "", ""],
+        ["💡참고", catGuide, "", "", "", "", "", "", ""]
+      ];
+      
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      ws['!cols'] = [{wch:15}, {wch:30}, {wch:10}, {wch:10}, {wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:20}];
+      
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "상품대량등록양식");
+      XLSX.writeFile(wb, "올랑몰_상품대량등록양식.xlsx");
+    }
+
+    // --- 엑셀 파일 파싱 및 대량 업로드 ---
+    async function handleExcelUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!confirm("엑셀 파일의 데이터를 대량 등록하시겠습니까? (이미지는 등록 후 [수정]을 통해 개별 캡처해야 합니다)")) {
+        e.target.value = ''; 
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length <= 4) {
+             throw new Error("데이터가 없습니다. 5번째 줄부터 데이터를 입력해주세요.");
+          }
+
+          let payloads = [];
+          
+          for (let i = 4; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0 || !row[0] || !row[1]) continue; 
+
+            const catId = parseInt(row[0]);
+            if (isNaN(catId)) {
+                throw new Error(`${i+1}번째 줄 오류: 카테고리ID는 숫자여야 합니다.`);
+            }
+
+            let deadline = null;
+            if (row[6]) {
+                if (typeof row[6] === 'number') {
+                    const excelDate = new Date((row[6] - (25567 + 2)) * 86400 * 1000);
+                    deadline = excelDate.toISOString();
+                } else if (typeof row[6] === 'string') {
+                    deadline = new Date(row[6] + 'T23:59:59').toISOString();
+                }
+            }
+
+            payloads.push({
+              category_id: catId,
+              name: String(row[1]),
+              wholesale_price: parseInt(row[2]) || 0,
+              box_qty: parseInt(row[3]) || 1,
+              moq: parseInt(row[4]) || 1,
+              stock: parseInt(row[5]) || 0,
+              deadline: deadline,
+              delivery_date: row[7] ? String(row[7]) : null,
+              comment: row[8] ? String(row[8]) : null,
+              image_url: null, 
+              is_archived: false
+            });
+          }
+
+          if (payloads.length === 0) {
+             throw new Error("유효한 데이터가 없습니다.");
+          }
+
+          const { error } = await sbClient.from('products').insert(payloads);
+          if (error) throw error;
+
+          alert(`🎉 총 ${payloads.length}개의 상품이 텍스트 베이스로 대량 등록되었습니다!\n\n이제 목록에서 [수정] 버튼을 눌러 캡처 이미지를 씌워주세요.`);
+          loadAdminProducts(); 
+          loadProducts(currentPage); 
+          
+        } catch (err) {
+          alert("업로드 실패: " + err.message);
+        } finally {
+          e.target.value = ''; 
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     async function loadNotices() {
       const { data } = await sbClient.from('notices').select('*').order('created_at', { ascending: false });
       const tbody = document.getElementById('notice-list-body');
@@ -851,7 +958,6 @@
       container.innerHTML = html;
     }
 
-    // --- 수량 선택 및 2-Way 모달 ---
     let pendingOrderItem = null;
 
     function openOrderChoiceModal(id, name, price, moq, boxQty, stock, catId, isFee, imageUrl, comment, deadlineStr, deliveryStr) {
@@ -1142,7 +1248,6 @@
           
           ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
           ctx.lineWidth = Math.max(w / 200, 2); 
-          // [수정] 올랑몰 로고 텍스트
           ctx.strokeText('올랑몰 B2B', 0, 0);
           
           ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
@@ -1418,7 +1523,6 @@
       }).join('');
     }
 
-    // [개선] 엑셀 다운로드 파일명 '올랑몰'로 변경
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
       const ws = XLSX.utils.json_to_sheet(currentFilteredOrders.map(i => ({
