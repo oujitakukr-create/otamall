@@ -17,15 +17,15 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-<body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col font-sans">
+<!-- [개선] overflow-x-hidden을 추가하여 모바일 화면이 가로로 찢어지는 현상 원천 봉쇄 -->
+<body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col font-sans overflow-x-hidden">
 
   <!-- 프리미엄 다크 테마 헤더 (반응형 최적화) -->
   <header class="flex flex-col items-center pt-4 shadow-lg sticky top-0 z-40 transition-colors duration-300" style="background-color: #1A1A1A;" id="main-header">
     
-    <!-- [개선] 모바일/데스크탑 완벽 호환 마스킹 (절대 정렬 기법) -->
-    <!-- 모바일은 h-[65px], 데스크탑은 h-[120px]로 컨테이너를 세팅 -->
-    <div class="relative w-full h-[65px] sm:h-[80px] md:h-[120px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
-      <!-- 모바일에서는 w-full (최대 450px)로 맞춰 양옆 잘림을 방지, 데스크탑에서는 h-[320px]로 고정하여 스케일업 -->
+    <!-- 모바일/데스크탑 완벽 호환 마스킹 (절대 정렬 기법) -->
+    <div class="relative w-full h-[90px] sm:h-[100px] md:h-[130px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
+      <!-- 로고 이미지 -->
       <img src="https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/public-asset/olangmallimage.png" alt="올랑몰 B2B 로고" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[450px] md:w-auto md:max-w-none md:h-[320px] object-contain transition-transform hover:scale-105 duration-300 mix-blend-screen" id="main-logo">
     </div>
 
@@ -271,9 +271,9 @@
     </section>
   </main>
 
-  <!-- 모달 1: 수량 선택 및 발주 2-WAY 분기 모달 -->
+  <!-- [개선] 뷰포트 확대 버그의 원흉이던 mx-2 클래스 제거 완료 -->
   <div id="order-choice-modal" onclick="if(event.target===this) closeOrderChoiceModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100 mx-2">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeOrderChoiceModal()" class="absolute top-4 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
@@ -301,9 +301,9 @@
     </div>
   </div>
 
-  <!-- 모달 2: 결제 모달 -->
+  <!-- 결제 모달 -->
   <div id="checkout-modal" onclick="if(event.target===this) closeCheckoutModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100 mx-2">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeCheckoutModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
       <h3 id="checkout-title" class="text-lg font-extrabold text-stone-800">🛒 결제 진행</h3>
       <p id="checkout-warning" class="text-[10px] text-rose-500 font-bold">* 같은 대분류 카테고리 상품만 함께 결제 가능합니다.</p>
@@ -328,9 +328,9 @@
     </div>
   </div>
 
-  <!-- 공지사항 및 인증 모달 등 기타 로직 (기존과 동일하되 여백/폰트크기만 반응형 조정) -->
+  <!-- 공지사항 모달 -->
   <div id="notice-read-modal" onclick="if(event.target===this) closeNoticeReadModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-5 md:p-6 relative shadow-xl mx-2">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 md:p-6 relative shadow-xl">
       <button onclick="closeNoticeReadModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
       <h3 id="rn-title" class="text-base md:text-lg font-extrabold text-stone-800 pr-6"></h3>
       <p id="rn-date" class="text-[11px] md:text-xs text-stone-400 mt-1 pb-3 border-b border-stone-100"></p>
@@ -343,7 +343,7 @@
   </div>
 
   <div id="notice-write-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-xl mx-2">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-xl">
       <button onclick="document.getElementById('notice-write-modal').classList.add('hidden')" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
       <h3 id="wn-modal-title" class="text-lg font-extrabold text-stone-800">공지사항 작성</h3>
       <input type="hidden" id="wn-id">
@@ -355,7 +355,7 @@
 
   <!-- 인증 모달 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl mx-2">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
       <div class="flex border-b border-stone-200 mt-2">
         <button id="auth-tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 font-extrabold border-b-2 border-amber-500 text-amber-600 text-sm">로그인</button>
@@ -430,7 +430,7 @@
 
   <!-- 상품 등록 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative mx-2">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
       <h3 id="modal-p-title" class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-2">📦 상품 관리</h3>
       
