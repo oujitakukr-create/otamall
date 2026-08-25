@@ -18,15 +18,13 @@
 </head>
 <body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col font-sans overflow-x-hidden w-full max-w-[100vw]">
 
-  <!-- [개선] 헤더 배경색을 이미지 톤에 맞춰 #171717로 변경 -->
+  <!-- 헤더 영역 -->
   <header class="flex flex-col items-center pt-4 shadow-lg sticky top-0 z-40 transition-colors duration-300 w-full" style="background-color: #000000;" id="main-header">
     
     <div class="relative w-full h-[90px] sm:h-[100px] md:h-[130px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
-      <!-- [개선] mix-blend-screen 속성을 제거하여 원본 이미지 색상이 변형되며 테두리가 뜨는 현상 방지 -->
       <img src="https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/public-asset/olangmallimage.png" alt="올랑몰 B2B 로고" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[450px] md:w-auto md:max-w-none md:h-[320px] object-contain transition-transform hover:scale-105 duration-300" id="main-logo">
     </div>
 
-    <!-- 네비게이션 & 유저 컨트롤 영역 -->
     <div class="w-full bg-[#141414] border-t border-stone-800 border-b border-amber-500 shadow-sm mt-1">
       <div class="max-w-7xl mx-auto px-2 md:px-4 h-12 flex justify-between items-center w-full">
         
@@ -64,7 +62,6 @@
           <input type="text" id="catalog-search" oninput="loadProducts(1)" placeholder="🔍 상품명 검색" class="w-full md:w-48 border border-stone-200 px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 mt-1 md:mt-0">
         </div>
         
-        <!-- [개선] 마감 상품 숨기기 필터 및 마감임박순 정렬 추가 -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3 mt-1 md:mt-0">
           <label class="flex items-center space-x-1.5 text-xs font-bold text-stone-600 cursor-pointer">
             <input type="checkbox" id="filter-hide-expired" onchange="loadProducts(1)" class="w-4 h-4 text-amber-500 rounded focus:ring-amber-400 border-stone-300">
@@ -278,7 +275,6 @@
     </section>
   </main>
 
-  <!-- 모달 창들의 내용은 동일하므로 유지 -->
   <div id="order-choice-modal" onclick="if(event.target===this) closeOrderChoiceModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeOrderChoiceModal()" class="absolute top-4 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
@@ -353,6 +349,7 @@
     </div>
   </div>
 
+  <!-- [개선] 제휴 계약서 약관 변경 적용 -->
   <div id="auth-modal" onclick="if(event.target===this) closeAuthModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative max-h-[90vh] overflow-y-auto shadow-xl">
       <button onclick="closeAuthModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -369,9 +366,30 @@
             "파트너스"는 "올랑몰"에 상품 구매에 필요한 금액을 제공하고, "올랑몰"은 상품을 대리 구매하여 "파트너스"가 원하는 주소지로 상품을 발송한다.<br>
             상품 구매에 필요한 금액은 "올랑몰"이 사전에 정한 방식으로 지불되어야 하며, "파트너스"는 "올랑몰"이 제공한 정보를 통해 상품을 자유롭게 주문할 수 있다.<br>
             “파트너스”는 “올랑몰”로부터 제공 받는 모든 상품에 대한 정보 및 이미지를 외부로 유출하지 않을 비밀 유지 의무를 가진다.<br>
-            "파트너스"는 "회사"로부터 "서비스"를 제공받는 대가로 가입 최초 10개월 동안 월 100,000원의 회비를 "회사"에 납부한다. 10개월 이후 회원 유지 시에는 더 이상 비용이 부과되지 아니한다. (국민은행 123-21-0270-724 정상범)<br>
+            <!-- [개선] 수정된 1회 가입비 / 계좌 정보 적용 -->
+            "파트너스"는 "회사"로부터 "서비스"를 제공받는 대가로 가입 시 최초 1회에 한해 가입비 100,000원을 "회사"에 납부한다. (케이뱅크 100-134-481200 정상범)<br>
             "파트너스"가 "올랑몰"에 "서비스"에 대한 금액을 지불하지 않을 경우, "회사"는 "파트너스"가 지불하지 않은 "서비스"를 파기할 수 있다.<br>
             "올랑몰"에서 부득이한 사유로 상품의 제공이 불가능할 경우, "파트너스"에게 이를 고지하며 제공받은 상품 구매에 필요한 금액을 환불 처리한다.<br><br>
+            <p class="font-bold text-stone-800 mb-1">비밀유지의무</p>
+            1. “파트너스”는 본 계약에 따라 제공받은 “올랑몰”의 서비스와 관련된 정보와 “올랑몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “올랑몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
+            2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “올랑몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
+            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
+            4. “올랑몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
+            5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
+            6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
+            <p class="font-bold text-stone-800 mb-1">계약 기간 및 해지</p>
+            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 한다.<br>
+            2. 각 당사자는 상대방에게 각 호의 사유 중 하나가 발생한 경우, 서면 통지하여 본 계약을 해제 또는 해지할 수 있다.<br>
+            - 상대방이 본 계약의 각 조항을 위반하거나 본 계약 상의 의무를 이행하지 아니한 때<br>
+            - 정부의 인∙허가 또는 등록∙신고 등이 필요한 것으로 법률 또는 규정이 제정 또는 개정되는 경우<br>
+            - 상대방의 중요 자산에 대한 가압류∙가처분이 있었거나 상대방이 회생 또는 파산을 신청하는 경우<br>
+            - 기타 상대방이 본 계약의 이행이 불가능하다고 판단할 합리적인 사유가 있는 경우<br>
+            3. 계약의 해제 또는 해지는 사유를 명확하게 기재한 서면에 의해 통지하여, 그 통지가 상대방에게 도달한 뒤에 효력이 발생한다.<br>
+            4. 본 계약의 해제 또는 해지는 손해배상청구에 영향을 미치지 아니한다.<br><br>
+            <p class="font-bold text-stone-800 mb-1">분쟁해결 및 기타</p>
+            1. 본 계약의 해석이나 적용에 관한 분쟁은 상호협력에 의하여 우호적으로 해결하며, 제3자의 개입을 허용하지 않는다. 분쟁 발생 시 부산지방법원을 제1심에 대한 전속적 관할로 단다.<br>
+            2. “올랑몰”과 “파트너스”는 사전 서면 동의 없이 제3자에게 양도할 수 없으며, 담보의 목적으로 제공할 수 없다.<br>
+            3. 본 계약은 독립된 당사자 간에 체결하는 계약으로 대리관계나 고용관계 등이 발생하지 아니하며 전자서명의 형태로 체결되어 법률적인 효력을 가진다.<br><br>
             <p class="font-bold text-stone-800 mb-1">개인정보 제공 동의 및 제3자 제공 및 동의서 안내</p>
             「개인정보보호법」 제 15조, 제 17조에 의거, '오지는 오타쿠'는 회원님의 개인정보 수집 및 이용에 대해 개인정보 수집, 이용 및 제 3자 제공 동의서를 받고 있습니다.<br>
             '오지는 오타쿠'는 회원님의 개인정보를 제공 시 동의한 내용 외의 다른 목적으로 활용하지 않으며, 동의 및 제공 이후에도 개인정보 관리책임자를 통해 그 열람, 정정 혹은 삭제를 요구할 수 있습니다.<br>
@@ -548,7 +566,7 @@
       currentAuthMode = mode;
       document.getElementById('auth-contract-group').classList.toggle('hidden', mode === 'login');
       document.getElementById('auth-biz-group').classList.toggle('hidden', mode === 'login');
-      document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '로그인하기' : '회원가입 신청 (회비 입금 후 신청 부탁드립니다.)';
+      document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '로그인하기' : '가입비 납부 완료 후 회원가입 신청';
       document.getElementById('auth-agree').required = mode === 'signup';
     }
 
@@ -587,7 +605,7 @@
             address: document.getElementById('auth-address').value,
             business_license_url: fileUrl
           }]);
-          alert("가입신청이 접수되었습니다! 회비 입금이 확인된 후 관리자가 승인 처리를 진행합니다.");
+          alert("가입신청이 접수되었습니다! 가입비 입금이 확인된 후 관리자가 승인 처리를 진행합니다.");
         }
         closeAuthModal();
         window.location.reload();
@@ -817,7 +835,6 @@
       return (cat?.name.includes('회비') || mainCat?.name.includes('회비'));
     }
 
-    // [개선] 마감 상품 숨기기 및 마감임박순 정렬 로직 추가
     async function loadProducts(page = 1) {
       currentPage = page; 
       const sort = document.getElementById('catalog-sort').value;
@@ -836,13 +853,11 @@
         query = query.ilike('name', `%${searchTerm}%`);
       }
 
-      // 마감 상품 숨기기 (현재 시간 이후거나, 무제한/회비처럼 마감일이 아예 없는 상품만 출력)
       if (hideExpired) {
         const now = new Date().toISOString();
         query = query.or(`deadline.gte.${now},deadline.is.null`);
       }
 
-      // 정렬 처리 (마감임박순 선택 시, 마감일이 없는 무제한 상품은 리스트 끝으로 밀어버림)
       if (sort === 'deadline_asc') query = query.order('deadline', {ascending: true, nullsFirst: false});
       else if (sort === 'id_desc') query = query.order('id', {ascending: false});
       else if (sort === 'name_asc') query = query.order('name', {ascending: true});
@@ -1116,7 +1131,8 @@
         });
         if (error) throw error;
 
-        alert("🎉 발주 신청이 완료되었습니다! (현재 상태: 입금대기)\n국민은행 123-21-0270-724 (정상범) 계좌로 입금해 주시면 입고 진행을 도와드립니다.");
+        // [개선] 결제 완료 안내 계좌 정보 케이뱅크로 변경 적용
+        alert("🎉 발주 신청이 완료되었습니다! (현재 상태: 입금대기)\n케이뱅크 100-134-481200 (정상범) 계좌로 입금해 주시면 입고 진행을 도와드립니다.");
         if (checkoutMode === 'cart') { cart = []; document.getElementById('cart-count').innerText = 0; }
         closeCheckoutModal();
         loadProducts(currentPage);
