@@ -20,16 +20,14 @@
 
   <!-- 헤더 영역 -->
   <header class="flex flex-col items-center pt-4 shadow-lg sticky top-0 z-40 transition-colors duration-300 w-full" style="background-color: #000000;" id="main-header">
-    
     <div class="relative w-full h-[90px] sm:h-[100px] md:h-[130px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
-      <!-- 전달받은 Supabase 로고 고정 -->
+      <!-- Supabase 로고 고정 -->
       <img src="https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/public-asset/olangmallimage.png" alt="올랑몰 B2B 로고" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[450px] md:w-auto md:max-w-none md:h-[320px] object-contain transition-transform hover:scale-105 duration-300" id="main-logo">
     </div>
 
     <!-- 네비게이션 & 유저 컨트롤 영역 -->
     <div class="w-full bg-[#141414] border-t border-stone-800 border-b border-amber-500 shadow-sm mt-1">
       <div class="max-w-7xl mx-auto px-2 md:px-4 h-12 flex justify-between items-center w-full">
-        
         <nav class="flex items-center gap-1 md:gap-2 h-full overflow-x-auto whitespace-nowrap no-scrollbar flex-1 min-w-0">
           <button id="nav-btn-catalog" onclick="switchTab('catalog')" class="shrink-0 h-full px-2 md:px-4 text-[13px] md:text-sm font-bold text-amber-500 border-b-2 border-amber-500 transition">상품 카탈로그</button>
           <button id="nav-btn-notice" onclick="switchTab('notice')" class="hidden shrink-0 h-full px-2 md:px-4 text-[13px] md:text-sm font-bold text-stone-400 hover:text-stone-200 border-b-2 border-transparent transition">공지사항</button>
@@ -234,11 +232,11 @@
                 </label>
               </div>
               
+              <!-- [개선] 엑셀 다운로드 버튼 유지 -->
               <button onclick="exportOrdersToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 md:py-1.5 rounded-lg font-bold mt-1 md:mt-0">통합 발주서 엑셀 다운로드</button>
             </div>
           </div>
           
-          <!-- [개선] max-h 제약 없이 세로로 무한히 늘어나는 구조 적용 완료 -->
           <div class="overflow-x-auto w-full">
             <table class="w-full text-sm text-left text-stone-600 min-w-[900px]">
               <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
@@ -648,7 +646,6 @@
       }
     }
 
-    // [개선] 카테고리 설명을 단 1줄의 텍스트로 완벽 압축 (엑셀 세로 늘어짐 방지)
     function downloadExcelTemplate() {
       let catGuideStrs = [];
       const mainCats = categoriesList.filter(c => !c.parent_id).sort((a,b) => a.id - b.id);
@@ -659,7 +656,6 @@
         catGuideStrs.push(`【 ${main.name}[${main.id}] : ${subStr || '소분류없음'} 】`);
       });
       
-      // 단일 문자열로 가로로 길게 결합
       const finalGuideStr = catGuideStrs.join('  //  ');
 
       const wsData = [
@@ -1451,16 +1447,15 @@
       }).join('');
     }
 
-    // [개선] Supabase 데이터 1000개 로드 제한 해제 (무한 세로 확장)
     async function loadAdminOrders() {
       const hideCompleted = document.getElementById('filter-not-completed-admin').checked;
       
-      // select 쿼리에 products(name, deadline, comment, image_url) 정보를 추가로 가져옴
+      // [개선] category_id 필드를 추가로 끌어오도록 API 호출 확장
       let query = sbClient.from('orders')
-        .select('*, profiles(company_name, depositor_name), products(name, deadline, comment, image_url)')
+        .select('*, profiles(company_name, depositor_name), products(name, deadline, comment, image_url, category_id)')
         .neq('status', '취소')
         .neq('status', '자동취소(미입금)')
-        .limit(10000); // 1000개 제한 해제
+        .limit(10000); 
         
       if(hideCompleted) {
         query = query.neq('status','배송완료');
@@ -1513,7 +1508,6 @@
         return;
       }
 
-      // [개선] 텍스트만 있던 발주 목록에 상품 이미지와 한줄 코멘트 썸네일 UI 추가
       tbody.innerHTML = filteredList.map(o => {
         let statusClass = "text-stone-800";
         if(o.status === '배송완료') statusClass = "text-emerald-600";
@@ -1565,62 +1559,94 @@
       }).join('');
     }
 
-    // [개선] 통합 발주서 엑셀 피벗(Pivot) 알고리즘 (상품 코멘트 포함 + 주문 시간순 정렬 적용)
+    // [개선] 대분류 카테고리별 시트(Tab) 분리 및 동적 확장 엑셀 다운로드
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
 
-      const grouped = {};
+      // 카테고리 아이디로 대분류 이름을 찾아주는 헬퍼 함수
+      function getMainCategoryName(catId) {
+        if (!catId) return "미분류";
+        const cat = categoriesList.find(c => String(c.id) === String(catId));
+        if (!cat) return "미분류";
+        if (!cat.parent_id) return cat.name; // 본인이 이미 대분류인 경우
+        const parent = categoriesList.find(c => String(c.id) === String(cat.parent_id));
+        return parent ? parent.name : "미분류";
+      }
+
+      // 대분류별 -> 상품명별로 데이터를 담을 객체 구조
+      const sheetsData = {};
       
-      // 상품 기준으로 발주자들을 피벗 테이블처럼 묶음
       currentFilteredOrders.forEach(o => {
+        const catId = o.products?.category_id || o.category_id;
+        const mainCatName = getMainCategoryName(catId);
+        
         const pName = o.product_name || o.products?.name || '-';
-        const pComment = o.products?.comment || ''; // 상품 한줄 코멘트 연결
-        const pCreatedAt = o.created_at; // 주문 시간
+        const pComment = o.products?.comment || ''; 
+        const pCreatedAt = o.created_at; 
         const buyer = o.profiles?.company_name || '비회원';
         const qty = o.quantity || 0;
 
-        if(!grouped[pName]) {
-          grouped[pName] = { name: pName, comment: pComment, orders: [] };
+        if(!sheetsData[mainCatName]) {
+            sheetsData[mainCatName] = {};
         }
-        grouped[pName].orders.push({ buyer: buyer, qty: qty, time: pCreatedAt });
+
+        if(!sheetsData[mainCatName][pName]) {
+          sheetsData[mainCatName][pName] = { name: pName, comment: pComment, orders: [] };
+        }
+        sheetsData[mainCatName][pName].orders.push({ buyer: buyer, qty: qty, time: pCreatedAt });
       });
 
-      // 발주한 시간 순서대로 빨리 주문한 사람이 엑셀 앞열(왼쪽)에 뜨도록 시간순 오름차순 정렬
-      let maxOrders = 0;
-      Object.values(grouped).forEach(g => {
-        g.orders.sort((a, b) => new Date(a.time) - new Date(b.time));
-        if(g.orders.length > maxOrders) maxOrders = g.orders.length;
-      });
-
-      // 엑셀 헤더 동적 생성 (이미지 열 제거, 코멘트 열 유지)
-      const headerRow = ["상품명", "코멘트"];
-      for(let i=1; i<=maxOrders; i++) {
-        headerRow.push(i === 1 ? `발주자` : `발주자${i}`);
-        headerRow.push(i === 1 ? `발주수량` : `발주수량${i}`);
-      }
-
-      // 엑셀 데이터 매핑
-      const wsData = [headerRow];
-      Object.values(grouped).forEach(g => {
-        const row = [g.name, g.comment];
-        g.orders.forEach(ord => {
-          row.push(ord.buyer);
-          row.push(ord.qty);
-        });
-        wsData.push(row);
-      });
-
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      
-      // 엑셀 열 너비 조정
-      ws['!cols'] = [{wch:40}, {wch:25}]; // 상품명, 코멘트
-      for(let i=1; i<=maxOrders; i++) {
-        ws['!cols'].push({wch:15}); // 발주자
-        ws['!cols'].push({wch:10}); // 수량
-      }
-      
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "포장및출고_통합본");
+
+      // 각 대분류별로 엑셀 시트 1장씩 생성
+      Object.keys(sheetsData).forEach(mainCatName => {
+        const grouped = sheetsData[mainCatName];
+        let maxOrders = 0;
+        
+        // 상품별로 발주자 수를 체크하고, 결제 시간순으로 오름차순 정렬
+        Object.values(grouped).forEach(g => {
+          g.orders.sort((a, b) => new Date(a.time) - new Date(b.time));
+          if(g.orders.length > maxOrders) maxOrders = g.orders.length;
+        });
+
+        // 엑셀 헤더 동적 생성
+        const headerRow = ["상품명", "코멘트"];
+        for(let i=1; i<=maxOrders; i++) {
+          headerRow.push(i === 1 ? `발주자` : `발주자${i}`);
+          headerRow.push(i === 1 ? `발주수량` : `발주수량${i}`);
+        }
+
+        // 엑셀 데이터 매핑
+        const wsData = [headerRow];
+        Object.values(grouped).forEach(g => {
+          const row = [g.name, g.comment];
+          g.orders.forEach(ord => {
+            row.push(ord.buyer);
+            row.push(ord.qty);
+          });
+          wsData.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // 엑셀 열 너비 조정
+        ws['!cols'] = [{wch:40}, {wch:25}]; // 상품명, 코멘트
+        for(let i=1; i<=maxOrders; i++) {
+          ws['!cols'].push({wch:15}); // 발주자
+          ws['!cols'].push({wch:10}); // 수량
+        }
+        
+        // 엑셀 시트명 규칙 방어 (특수문자 불가, 최대 31자)
+        let safeSheetName = mainCatName.replace(/[\[\]\*?\/\\]/g, '').trim().substring(0, 30) || "미분류";
+        
+        // 엑셀 내 중복되는 시트명이 있을 경우 난수 추가 방어
+        if(wb.SheetNames.includes(safeSheetName)) {
+            safeSheetName = safeSheetName.substring(0, 25) + "_" + Math.floor(Math.random()*1000);
+        }
+        
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+      });
+
       XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
   </script>
