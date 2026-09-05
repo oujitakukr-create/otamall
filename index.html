@@ -20,14 +20,15 @@
 
   <!-- 헤더 영역 -->
   <header class="flex flex-col items-center pt-4 shadow-lg sticky top-0 z-40 transition-colors duration-300 w-full" style="background-color: #000000;" id="main-header">
+    
     <div class="relative w-full h-[90px] sm:h-[100px] md:h-[130px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
-      <!-- Supabase 로고 고정 -->
       <img src="https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/public-asset/olangmallimage.png" alt="올랑몰 B2B 로고" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[450px] md:w-auto md:max-w-none md:h-[320px] object-contain transition-transform hover:scale-105 duration-300" id="main-logo">
     </div>
 
     <!-- 네비게이션 & 유저 컨트롤 영역 -->
     <div class="w-full bg-[#141414] border-t border-stone-800 border-b border-amber-500 shadow-sm mt-1">
       <div class="max-w-7xl mx-auto px-2 md:px-4 h-12 flex justify-between items-center w-full">
+        
         <nav class="flex items-center gap-1 md:gap-2 h-full overflow-x-auto whitespace-nowrap no-scrollbar flex-1 min-w-0">
           <button id="nav-btn-catalog" onclick="switchTab('catalog')" class="shrink-0 h-full px-2 md:px-4 text-[13px] md:text-sm font-bold text-amber-500 border-b-2 border-amber-500 transition">상품 카탈로그</button>
           <button id="nav-btn-notice" onclick="switchTab('notice')" class="hidden shrink-0 h-full px-2 md:px-4 text-[13px] md:text-sm font-bold text-stone-400 hover:text-stone-200 border-b-2 border-transparent transition">공지사항</button>
@@ -216,9 +217,12 @@
             <div class="flex flex-wrap gap-2 md:gap-3 items-center w-full lg:w-auto">
               <input type="text" id="admin-order-search" oninput="renderAdminOrders()" placeholder="🔍 상호명 또는 상품명 검색" class="w-full md:w-48 border border-stone-200 px-3 py-1.5 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400">
               
+              <!-- [개선] 가나다순 정렬(상품명, 파트너스명) 추가 -->
               <select id="admin-order-sort" onchange="renderAdminOrders()" class="w-full sm:w-auto border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 focus:outline-none">
                 <option value="order_desc">최신 발주순</option>
                 <option value="deadline_asc">마감일 임박순</option>
+                <option value="product_asc">📦 상품명 가나다순</option>
+                <option value="buyer_asc">👤 파트너스명 가나다순</option>
               </select>
 
               <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -232,7 +236,6 @@
                 </label>
               </div>
               
-              <!-- [개선] 엑셀 다운로드 버튼 유지 -->
               <button onclick="exportOrdersToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 md:py-1.5 rounded-lg font-bold mt-1 md:mt-0">통합 발주서 엑셀 다운로드</button>
             </div>
           </div>
@@ -378,7 +381,7 @@
             5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
             6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
             <p class="font-bold text-stone-800 mb-1">계약 기간 및 해지</p>
-            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 한다.<br>
+            1. 본 계약은 체결시로부터 효력을 가지고 익월 1일 종료된다. 다만, 계약의 당사자 일방이 계약 만료일의 하루 전까지 상대방에게 연장 거부의 의사표시를 하지 않는 이상 본 계약은 종전과 동일한 조건으로 1개월간 자동 연장되는 것으로 단다.<br>
             2. 각 당사자는 상대방에게 각 호의 사유 중 하나가 발생한 경우, 서면 통지하여 본 계약을 해제 또는 해지할 수 있다.<br>
             - 상대방이 본 계약의 각 조항을 위반하거나 본 계약 상의 의무를 이행하지 아니한 때<br>
             - 정부의 인∙허가 또는 등록∙신고 등이 필요한 것으로 법률 또는 규정이 제정 또는 개정되는 경우<br>
@@ -1450,7 +1453,6 @@
     async function loadAdminOrders() {
       const hideCompleted = document.getElementById('filter-not-completed-admin').checked;
       
-      // [개선] category_id 필드를 추가로 끌어오도록 API 호출 확장
       let query = sbClient.from('orders')
         .select('*, profiles(company_name, depositor_name), products(name, deadline, comment, image_url, category_id)')
         .neq('status', '취소')
@@ -1490,6 +1492,7 @@
         return matchSearch && matchDeadline;
       });
 
+      // [개선] 가나다순(상품명, 파트너스명) 정렬 알고리즘 적용
       filteredList.sort((a, b) => {
         if (sortType === 'order_desc') {
           return new Date(b.created_at) - new Date(a.created_at);
@@ -1497,6 +1500,14 @@
           const d1 = a.products?.deadline ? new Date(a.products.deadline).getTime() : Infinity;
           const d2 = b.products?.deadline ? new Date(b.products.deadline).getTime() : Infinity;
           return d1 - d2;
+        } else if (sortType === 'product_asc') {
+          const p1 = a.product_name || a.products?.name || '';
+          const p2 = b.product_name || b.products?.name || '';
+          return p1.localeCompare(p2, 'ko-KR');
+        } else if (sortType === 'buyer_asc') {
+          const b1 = a.profiles?.company_name || '';
+          const b2 = b.profiles?.company_name || '';
+          return b1.localeCompare(b2, 'ko-KR');
         }
         return 0;
       });
@@ -1559,21 +1570,18 @@
       }).join('');
     }
 
-    // [개선] 대분류 카테고리별 시트(Tab) 분리 및 동적 확장 엑셀 다운로드
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
 
-      // 카테고리 아이디로 대분류 이름을 찾아주는 헬퍼 함수
       function getMainCategoryName(catId) {
         if (!catId) return "미분류";
         const cat = categoriesList.find(c => String(c.id) === String(catId));
         if (!cat) return "미분류";
-        if (!cat.parent_id) return cat.name; // 본인이 이미 대분류인 경우
+        if (!cat.parent_id) return cat.name; 
         const parent = categoriesList.find(c => String(c.id) === String(cat.parent_id));
         return parent ? parent.name : "미분류";
       }
 
-      // 대분류별 -> 상품명별로 데이터를 담을 객체 구조
       const sheetsData = {};
       
       currentFilteredOrders.forEach(o => {
@@ -1598,25 +1606,21 @@
 
       const wb = XLSX.utils.book_new();
 
-      // 각 대분류별로 엑셀 시트 1장씩 생성
       Object.keys(sheetsData).forEach(mainCatName => {
         const grouped = sheetsData[mainCatName];
         let maxOrders = 0;
         
-        // 상품별로 발주자 수를 체크하고, 결제 시간순으로 오름차순 정렬
         Object.values(grouped).forEach(g => {
           g.orders.sort((a, b) => new Date(a.time) - new Date(b.time));
           if(g.orders.length > maxOrders) maxOrders = g.orders.length;
         });
 
-        // 엑셀 헤더 동적 생성
         const headerRow = ["상품명", "코멘트"];
         for(let i=1; i<=maxOrders; i++) {
           headerRow.push(i === 1 ? `발주자` : `발주자${i}`);
           headerRow.push(i === 1 ? `발주수량` : `발주수량${i}`);
         }
 
-        // 엑셀 데이터 매핑
         const wsData = [headerRow];
         Object.values(grouped).forEach(g => {
           const row = [g.name, g.comment];
@@ -1629,17 +1633,14 @@
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         
-        // 엑셀 열 너비 조정
-        ws['!cols'] = [{wch:40}, {wch:25}]; // 상품명, 코멘트
+        ws['!cols'] = [{wch:40}, {wch:25}]; 
         for(let i=1; i<=maxOrders; i++) {
-          ws['!cols'].push({wch:15}); // 발주자
-          ws['!cols'].push({wch:10}); // 수량
+          ws['!cols'].push({wch:15}); 
+          ws['!cols'].push({wch:10}); 
         }
         
-        // 엑셀 시트명 규칙 방어 (특수문자 불가, 최대 31자)
         let safeSheetName = mainCatName.replace(/[\[\]\*?\/\\]/g, '').trim().substring(0, 30) || "미분류";
         
-        // 엑셀 내 중복되는 시트명이 있을 경우 난수 추가 방어
         if(wb.SheetNames.includes(safeSheetName)) {
             safeSheetName = safeSheetName.substring(0, 25) + "_" + Math.floor(Math.random()*1000);
         }
