@@ -22,7 +22,7 @@
   <header class="flex flex-col items-center pt-4 shadow-lg sticky top-0 z-40 transition-colors duration-300 w-full" style="background-color: #000000;" id="main-header">
     
     <div class="relative w-full h-[90px] sm:h-[100px] md:h-[130px] overflow-hidden cursor-pointer mb-2 flex justify-center" onclick="switchTab('catalog')">
-      <!-- Supabase 로고 URL 하드코딩 유지 -->
+      <!-- 전달받은 Supabase 로고 고정 -->
       <img src="https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/public-asset/olangmallimage.png" alt="올랑몰 B2B 로고" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[450px] md:w-auto md:max-w-none md:h-[320px] object-contain transition-transform hover:scale-105 duration-300" id="main-logo">
     </div>
 
@@ -237,16 +237,18 @@
               <button onclick="exportOrdersToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 md:py-1.5 rounded-lg font-bold mt-1 md:mt-0">통합 발주서 엑셀 다운로드</button>
             </div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-stone-600 min-w-[800px]">
+          
+          <!-- [개선] max-h 제약 없이 세로로 무한히 늘어나는 구조 적용 완료 -->
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-sm text-left text-stone-600 min-w-[900px]">
               <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th class="px-4 py-3">주문번호 / 일시</th>
-                  <th class="px-4 py-3">신청 파트너스</th>
-                  <th class="px-4 py-3 w-1/3">주문 상품 / ⏰ 마감일</th>
-                  <th class="px-4 py-3 text-right">총 결제금액</th>
-                  <th class="px-4 py-3 text-center">세금계산서</th>
-                  <th class="px-4 py-3 text-center w-40">상태 변경 및 관리</th>
+                  <th class="px-4 py-3 w-32">주문번호 / 일시</th>
+                  <th class="px-4 py-3 w-40">신청 파트너스</th>
+                  <th class="px-4 py-3 w-1/3">주문 상품 정보</th>
+                  <th class="px-4 py-3 text-right w-24">총 결제금액</th>
+                  <th class="px-4 py-3 text-center w-24">세금계산서</th>
+                  <th class="px-4 py-3 text-center w-48">상태 변경 및 관리</th>
                 </tr>
               </thead>
               <tbody id="admin-orders-body"></tbody>
@@ -646,28 +648,27 @@
       }
     }
 
-    // [개선] 상품 대량 등록 엑셀 양식: 카테고리 트리(대분류-소분류) 정렬 및 줄바꿈 적용
+    // [개선] 카테고리 설명을 단 1줄의 텍스트로 완벽 압축 (엑셀 세로 늘어짐 방지)
     function downloadExcelTemplate() {
       let catGuideStrs = [];
       const mainCats = categoriesList.filter(c => !c.parent_id).sort((a,b) => a.id - b.id);
+      
       mainCats.forEach(main => {
-        catGuideStrs.push(`[${main.id}] ${main.name} (대분류)`);
         const subCats = categoriesList.filter(c => String(c.parent_id) === String(main.id)).sort((a,b) => a.id - b.id);
-        subCats.forEach(sub => {
-          catGuideStrs.push(`   ㄴ [${sub.id}] ${sub.name} (소분류)`);
-        });
+        const subStr = subCats.map(sub => `[${sub.id}]${sub.name}`).join(', ');
+        catGuideStrs.push(`【 ${main.name}[${main.id}] : ${subStr || '소분류없음'} 】`);
       });
+      
+      // 단일 문자열로 가로로 길게 결합
+      const finalGuideStr = catGuideStrs.join('  //  ');
 
       const wsData = [
         ["카테고리ID", "상품명", "도매가", "입수량", "최소주문수량(MOQ)", "재고수량", "발주마감일(YYYY-MM-DD)", "예상배송시기", "코멘트"],
         ["입력예시 👉", "테스트 피규어", "15000", "1", "10", "100", "2026-12-31", "11월 초순", "인기상품"],
-        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요.", "", "", "", "", "", "", ""]
+        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요.", "", "", "", "", "", "", ""],
+        ["💡카테고리ID 참고", finalGuideStr, "", "", "", "", "", "", ""]
       ];
       
-      catGuideStrs.forEach((guide, idx) => {
-        wsData.push([idx === 0 ? "💡카테고리ID 참고" : "", guide, "", "", "", "", "", "", ""]);
-      });
-
       const ws = XLSX.utils.aoa_to_sheet(wsData);
       ws['!cols'] = [{wch:20}, {wch:30}, {wch:10}, {wch:10}, {wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:20}];
       const wb = XLSX.utils.book_new();
@@ -1450,13 +1451,16 @@
       }).join('');
     }
 
+    // [개선] Supabase 데이터 1000개 로드 제한 해제 (무한 세로 확장)
     async function loadAdminOrders() {
       const hideCompleted = document.getElementById('filter-not-completed-admin').checked;
       
+      // select 쿼리에 products(name, deadline, comment, image_url) 정보를 추가로 가져옴
       let query = sbClient.from('orders')
-        .select('*, profiles(company_name, depositor_name), products(name, deadline)')
+        .select('*, profiles(company_name, depositor_name), products(name, deadline, comment, image_url)')
         .neq('status', '취소')
-        .neq('status', '자동취소(미입금)');
+        .neq('status', '자동취소(미입금)')
+        .limit(10000); // 1000개 제한 해제
         
       if(hideCompleted) {
         query = query.neq('status','배송완료');
@@ -1509,6 +1513,7 @@
         return;
       }
 
+      // [개선] 텍스트만 있던 발주 목록에 상품 이미지와 한줄 코멘트 썸네일 UI 추가
       tbody.innerHTML = filteredList.map(o => {
         let statusClass = "text-stone-800";
         if(o.status === '배송완료') statusClass = "text-emerald-600";
@@ -1518,14 +1523,28 @@
         let deadlineBadge = '';
         if (o.products?.deadline) {
             const d = new Date(o.products.deadline);
-            deadlineBadge = `<br><span class="inline-block mt-1 text-[10px] bg-rose-50 text-rose-500 border border-rose-100 px-1.5 py-0.5 rounded font-bold">⏰ 마감: ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}</span>`;
+            deadlineBadge = `<span class="inline-block mt-1 text-[10px] bg-rose-50 text-rose-500 border border-rose-100 px-1.5 py-0.5 rounded font-bold">⏰ 마감: ${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}</span>`;
         }
+
+        const pImg = o.products?.image_url || FALLBACK_IMAGE;
+        const pComment = o.products?.comment ? `<div class="text-[10px] text-amber-700 font-bold mt-0.5">${escapeHtml(o.products.comment)}</div>` : '';
 
         return `
         <tr class="border-b text-xs hover:bg-stone-50">
           <td class="px-4 py-2 font-mono">#${o.id}<br><span class="text-[10px] text-stone-400">${new Date(o.created_at).toLocaleString()}</span></td>
           <td class="px-4 py-2 font-bold">${escapeHtml(o.profiles?.company_name||'비회원')}<br><span class="text-amber-600 font-normal">입금: ${escapeHtml(o.profiles?.depositor_name||'-')}</span></td>
-          <td class="px-4 py-2 font-bold">${escapeHtml(o.product_name || o.products?.name)} <span class="text-amber-600">(${o.quantity}개)</span>${deadlineBadge}</td>
+          
+          <td class="px-4 py-2">
+            <div class="flex items-center gap-3">
+              <img src="${pImg}" class="w-12 h-12 object-cover rounded border border-stone-200 shrink-0">
+              <div class="flex flex-col">
+                <span class="font-bold text-sm text-stone-800">${escapeHtml(o.product_name || o.products?.name)} <span class="text-amber-600 text-xs">(${o.quantity}개)</span></span>
+                ${pComment}
+                <div>${deadlineBadge}</div>
+              </div>
+            </div>
+          </td>
+
           <td class="px-4 py-2 text-right font-black text-stone-900">${Number(o.total_price).toLocaleString()}원</td>
           <td class="px-4 py-2 text-center">
             <button onclick="sbClient.from('orders').update({tax_invoice_issued:${!o.tax_invoice_issued}}).eq('id',${o.id}).then(()=>loadAdminOrders())" class="px-2 py-1 rounded font-bold ${o.tax_invoice_issued ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
@@ -1546,34 +1565,35 @@
       }).join('');
     }
 
-    // [개선] 통합 발주서 엑셀 피벗(Pivot) 알고리즘 적용 (포장 및 출고 최적화)
+    // [개선] 통합 발주서 엑셀 피벗(Pivot) 알고리즘 (상품 코멘트 포함 + 주문 시간순 정렬 적용)
     function exportOrdersToExcel() {
       if (!currentFilteredOrders.length) return alert("데이터 없음");
 
       const grouped = {};
       
-      // 상품명 기준으로 발주 데이터 그룹핑 (피벗 테이블 원리)
+      // 상품 기준으로 발주자들을 피벗 테이블처럼 묶음
       currentFilteredOrders.forEach(o => {
         const pName = o.product_name || o.products?.name || '-';
-        const pComment = o.products?.comment || '';
-        const pImage = o.products?.image_url || '';
+        const pComment = o.products?.comment || ''; // 상품 한줄 코멘트 연결
+        const pCreatedAt = o.created_at; // 주문 시간
         const buyer = o.profiles?.company_name || '비회원';
         const qty = o.quantity || 0;
 
         if(!grouped[pName]) {
-          grouped[pName] = { image: pImage, name: pName, comment: pComment, orders: [] };
+          grouped[pName] = { name: pName, comment: pComment, orders: [] };
         }
-        grouped[pName].orders.push({ buyer: buyer, qty: qty });
+        grouped[pName].orders.push({ buyer: buyer, qty: qty, time: pCreatedAt });
       });
 
-      // 가장 발주자가 많은 상품을 찾아 동적 컬럼(열) 개수 계산
+      // 발주한 시간 순서대로 빨리 주문한 사람이 엑셀 앞열(왼쪽)에 뜨도록 시간순 오름차순 정렬
       let maxOrders = 0;
       Object.values(grouped).forEach(g => {
+        g.orders.sort((a, b) => new Date(a.time) - new Date(b.time));
         if(g.orders.length > maxOrders) maxOrders = g.orders.length;
       });
 
-      // 엑셀 헤더 생성
-      const headerRow = ["이미지URL", "상품명", "코멘트"];
+      // 엑셀 헤더 동적 생성 (이미지 열 제거, 코멘트 열 유지)
+      const headerRow = ["상품명", "코멘트"];
       for(let i=1; i<=maxOrders; i++) {
         headerRow.push(i === 1 ? `발주자` : `발주자${i}`);
         headerRow.push(i === 1 ? `발주수량` : `발주수량${i}`);
@@ -1582,7 +1602,7 @@
       // 엑셀 데이터 매핑
       const wsData = [headerRow];
       Object.values(grouped).forEach(g => {
-        const row = [g.image, g.name, g.comment];
+        const row = [g.name, g.comment];
         g.orders.forEach(ord => {
           row.push(ord.buyer);
           row.push(ord.qty);
@@ -1592,8 +1612,8 @@
 
       const ws = XLSX.utils.aoa_to_sheet(wsData);
       
-      // 엑셀 열 너비 최적화
-      ws['!cols'] = [{wch:50}, {wch:30}, {wch:20}];
+      // 엑셀 열 너비 조정
+      ws['!cols'] = [{wch:40}, {wch:25}]; // 상품명, 코멘트
       for(let i=1; i<=maxOrders; i++) {
         ws['!cols'].push({wch:15}); // 발주자
         ws['!cols'].push({wch:10}); // 수량
