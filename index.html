@@ -279,6 +279,7 @@
     </section>
   </main>
 
+  <!-- 장바구니/주문 선택 모달 -->
   <div id="order-choice-modal" onclick="if(event.target===this) closeOrderChoiceModal()" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-4 relative shadow-2xl border border-stone-100">
       <button onclick="closeOrderChoiceModal()" class="absolute top-4 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
@@ -1587,7 +1588,9 @@
     }
 
     function exportOrdersToExcel() {
-      if (!currentFilteredOrders.length) return alert("데이터 없음");
+      // 핵심 변경: 배송완료 상태인 발주 건은 엑셀 파일 출력 대상에서 완전히 제외합니다.
+      const ordersToExport = currentFilteredOrders.filter(o => o.status !== '배송완료');
+      if (!ordersToExport.length) return alert("출력할 배송 대기 데이터가 없습니다.");
 
       function getMainCategoryName(catId) {
         if (!catId) return "미분류";
@@ -1600,7 +1603,7 @@
 
       const sheetsData = {};
       
-      currentFilteredOrders.forEach(o => {
+      ordersToExport.forEach(o => {
         const catId = o.products?.category_id || o.category_id;
         const mainCatName = getMainCategoryName(catId);
         
