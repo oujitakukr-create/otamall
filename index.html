@@ -161,7 +161,7 @@
               
               <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm md:ml-2 w-full md:w-auto">⬇️ 엑셀 양식</button>
               
-              <!-- ZIP 파일 업로드 버튼 -->
+              <!-- ZIP 이미지 업로드 버튼 -->
               <label class="bg-purple-600 hover:bg-purple-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer w-full md:w-auto text-center">
                 📦 ZIP 이미지 일괄 등록
                 <input type="file" id="zip-upload" accept=".zip" class="hidden" onchange="handleZipUpload(event)">
@@ -172,7 +172,9 @@
                 ⬆️ 엑셀 대량 등록
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
               </label>
-              
+
+              <!-- [신규 추가] 일괄 삭제 버튼 -->
+              <button onclick="bulkDeleteProducts()" class="bg-rose-500 hover:bg-rose-600 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm md:ml-2 w-full md:w-auto">🗑️ 선택 일괄삭제</button>
               <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm w-full md:w-auto">+ 신규 단건 등록</button>
             </div>
           </div>
@@ -187,6 +189,8 @@
             <table class="w-full text-sm text-left text-stone-600 min-w-[600px]">
               <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
                 <tr>
+                  <!-- [신규 추가] 전체 선택 체크박스 -->
+                  <th class="px-4 py-3 w-10 text-center"><input type="checkbox" id="check-all-products" onchange="toggleAllProducts(this)" class="w-4 h-4 text-amber-500 rounded border-stone-300 cursor-pointer"></th>
                   <th class="px-4 py-3">이미지</th>
                   <th class="px-4 py-3 w-1/3">상품명 / 카테고리</th>
                   <th class="px-4 py-3 text-right">도매가</th>
@@ -397,7 +401,7 @@
             <p class="font-bold text-stone-800 mb-1">비밀유지의무</p>
             1. “파트너스”는 본 계약에 따라 제공받은 “올랑몰”의 서비스와 관련된 정보와 “올랑몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “올랑몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
             2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “올랑몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
-            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”の 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
+            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
             4. “올랑몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
             5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
             6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
@@ -443,7 +447,6 @@
     </div>
   </div>
 
-  <!-- 개별 상품 추가/수정 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -503,10 +506,10 @@
     let currentAuthMode = 'login';
     let currentUserProfile = null;
     let cart = [];
+    
     let checkoutMode = 'cart'; 
     let directCheckoutItem = null;
 
-    // ZIP으로 업로드된 이미지 파일명과 Supabase Storage URL 매핑 저장소
     let uploadedZipImageMap = {};
 
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23fdfbf7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d6d3d1' font-size='14'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
@@ -671,6 +674,7 @@
         const { data, error } = await sbClient.functions.invoke('send-bulk-email', {
           body: { subject: subject, html: body, bcc: emails }
         });
+
         if (error) throw error;
         alert("성공적으로 단체 메일이 발송되었습니다!");
         document.getElementById('admin-mail-subject').value = '';
@@ -682,7 +686,6 @@
       }
     }
 
-    // 엑셀 대량등록 양식 다운로드 (이미지 파일명 열 포함)
     function downloadExcelTemplate() {
       let catGuideStrs = [];
       const mainCats = categoriesList.filter(c => !c.parent_id).sort((a,b) => a.id - b.id);
@@ -709,12 +712,46 @@
       XLSX.writeFile(wb, "올랑몰_상품대량등록양식.xlsx");
     }
 
-    // ZIP 파일 업로드 및 자동 압축 해제 처리 (화면 멈춤 방지 적용)
+    // [신규] 일괄 체크박스 선택 기능
+    function toggleAllProducts(source) {
+      const checkboxes = document.querySelectorAll('.product-checkbox');
+      checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    // [신규] 체크된 상품 일괄 삭제 기능
+    async function bulkDeleteProducts() {
+      const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        alert("삭제할 상품을 먼저 선택해주세요.");
+        return;
+      }
+
+      if (!confirm(`선택한 ${checkedBoxes.length}개의 상품을 일괄 삭제하시겠습니까?\n(복구할 수 없습니다)`)) {
+        return;
+      }
+
+      const idsToDelete = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+      try {
+        const { error } = await sbClient.from('products').update({ is_archived: true }).in('id', idsToDelete);
+        if (error) throw error;
+
+        alert(`✅ ${idsToDelete.length}개의 상품이 성공적으로 삭제되었습니다.`);
+        
+        const checkAll = document.getElementById('check-all-products');
+        if (checkAll) checkAll.checked = false;
+
+        loadAdminProducts(); 
+        loadProducts(currentPage);
+      } catch (err) {
+        alert("일괄 삭제 중 오류가 발생했습니다: " + err.message);
+      }
+    }
+
     async function handleZipUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
       
-      // 대소문자 구분 없이 zip 파일 검사
       if (!file.name.toLowerCase().endsWith('.zip')) {
         alert("ZIP 압축 파일만 업로드 가능합니다.");
         e.target.value = '';
@@ -725,12 +762,10 @@
       const progressBar = document.getElementById('zip-progress-bar');
       const progressText = document.getElementById('zip-progress-text');
       
-      // 1. 파일 선택 즉시 확인창 생략하고 바로 진행률 바 띄우기 (화면 멈춤 방지)
       progressContainer.classList.remove('hidden');
       progressBar.style.width = '5%';
       progressText.innerText = '압축 파일 분석 중... (잠시만 기다려주세요)';
       
-      // 2. 브라우저가 화면을 먼저 렌더링할 시간을 잠시 벌어줍니다.
       await new Promise(resolve => setTimeout(resolve, 150));
 
       try {
@@ -751,7 +786,7 @@
         });
 
         if (imageFiles.length === 0) {
-          throw new Error("ZIP 파일 내부에 유효한 이미지(PNG, JPG 등)가 없습니다.");
+          throw new Error("ZIP 파일 내부에 이미지(PNG, JPG 등)가 하나도 없습니다.");
         }
 
         let successCount = 0;
@@ -776,7 +811,6 @@
             failCount++;
           }
 
-          // 진행률 바 업데이트
           const percent = Math.round(((i + 1) / imageFiles.length) * 100);
           progressBar.style.width = `${percent}%`;
           progressText.innerText = `${percent}% 완료 (${i + 1}/${imageFiles.length}개 업로드 중)`;
@@ -786,7 +820,6 @@
       } catch (err) {
         alert("ZIP 처리 중 오류 발생: " + err.message);
       } finally {
-        // 완료 후 3초 뒤에 사라지게 설정
         setTimeout(() => {
           progressContainer.classList.add('hidden');
         }, 3000);
@@ -794,7 +827,6 @@
       }
     }
 
-    // 엑셀 파일 대량 업로드 (이미지 파일명과 ZIP 이미지 자동 연결)
     async function handleExcelUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -832,7 +864,6 @@
                 }
             }
 
-            // [핵심 로직] 이미지 파일명이 엑셀에 있으면 ZIP으로 미리 올린 URL 맵에서 가져오기
             let finalImageUrl = null;
             const imageName = row[9] ? String(row[9]).trim() : null;
             if (imageName) {
@@ -1518,6 +1549,7 @@
         document.getElementById('admin-product-list-body').innerHTML = (data||[]).map(p => {
           return `
           <tr class="border-b border-stone-100 text-xs hover:bg-stone-50">
+            <td class="px-4 py-2 text-center"><input type="checkbox" value="${p.id}" class="product-checkbox w-4 h-4 text-amber-500 rounded border-stone-300 cursor-pointer"></td>
             <td class="px-4 py-2"><img src="${p.image_url||FALLBACK_IMAGE}" class="w-10 h-10 object-cover rounded border"></td>
             <td class="px-4 py-2 font-bold">${escapeHtml(p.name)}<br><span class="text-stone-400 font-normal">[${escapeHtml(getCatName(p.category_id))}]</span></td>
             <td class="px-4 py-2 text-right font-black text-amber-600">${Number(p.wholesale_price).toLocaleString()}원</td>
@@ -1529,7 +1561,7 @@
           </tr>`
         }).join('');
       } catch (err) {
-        document.getElementById('admin-product-list-body').innerHTML = `<tr><td colspan="5" class="text-center py-8 text-rose-500">상품 로드 중 오류가 발생했습니다.</td></tr>`;
+        document.getElementById('admin-product-list-body').innerHTML = `<tr><td colspan="6" class="text-center py-8 text-rose-500">상품 로드 중 오류가 발생했습니다.</td></tr>`;
       }
     }
 
