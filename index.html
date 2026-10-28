@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- ZIP 파일 압축 해제를 위한 JSZip 라이브러리 추가 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -157,22 +158,31 @@
             <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
               <select id="admin-filter-main-cat" onchange="onAdminProductMainCatChange()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 flex-1 md:flex-none"><option value="all">대분류 전체</option></select>
               <select id="admin-filter-sub-cat" onchange="loadAdminProducts()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 flex-1 md:flex-none" disabled><option value="all">소분류 전체</option></select>
+              
               <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm md:ml-2 w-full md:w-auto">⬇️ 엑셀 양식</button>
+              
+              <!-- ZIP 파일 업로드 버튼 -->
               <label class="bg-purple-600 hover:bg-purple-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer w-full md:w-auto text-center">
                 📦 ZIP 이미지 일괄 등록
                 <input type="file" id="zip-upload" accept=".zip" class="hidden" onchange="handleZipUpload(event)">
               </label>
+
+              <!-- 엑셀 대량 등록 버튼 -->
               <label class="bg-blue-600 hover:bg-blue-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer w-full md:w-auto text-center">
                 ⬆️ 엑셀 대량 등록
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
               </label>
+              
               <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm w-full md:w-auto">+ 신규 단건 등록</button>
             </div>
           </div>
+          
+          <!-- ZIP 업로드 진행률 바 -->
           <div id="zip-progress-container" class="hidden w-full bg-stone-200 rounded-full h-2.5 mb-4 mt-2">
             <div id="zip-progress-bar" class="bg-purple-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             <p id="zip-progress-text" class="text-[10px] font-bold text-purple-700 mt-1 text-right">0% 완료</p>
           </div>
+
           <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-stone-600 min-w-[600px]">
               <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
@@ -294,7 +304,6 @@
       <button onclick="closeOrderChoiceModal()" class="absolute top-4 right-5 text-stone-400 hover:text-stone-600 font-bold text-lg">✕</button>
       <h3 class="text-lg font-extrabold text-stone-800 border-b border-stone-100 pb-3">🛒 상품 발주 선택</h3>
       
-      <!-- 상품 썸네일 클릭 시 확대 기능 추가 및 비율 유지 -->
       <div class="flex flex-col md:flex-row gap-3 md:gap-4 items-start pt-1">
         <img id="oc-image" src="" onclick="toggleImageZoom(this)" class="w-16 h-16 md:w-20 md:h-20 object-contain rounded-xl border border-stone-200 shadow-sm shrink-0 bg-stone-50 cursor-zoom-in transition-all duration-300">
         <div class="space-y-1 md:space-y-1.5 flex-1 min-w-0">
@@ -388,7 +397,7 @@
             <p class="font-bold text-stone-800 mb-1">비밀유지의무</p>
             1. “파트너스”는 본 계약에 따라 제공받은 “올랑몰”의 서비스와 관련된 정보와 “올랑몰”의 서비스에 대해 부여받은 권리를 본 계약 기간 동안 “올랑몰”이 지정한 범위 내에서 본 계약 상의 의무를 이행하기 위한 목적으로만 사용하여야 하고, 계약기간 만료 후 5년이 되는 날까지 제3자에게 제공하거나 유출하지 아니하여야 한다.<br>
             2. 본 계약기간이 종료되거나 계약이 해지 또는 해제되는 경우, “올랑몰”과 “파트너스”는 본 계약에 따라 상대방으로부터 제공받은 모든 정보를 삭제 및 파기하여야 하고, 이유를 불문하고 해당 정보 일체를 이용할 수 없다.<br>
-            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”의 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
+            3. 각 당사자는 본 계약에 따른 의무를 이행하는 과정에서 취득한 상대방의 영업상의 비밀과 “올랑몰”에 신규 가입한 “파트너스”の 개인정보를 누설하거나 제3자에게 제공하거나 이용하게 하여서는 아니된다.<br>
             4. “올랑몰”과 “파트너스”는 의무를 위반하여 상대방에게 손해를 발생시켰을 경우 상대방이 입은 손해를 배상하여야 한다.<br>
             5. “올랑몰”과 “파트너스”는 업무담당 인력에 대한 교육을 철저히 시행하여 본 계약에 따른 영업에 관한 자료 및 신규 “회원”에 관한 개인정보 등이 외부에 유출되거나 제공되지 않도록 하여야 한다.<br>
             6. 본 조에서 별도로 규정하지 않은 사항은 「부정경쟁방지 및 영업비밀 보호에 관한 법률」 등 관련 법규를 준수한다.<br><br>
@@ -434,6 +443,7 @@
     </div>
   </div>
 
+  <!-- 개별 상품 추가/수정 모달 -->
   <div id="product-modal" onclick="if(event.target===this) closeProductModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 md:p-6 space-y-3 shadow-xl max-h-[90vh] overflow-y-auto relative">
       <button type="button" onclick="closeProductModal()" class="absolute top-4 right-5 text-stone-400 font-bold text-lg">✕</button>
@@ -493,13 +503,14 @@
     let currentAuthMode = 'login';
     let currentUserProfile = null;
     let cart = [];
-    
     let checkoutMode = 'cart'; 
     let directCheckoutItem = null;
 
+    // ZIP으로 업로드된 이미지 파일명과 Supabase Storage URL 매핑 저장소
+    let uploadedZipImageMap = {};
+
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23fdfbf7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d6d3d1' font-size='14'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
 
-    // 썸네일 이미지 클릭 시 원본 비율로 확대/축소 토글
     function toggleImageZoom(imgEl) {
         if (imgEl.classList.contains('w-16')) {
             imgEl.classList.remove('w-16', 'h-16', 'md:w-20', 'md:h-20', 'cursor-zoom-in');
@@ -660,7 +671,6 @@
         const { data, error } = await sbClient.functions.invoke('send-bulk-email', {
           body: { subject: subject, html: body, bcc: emails }
         });
-
         if (error) throw error;
         alert("성공적으로 단체 메일이 발송되었습니다!");
         document.getElementById('admin-mail-subject').value = '';
@@ -672,6 +682,7 @@
       }
     }
 
+    // 엑셀 대량등록 양식 다운로드 (이미지 파일명 열 포함)
     function downloadExcelTemplate() {
       let catGuideStrs = [];
       const mainCats = categoriesList.filter(c => !c.parent_id).sort((a,b) => a.id - b.id);
@@ -685,23 +696,109 @@
       const finalGuideStr = catGuideStrs.join('  //  ');
 
       const wsData = [
-        ["카테고리ID", "상품명", "도매가", "입수량", "최소주문수량(MOQ)", "재고수량", "발주마감일(YYYY-MM-DD)", "예상배송시기", "코멘트"],
-        ["입력예시 👉", "테스트 피규어", "15000", "1", "10", "100", "2026-12-31", "11월 초순", "인기상품"],
-        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요.", "", "", "", "", "", "", ""],
-        ["💡카테고리ID 참고", finalGuideStr, "", "", "", "", "", "", ""]
+        ["카테고리ID", "상품명", "도매가", "입수량", "최소주문수량(MOQ)", "재고수량", "발주마감일(YYYY-MM-DD)", "예상배송시기", "코멘트", "이미지파일명(.png 등)"],
+        ["입력예시 👉", "테스트 피규어", "15000", "1", "10", "100", "2026-12-31", "11월 초순", "인기상품", "a1.png"],
+        ["❗주의", "카테고리ID는 반드시 숫자로만 입력하세요.", "", "", "", "", "", "", "", "ZIP파일과 파일명이 일치해야 합니다."],
+        ["💡카테고리ID 참고", finalGuideStr, "", "", "", "", "", "", "", ""]
       ];
       
       const ws = XLSX.utils.aoa_to_sheet(wsData);
-      ws['!cols'] = [{wch:20}, {wch:30}, {wch:10}, {wch:10}, {wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:20}];
+      ws['!cols'] = [{wch:20}, {wch:30}, {wch:10}, {wch:10}, {wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:20}, {wch:30}];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "상품대량등록양식");
       XLSX.writeFile(wb, "올랑몰_상품대량등록양식.xlsx");
     }
 
+    // ZIP 파일 업로드 및 자동 압축 해제 처리 (화면 멈춤 방지 적용)
+    async function handleZipUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // 대소문자 구분 없이 zip 파일 검사
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        alert("ZIP 압축 파일만 업로드 가능합니다.");
+        e.target.value = '';
+        return;
+      }
+      
+      const progressContainer = document.getElementById('zip-progress-container');
+      const progressBar = document.getElementById('zip-progress-bar');
+      const progressText = document.getElementById('zip-progress-text');
+      
+      // 1. 파일 선택 즉시 확인창 생략하고 바로 진행률 바 띄우기 (화면 멈춤 방지)
+      progressContainer.classList.remove('hidden');
+      progressBar.style.width = '5%';
+      progressText.innerText = '압축 파일 분석 중... (잠시만 기다려주세요)';
+      
+      // 2. 브라우저가 화면을 먼저 렌더링할 시간을 잠시 벌어줍니다.
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      try {
+        if (typeof JSZip === 'undefined') {
+          throw new Error("압축 해제 기능(JSZip)을 불러오지 못했습니다. 페이지 상단에 <script> 태그가 잘 있는지 확인해주세요!");
+        }
+
+        const jszip = new JSZip();
+        const zip = await jszip.loadAsync(file);
+        
+        const imageFiles = [];
+        zip.forEach((relativePath, zipEntry) => {
+          if (!zipEntry.dir && relativePath.match(/\.(png|jpe?g|gif|webp)$/i)) {
+            if (!relativePath.includes('__MACOSX')) {
+              imageFiles.push(zipEntry);
+            }
+          }
+        });
+
+        if (imageFiles.length === 0) {
+          throw new Error("ZIP 파일 내부에 유효한 이미지(PNG, JPG 등)가 없습니다.");
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < imageFiles.length; i++) {
+          const zipEntry = imageFiles[i];
+          const fileNameOnly = zipEntry.name.split('/').pop();
+          const fileData = await zipEntry.async("blob");
+          
+          const { error: upErr } = await sbClient.storage.from('product-images').upload(fileNameOnly, fileData, {
+            cacheControl: '3600',
+            upsert: true 
+          });
+
+          if (!upErr) {
+            const publicUrl = sbClient.storage.from('product-images').getPublicUrl(fileNameOnly).data.publicUrl;
+            uploadedZipImageMap[fileNameOnly] = publicUrl;
+            successCount++;
+          } else {
+            console.error("업로드 실패: ", upErr);
+            failCount++;
+          }
+
+          // 진행률 바 업데이트
+          const percent = Math.round(((i + 1) / imageFiles.length) * 100);
+          progressBar.style.width = `${percent}%`;
+          progressText.innerText = `${percent}% 완료 (${i + 1}/${imageFiles.length}개 업로드 중)`;
+        }
+
+        alert(`🎉 이미지 일괄 등록 완료!\n- 성공: ${successCount}개\n- 실패: ${failCount}개\n\n이제 [엑셀 대량 등록] 버튼을 눌러 엑셀을 업로드하시면 사진이 자동 연결됩니다.`);
+      } catch (err) {
+        alert("ZIP 처리 중 오류 발생: " + err.message);
+      } finally {
+        // 완료 후 3초 뒤에 사라지게 설정
+        setTimeout(() => {
+          progressContainer.classList.add('hidden');
+        }, 3000);
+        e.target.value = '';
+      }
+    }
+
+    // 엑셀 파일 대량 업로드 (이미지 파일명과 ZIP 이미지 자동 연결)
     async function handleExcelUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (!confirm("엑셀 파일의 데이터를 대량 등록하시겠습니까? (이미지는 등록 후 [수정]을 통해 개별 캡처해야 합니다)")) {
+      if (!confirm("엑셀 파일의 데이터를 대량 등록하시겠습니까?\n(사전에 ZIP 이미지를 업로드했다면 파일명과 자동 연결됩니다)")) {
         e.target.value = ''; 
         return;
       }
@@ -735,11 +832,22 @@
                 }
             }
 
+            // [핵심 로직] 이미지 파일명이 엑셀에 있으면 ZIP으로 미리 올린 URL 맵에서 가져오기
+            let finalImageUrl = null;
+            const imageName = row[9] ? String(row[9]).trim() : null;
+            if (imageName) {
+              if (uploadedZipImageMap[imageName]) {
+                 finalImageUrl = uploadedZipImageMap[imageName];
+              } else {
+                 finalImageUrl = `https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/product-images/${imageName}`;
+              }
+            }
+
             payloads.push({
               category_id: catId, name: String(row[1]), wholesale_price: parseInt(row[2]) || 0,
               box_qty: parseInt(row[3]) || 1, moq: parseInt(row[4]) || 1, stock: parseInt(row[5]) || 0,
               deadline: deadline, delivery_date: row[7] ? String(row[7]) : null, comment: row[8] ? String(row[8]) : null,
-              image_url: null, is_archived: false
+              image_url: finalImageUrl, is_archived: false
             });
           }
           if (payloads.length === 0) throw new Error("유효한 데이터가 없습니다.");
@@ -907,7 +1015,6 @@
       const grid = document.getElementById('product-grid');
       const isApproved = currentUserProfile?.status === 'approved' || currentUserProfile?.role === 'admin';
 
-      // object-cover에서 object-contain으로 교체하여 카탈로그 이미지 잘림 방지
       grid.innerHTML = (data || []).map(p => {
         const isExpired = p.deadline && new Date(p.deadline) < new Date();
         const isFee = isFeeProduct(p.category_id);
@@ -1022,7 +1129,6 @@
 
       const imgEl = document.getElementById('oc-image');
       imgEl.src = imageUrl || FALLBACK_IMAGE;
-      // 이미지 클래스 리셋 (확대 상태에서 닫힌 경우 대비)
       imgEl.className = "w-16 h-16 md:w-20 md:h-20 object-contain rounded-xl border border-stone-200 shadow-sm shrink-0 bg-stone-50 cursor-zoom-in transition-all duration-300";
 
       const commentEl = document.getElementById('oc-comment');
@@ -1597,7 +1703,6 @@
     }
 
     function exportOrdersToExcel() {
-      // 핵심 변경: 배송완료 상태인 발주 건은 엑셀 파일 출력 대상에서 완전히 제외합니다.
       const ordersToExport = currentFilteredOrders.filter(o => o.status !== '배송완료');
       if (!ordersToExport.length) return alert("출력할 배송 대기 데이터가 없습니다.");
 
