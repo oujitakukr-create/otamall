@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -157,12 +158,20 @@
               <select id="admin-filter-main-cat" onchange="onAdminProductMainCatChange()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 flex-1 md:flex-none"><option value="all">대분류 전체</option></select>
               <select id="admin-filter-sub-cat" onchange="loadAdminProducts()" class="border border-stone-200 rounded-xl px-2 py-1.5 text-xs font-bold text-stone-700 bg-stone-50 flex-1 md:flex-none" disabled><option value="all">소분류 전체</option></select>
               <button onclick="downloadExcelTemplate()" class="bg-emerald-600 hover:bg-emerald-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm md:ml-2 w-full md:w-auto">⬇️ 엑셀 양식</button>
+              <label class="bg-purple-600 hover:bg-purple-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer w-full md:w-auto text-center">
+                📦 ZIP 이미지 일괄 등록
+                <input type="file" id="zip-upload" accept=".zip" class="hidden" onchange="handleZipUpload(event)">
+              </label>
               <label class="bg-blue-600 hover:bg-blue-700 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm cursor-pointer w-full md:w-auto text-center">
                 ⬆️ 엑셀 대량 등록
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
               </label>
               <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm w-full md:w-auto">+ 신규 단건 등록</button>
             </div>
+          </div>
+          <div id="zip-progress-container" class="hidden w-full bg-stone-200 rounded-full h-2.5 mb-4 mt-2">
+            <div id="zip-progress-bar" class="bg-purple-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <p id="zip-progress-text" class="text-[10px] font-bold text-purple-700 mt-1 text-right">0% 완료</p>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-stone-600 min-w-[600px]">
