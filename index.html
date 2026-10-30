@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- ZIP 파일 압축 해제를 위한 JSZip 라이브러리 추가 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -174,7 +173,6 @@
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
               </label>
 
-              <!-- [신규 추가] 일괄 삭제 버튼 -->
               <button onclick="bulkDeleteProducts()" class="bg-rose-500 hover:bg-rose-600 transition text-white text-xs px-3 py-2 rounded-xl font-bold shadow-sm md:ml-2 w-full md:w-auto">🗑️ 선택 일괄삭제</button>
               <button onclick="openProductModal()" class="bg-amber-500 hover:bg-amber-600 transition text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm w-full md:w-auto">+ 신규 단건 등록</button>
             </div>
@@ -574,6 +572,7 @@
       }
     }
 
+    // 💡 [수정] 로그인 및 권한 상태 체크 함수 (관리자일 때만 캐시 청소 버튼 표시)
     async function checkAuthStatus() {
       const { data: { user } } = await sbClient.auth.getUser();
       if (user) {
@@ -592,6 +591,7 @@
           document.getElementById('nav-btn-admin').classList.remove('hidden');
           document.getElementById('admin-notice-btn').classList.remove('hidden');
           
+          // 관리자일 경우 캐시 청소 버튼 보이기
           const cacheBtn = document.getElementById('btn-clear-cache');
           if (cacheBtn) cacheBtn.style.display = 'block';
         }
@@ -1817,7 +1817,38 @@
       XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
 
-    // 💡 [추가됨] 캐시 청소 및 새로고침 강제 실행 함수
+    // 💡 [수정됨] 로그인 및 권한 상태 체크 함수 (관리자일 때만 캐시 청소 버튼 표시)
+    async function checkAuthStatus() {
+      const { data: { user } } = await sbClient.auth.getUser();
+      if (user) {
+        document.getElementById('auth-buttons').classList.add('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('nav-btn-notice').classList.remove('hidden');
+        
+        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
+        currentUserProfile = profile;
+        
+        if (profile?.status === 'approved' || profile?.role === 'admin') {
+          document.getElementById('nav-btn-orders').classList.remove('hidden');
+          document.getElementById('cart-btn').classList.remove('hidden');
+        }
+        if (profile?.role === 'admin') {
+          document.getElementById('nav-btn-admin').classList.remove('hidden');
+          document.getElementById('admin-notice-btn').classList.remove('hidden');
+          
+          // 관리자일 경우 캐시 청소 버튼 보이기
+          const cacheBtn = document.getElementById('btn-clear-cache');
+          if (cacheBtn) cacheBtn.style.display = 'block';
+        }
+        
+        document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
+          (profile?.status === 'approved' ? `${user.email} (정회원)` : `${user.email} (승인대기)`);
+      } else {
+        currentUserProfile = null;
+      }
+    }
+
+    // 💡 [수정됨] 캐시 청소 및 새로고침 강제 실행 함수 (로그아웃 방지)
     async function clearSiteCache() {
         const btn = document.getElementById('btn-clear-cache');
         btn.innerText = "⏳ 청소 중...";
@@ -1825,23 +1856,19 @@
         btn.style.background = "#64748b";
 
         try {
-            // 1. 브라우저 로컬/세션 스토리지 완전 초기화
-            localStorage.clear();
-            sessionStorage.clear();
-
-            // 2. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제
+            // 1. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제 (이미지 캐시 등 초기화)
             if ('caches' in window) {
                 const cacheNames = await caches.keys();
                 await Promise.all(cacheNames.map(name => caches.delete(name)));
             }
 
-            // 3. 화면에 렌더링된 모든 이미지 태그의 소스를 강제로 새로고침 (Cache Busting)
+            // 2. 화면에 렌더링된 모든 이미지 태그의 소스를 강제로 새로고침 (Cache Busting)
             const images = document.getElementsByTagName('img');
             const now = new Date().getTime();
             
             for (let i = 0; i < images.length; i++) {
                 let src = images[i].src;
-                if (src && !src.startsWith('data:')) {
+                if (src && !src.startsWith('data:')) { // base64 이미지는 제외
                     src = src.split('?')[0]; 
                     images[i].src = src + '?v=' + now;
                 }
@@ -1849,7 +1876,7 @@
 
             alert('✨ 낡은 이미지 캐시가 완벽하게 청소되었습니다!\n서버에서 최신 알집(ZIP) 이미지를 다시 불러옵니다.');
             
-            // 4. 페이지 자체를 캐시 없이 강제 새로고침
+            // 3. 페이지 자체를 캐시 없이 강제 새로고침
             window.location.reload(true);
 
         } catch (error) {
@@ -1868,3 +1895,4 @@
   </button>
 </body>
 </html>
+```
