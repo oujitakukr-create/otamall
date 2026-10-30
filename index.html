@@ -1817,4 +1817,89 @@
     }
   </script>
 </body>
+  // 기존 코드: 엑셀 파일 생성 및 다운로드 로직 끝부분
+      XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    // 💡 [추가됨] 캐시 청소 및 새로고침 강제 실행 함수
+    async function clearSiteCache() {
+        const btn = document.getElementById('btn-clear-cache');
+        btn.innerText = "⏳ 청소 중...";
+        btn.style.pointerEvents = "none";
+        btn.style.background = "#64748b";
+
+        try {
+            // 1. 브라우저 로컬/세션 스토리지 완전 초기화
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // 2. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제 (강력 초기화)
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+            }
+
+            // 3. 화면에 렌더링된 모든 이미지 태그의 소스를 강제로 새로고침 (Cache Busting)
+            const images = document.getElementsByTagName('img');
+            const now = new Date().getTime();
+            
+            for (let i = 0; i < images.length; i++) {
+                let src = images[i].src;
+                if (src && !src.startsWith('data:')) { // base64 이미지는 제외
+                    src = src.split('?')[0]; 
+                    images[i].src = src + '?v=' + now;
+                }
+            }
+
+            alert('✨ 낡은 이미지 캐시가 완벽하게 청소되었습니다!\n서버에서 최신 알집(ZIP) 이미지를 다시 불러옵니다.');
+            
+            // 4. 페이지 자체를 캐시 없이 강제 새로고침
+            window.location.reload(true);
+
+        } catch (error) {
+            console.error("캐시 청소 중 오류 발생:", error);
+            alert("캐시 청소 중 문제가 발생했습니다. 브라우저 설정에서 캐시를 직접 비워주세요.");
+            btn.innerText = "🔄 이미지 캐시 청소";
+            btn.style.pointerEvents = "auto";
+            btn.style.background = "linear-gradient(135deg, #ef4444, #b91c1c)";
+        }
+    }
+
+    // 💡 [수정됨] 로그인/권한 체크 시 관리자일 때만 캐시 청소 버튼 띄우기
+    async function checkAuthStatus() {
+      const { data: { user } } = await sbClient.auth.getUser();
+      if (user) {
+        document.getElementById('auth-buttons').classList.add('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('nav-btn-notice').classList.remove('hidden');
+        
+        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
+        currentUserProfile = profile;
+        
+        if (profile?.status === 'approved' || profile?.role === 'admin') {
+          document.getElementById('nav-btn-orders').classList.remove('hidden');
+          document.getElementById('cart-btn').classList.remove('hidden');
+        }
+        if (profile?.role === 'admin') {
+          document.getElementById('nav-btn-admin').classList.remove('hidden');
+          document.getElementById('admin-notice-btn').classList.remove('hidden');
+          
+          // 관리자일 경우 캐시 청소 버튼 보이기
+          const cacheBtn = document.getElementById('btn-clear-cache');
+          if (cacheBtn) cacheBtn.style.display = 'block';
+        }
+        
+        document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
+          (profile?.status === 'approved' ? `${user.email} (정회원)` : `${user.email} (승인대기)`);
+      } else {
+        currentUserProfile = null;
+      }
+    }
+  </script>
+
+  <!-- 💡 [추가됨] 관리자용 이미지 캐시 청소 버튼 (기본적으로는 숨김 처리) -->
+  <button id="btn-clear-cache" onclick="clearSiteCache()" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border: 2px solid #fca5a5; border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); transition: transform 0.1s;">
+      <i class="fa-solid fa-trash-can"></i> 🔄 이미지 캐시 청소
+  </button>
+</body>
 </html>
