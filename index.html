@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- ZIP 파일 압축 해제를 위한 JSZip 라이브러리 추가 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -189,7 +190,6 @@
             <table class="w-full text-sm text-left text-stone-600 min-w-[600px]">
               <thead class="text-xs text-stone-500 uppercase bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <!-- [신규 추가] 전체 선택 체크박스 -->
                   <th class="px-4 py-3 w-10 text-center"><input type="checkbox" id="check-all-products" onchange="toggleAllProducts(this)" class="w-4 h-4 text-amber-500 rounded border-stone-300 cursor-pointer"></th>
                   <th class="px-4 py-3">이미지</th>
                   <th class="px-4 py-3 w-1/3">상품명 / 카테고리</th>
@@ -591,6 +591,9 @@
         if (profile?.role === 'admin') {
           document.getElementById('nav-btn-admin').classList.remove('hidden');
           document.getElementById('admin-notice-btn').classList.remove('hidden');
+          
+          const cacheBtn = document.getElementById('btn-clear-cache');
+          if (cacheBtn) cacheBtn.style.display = 'block';
         }
         
         document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
@@ -712,13 +715,11 @@
       XLSX.writeFile(wb, "올랑몰_상품대량등록양식.xlsx");
     }
 
-    // [신규] 일괄 체크박스 선택 기능
     function toggleAllProducts(source) {
       const checkboxes = document.querySelectorAll('.product-checkbox');
       checkboxes.forEach(cb => cb.checked = source.checked);
     }
 
-    // [신규] 체크된 상품 일괄 삭제 기능
     async function bulkDeleteProducts() {
       const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
       if (checkedBoxes.length === 0) {
@@ -1815,11 +1816,6 @@
 
       XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
-  </script>
-</body>
-  // 기존 코드: 엑셀 파일 생성 및 다운로드 로직 끝부분
-      XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
-    }
 
     // 💡 [추가됨] 캐시 청소 및 새로고침 강제 실행 함수
     async function clearSiteCache() {
@@ -1833,7 +1829,7 @@
             localStorage.clear();
             sessionStorage.clear();
 
-            // 2. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제 (강력 초기화)
+            // 2. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제
             if ('caches' in window) {
                 const cacheNames = await caches.keys();
                 await Promise.all(cacheNames.map(name => caches.delete(name)));
@@ -1845,7 +1841,7 @@
             
             for (let i = 0; i < images.length; i++) {
                 let src = images[i].src;
-                if (src && !src.startsWith('data:')) { // base64 이미지는 제외
+                if (src && !src.startsWith('data:')) {
                     src = src.split('?')[0]; 
                     images[i].src = src + '?v=' + now;
                 }
@@ -1863,37 +1859,6 @@
             btn.style.pointerEvents = "auto";
             btn.style.background = "linear-gradient(135deg, #ef4444, #b91c1c)";
         }
-    }
-
-    // 💡 [수정됨] 로그인/권한 체크 시 관리자일 때만 캐시 청소 버튼 띄우기
-    async function checkAuthStatus() {
-      const { data: { user } } = await sbClient.auth.getUser();
-      if (user) {
-        document.getElementById('auth-buttons').classList.add('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        document.getElementById('nav-btn-notice').classList.remove('hidden');
-        
-        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
-        currentUserProfile = profile;
-        
-        if (profile?.status === 'approved' || profile?.role === 'admin') {
-          document.getElementById('nav-btn-orders').classList.remove('hidden');
-          document.getElementById('cart-btn').classList.remove('hidden');
-        }
-        if (profile?.role === 'admin') {
-          document.getElementById('nav-btn-admin').classList.remove('hidden');
-          document.getElementById('admin-notice-btn').classList.remove('hidden');
-          
-          // 관리자일 경우 캐시 청소 버튼 보이기
-          const cacheBtn = document.getElementById('btn-clear-cache');
-          if (cacheBtn) cacheBtn.style.display = 'block';
-        }
-        
-        document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
-          (profile?.status === 'approved' ? `${user.email} (정회원)` : `${user.email} (승인대기)`);
-      } else {
-        currentUserProfile = null;
-      }
     }
   </script>
 
