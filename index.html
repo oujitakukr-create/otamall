@@ -7,8 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- ZIP 파일 압축 해제를 위한 JSZip 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -508,6 +508,7 @@
     let checkoutMode = 'cart'; 
     let directCheckoutItem = null;
 
+    // 💡 1회성 ZIP 이미지 매핑 저장소 (엑셀 등록 시 즉시 초기화됨)
     let uploadedZipImageMap = {};
 
     const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='100%25' height='100%25' fill='%23fdfbf7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d6d3d1' font-size='14'%3E이미지 준비중%3C/text%3E%3C/svg%3E";
@@ -572,7 +573,6 @@
       }
     }
 
-    // 💡 [수정] 로그인 및 권한 상태 체크 함수 (관리자일 때만 캐시 청소 버튼 표시)
     async function checkAuthStatus() {
       const { data: { user } } = await sbClient.auth.getUser();
       if (user) {
@@ -590,10 +590,6 @@
         if (profile?.role === 'admin') {
           document.getElementById('nav-btn-admin').classList.remove('hidden');
           document.getElementById('admin-notice-btn').classList.remove('hidden');
-          
-          // 관리자일 경우 캐시 청소 버튼 보이기
-          const cacheBtn = document.getElementById('btn-clear-cache');
-          if (cacheBtn) cacheBtn.style.display = 'block';
         }
         
         document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
@@ -749,6 +745,7 @@
       }
     }
 
+    // 💡 [핵심 개선 1] ZIP 업로드 시 기존 대기열을 비우고 고유 파일명으로 서버에 저장하여 구형 이미지 충돌 100% 차단
     async function handleZipUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -774,6 +771,10 @@
           throw new Error("압축 해제 기능(JSZip)을 불러오지 못했습니다. 페이지 상단에 <script> 태그가 잘 있는지 확인해주세요!");
         }
 
+        // 새로운 ZIP을 올릴 때마다 이전 ZIP 매핑 데이터를 완전히 초기화
+        uploadedZipImageMap = {};
+        const batchTimestamp = Date.now();
+
         const jszip = new JSZip();
         const zip = await jszip.loadAsync(file);
         
@@ -795,17 +796,20 @@
 
         for (let i = 0; i < imageFiles.length; i++) {
           const zipEntry = imageFiles[i];
-          const fileNameOnly = zipEntry.name.split('/').pop();
+          const originalFileName = zipEntry.name.split('/').pop().trim();
+          // 서버 저장 시에는 고유 타임스탬프를 붙여 과거 a1.png와 절대 섞이지 않도록 분리
+          const uniqueStorageKey = `zip_${batchTimestamp}_${originalFileName}`;
           const fileData = await zipEntry.async("blob");
           
-          const { error: upErr } = await sbClient.storage.from('product-images').upload(fileNameOnly, fileData, {
+          const { error: upErr } = await sbClient.storage.from('product-images').upload(uniqueStorageKey, fileData, {
             cacheControl: '3600',
             upsert: true 
           });
 
           if (!upErr) {
-            const publicUrl = sbClient.storage.from('product-images').getPublicUrl(fileNameOnly).data.publicUrl;
-            uploadedZipImageMap[fileNameOnly] = publicUrl;
+            const publicUrl = sbClient.storage.from('product-images').getPublicUrl(uniqueStorageKey).data.publicUrl;
+            // 엑셀 매칭용 키는 원래 파일명(소문자 기준, 예: a1.png)으로 저장
+            uploadedZipImageMap[originalFileName.toLowerCase()] = publicUrl;
             successCount++;
           } else {
             console.error("업로드 실패: ", upErr);
@@ -817,7 +821,7 @@
           progressText.innerText = `${percent}% 완료 (${i + 1}/${imageFiles.length}개 업로드 중)`;
         }
 
-        alert(`🎉 이미지 일괄 등록 완료!\n- 성공: ${successCount}개\n- 실패: ${failCount}개\n\n이제 [엑셀 대량 등록] 버튼을 눌러 엑셀을 업로드하시면 사진이 자동 연결됩니다.`);
+        alert(`🎉 이미지 일괄 등록 완료!\n- 성공: ${successCount}개\n- 실패: ${failCount}개\n\n이 이미지들은 바로 다음에 등록하는 엑셀 1회에만 적용됩니다.`);
       } catch (err) {
         alert("ZIP 처리 중 오류 발생: " + err.message);
       } finally {
@@ -828,10 +832,17 @@
       }
     }
 
+    // 💡 [핵심 개선 2] 직전에 업로드한 ZIP 파일에 있는 이미지만 연결하고, 없으면 무조건 이미지 없이(null) 등록 후 ZIP 대기열 즉시 소멸
     async function handleExcelUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (!confirm("엑셀 파일의 데이터를 대량 등록하시겠습니까?\n(사전에 ZIP 이미지를 업로드했다면 파일명과 자동 연결됩니다)")) {
+
+      const loadedZipCount = Object.keys(uploadedZipImageMap).length;
+      const confirmMsg = loadedZipCount > 0
+        ? `현재 대기 중인 ZIP 이미지(${loadedZipCount}장)와 매칭하여 엑셀 대량 등록을 진행하시겠습니까?\n(ZIP에 없는 파일 번호는 이미지 없이 등록되며, 등록 완료 후 ZIP 대기열은 자동 초기화됩니다.)`
+        : `직전에 업로드한 ZIP 이미지가 없습니다.\n모든 상품을 [이미지 없이] 대량 등록하시겠습니까?`;
+
+      if (!confirm(confirmMsg)) {
         e.target.value = ''; 
         return;
       }
@@ -848,6 +859,8 @@
           if (jsonData.length <= 4) throw new Error("데이터가 없습니다. 5번째 줄부터 데이터를 입력해주세요.");
 
           let payloads = [];
+          let matchedImageCount = 0;
+
           for (let i = 4; i < jsonData.length; i++) {
             const row = jsonData[i];
             if (!row || row.length === 0 || !row[0] || !row[1]) continue; 
@@ -865,14 +878,13 @@
                 }
             }
 
+            // 💡 과거 서버 이미지를 강제로 불러오던 else 구문을 완전 삭제!
+            // 오직 직전에 업로드한 ZIP(uploadedZipImageMap)에 파일이 존재할 때만 이미지를 연결하고, 없으면 null 처리
             let finalImageUrl = null;
-            const imageName = row[9] ? String(row[9]).trim() : null;
-            if (imageName) {
-              if (uploadedZipImageMap[imageName]) {
-                 finalImageUrl = uploadedZipImageMap[imageName];
-              } else {
-                 finalImageUrl = `https://jjgyzlcegsckiobjwybb.supabase.co/storage/v1/object/public/product-images/${imageName}`;
-              }
+            const imageName = row[9] ? String(row[9]).trim().toLowerCase() : null;
+            if (imageName && uploadedZipImageMap[imageName]) {
+              finalImageUrl = uploadedZipImageMap[imageName];
+              matchedImageCount++;
             }
 
             payloads.push({
@@ -887,7 +899,10 @@
           const { error } = await sbClient.from('products').insert(payloads);
           if (error) throw error;
 
-          alert(`🎉 총 ${payloads.length}개의 상품이 대량 등록되었습니다!`);
+          // 💡 엑셀 등록이 끝나는 즉시 ZIP 매핑 초기화 (다음 엑셀 업로드 시 이미지 없이 등록되도록 보장)
+          uploadedZipImageMap = {};
+
+          alert(`🎉 총 ${payloads.length}개의 상품이 대량 등록되었습니다!\n(이미지 연결: ${matchedImageCount}건 / 이미지 없음: ${payloads.length - matchedImageCount}건)`);
           loadAdminProducts(); loadProducts(currentPage); 
         } catch (err) {
           alert("업로드 실패: " + err.message);
@@ -1816,83 +1831,6 @@
 
       XLSX.writeFile(wb, `올랑몰_통합발주서_${new Date().toISOString().slice(0,10)}.xlsx`);
     }
-
-    // 💡 [수정됨] 로그인 및 권한 상태 체크 함수 (관리자일 때만 캐시 청소 버튼 표시)
-    async function checkAuthStatus() {
-      const { data: { user } } = await sbClient.auth.getUser();
-      if (user) {
-        document.getElementById('auth-buttons').classList.add('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        document.getElementById('nav-btn-notice').classList.remove('hidden');
-        
-        const { data: profile } = await sbClient.from('profiles').select('*').eq('id', user.id).single();
-        currentUserProfile = profile;
-        
-        if (profile?.status === 'approved' || profile?.role === 'admin') {
-          document.getElementById('nav-btn-orders').classList.remove('hidden');
-          document.getElementById('cart-btn').classList.remove('hidden');
-        }
-        if (profile?.role === 'admin') {
-          document.getElementById('nav-btn-admin').classList.remove('hidden');
-          document.getElementById('admin-notice-btn').classList.remove('hidden');
-          
-          // 관리자일 경우 캐시 청소 버튼 보이기
-          const cacheBtn = document.getElementById('btn-clear-cache');
-          if (cacheBtn) cacheBtn.style.display = 'block';
-        }
-        
-        document.getElementById('user-display').innerText = profile?.role === 'admin' ? `[관리자] ${user.email}` : 
-          (profile?.status === 'approved' ? `${user.email} (정회원)` : `${user.email} (승인대기)`);
-      } else {
-        currentUserProfile = null;
-      }
-    }
-
-    // 💡 [수정됨] 캐시 청소 및 새로고침 강제 실행 함수 (로그아웃 방지)
-    async function clearSiteCache() {
-        const btn = document.getElementById('btn-clear-cache');
-        btn.innerText = "⏳ 청소 중...";
-        btn.style.pointerEvents = "none";
-        btn.style.background = "#64748b";
-
-        try {
-            // 1. 서비스 워커(Service Worker) 및 하드 캐시 스토리지 삭제 (이미지 캐시 등 초기화)
-            if ('caches' in window) {
-                const cacheNames = await caches.keys();
-                await Promise.all(cacheNames.map(name => caches.delete(name)));
-            }
-
-            // 2. 화면에 렌더링된 모든 이미지 태그의 소스를 강제로 새로고침 (Cache Busting)
-            const images = document.getElementsByTagName('img');
-            const now = new Date().getTime();
-            
-            for (let i = 0; i < images.length; i++) {
-                let src = images[i].src;
-                if (src && !src.startsWith('data:')) { // base64 이미지는 제외
-                    src = src.split('?')[0]; 
-                    images[i].src = src + '?v=' + now;
-                }
-            }
-
-            alert('✨ 낡은 이미지 캐시가 완벽하게 청소되었습니다!\n서버에서 최신 알집(ZIP) 이미지를 다시 불러옵니다.');
-            
-            // 3. 페이지 자체를 캐시 없이 강제 새로고침
-            window.location.reload(true);
-
-        } catch (error) {
-            console.error("캐시 청소 중 오류 발생:", error);
-            alert("캐시 청소 중 문제가 발생했습니다. 브라우저 설정에서 캐시를 직접 비워주세요.");
-            btn.innerText = "🔄 이미지 캐시 청소";
-            btn.style.pointerEvents = "auto";
-            btn.style.background = "linear-gradient(135deg, #ef4444, #b91c1c)";
-        }
-    }
   </script>
-
-  <!-- 💡 [추가됨] 관리자용 이미지 캐시 청소 버튼 (기본적으로는 숨김 처리) -->
-  <button id="btn-clear-cache" onclick="clearSiteCache()" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border: 2px solid #fca5a5; border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); transition: transform 0.1s;">
-      <i class="fa-solid fa-trash-can"></i> 🔄 이미지 캐시 청소
-  </button>
 </body>
 </html>
-```
